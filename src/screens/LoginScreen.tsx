@@ -11,6 +11,7 @@ import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { userTypeMap } from '../types/userType';
 import OptimisticFeedback from '../components/Loading'; // Import OptimisticFeedback
+import { API_ENDPOINTS } from '../api/api-endpoints';
 
 type RootStackParamList = {
   PassengerDashboard: undefined;
@@ -38,7 +39,7 @@ const Login: React.FC = () => {
     console.log('Logging in with payload:', payload);
 
     try {
-      const data = await post('/login', payload);
+      const data = await post(API_ENDPOINTS.LOGIN, payload);
       console.log('Login response:', data);
 
       const token = data.access_token;

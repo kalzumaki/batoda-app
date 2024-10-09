@@ -1,15 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react'; // Added useEffect
 import { View, StyleSheet, Button, ScrollView } from 'react-native';
 import Toast from 'react-native-toast-message';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-
-import PassengerLoad from '../../components/passenger/PassengerLoad';
-import QueueInfo from '../../components/passenger/QueueInfo';
 import { logout } from '../../utils/proxy';
 import HeaderMain from '../../components/passenger/HeaderCard';
+import PassengerLoad from '../../components/passenger/PassengerLoad';
+import QueueInfo from '../../components/passenger/QueueInfo';
 import OptimisticFeedback from '../../components/Loading'; // Import OptimisticFeedback
+
 
 type RootStackParamList = {
   Login: undefined;
@@ -20,6 +19,7 @@ type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 const PassengerDashboard: React.FC = () => {
   const navigation = useNavigation<NavigationProps>();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
 
   const handleLogout = async () => {
     console.log('Logout process started');
@@ -56,7 +56,7 @@ const PassengerDashboard: React.FC = () => {
         <PassengerLoad />
         <QueueInfo />
         <Button title="Logout" onPress={handleLogout} color="#FF6F61" disabled={isLoggingOut} />
-
+        
         {/* Display optimistic feedback when logging out */}
         {isLoggingOut && <OptimisticFeedback action="logout" />}
       </View>
@@ -66,7 +66,7 @@ const PassengerDashboard: React.FC = () => {
 
 const styles = StyleSheet.create({
   scrollContainer: {
-    flexGrow: 1, // Ensure ScrollView takes full available height
+    flexGrow: 1,
   },
   container: {
     flex: 1,
