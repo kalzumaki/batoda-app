@@ -22,6 +22,11 @@ const HeaderMain: React.FC = () => {
         <View style={styles.tricycleContainer}>
           <Text style={styles.tricycleNumber}>123</Text>
           <Text style={styles.tricycleLabel}>Tricycle Number</Text>
+
+          {/* Button below the tricycle number */}
+          <TouchableOpacity style={styles.reserveButton}>
+            <Text style={styles.buttonText}>Reserve Now</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.infoContainer}>
@@ -32,7 +37,8 @@ const HeaderMain: React.FC = () => {
 
           <View style={styles.infoTextContainer}>
             <Text style={styles.infoTitle}>Route</Text>
-            <Text style={styles.infoValue}>Dumaguete ➔ Bacong</Text>
+            <Text style={styles.infoValue}>Dumaguete ➔ </Text>
+            <Text style={styles.infoValue}>Bacong</Text>
           </View>
 
           <View style={styles.infoTextContainer}>
@@ -52,8 +58,8 @@ const styles = StyleSheet.create({
     padding: 20,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    width: '100%', // Full width
-    marginHorizontal: 0, // Remove any default margins
+    width: '100%',
+    marginHorizontal: 0,
   },
   topBar: {
     flexDirection: 'row',
@@ -72,7 +78,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 18,
     color: '#C6D9D7',
-    marginTop: 10,
+    marginTop: 30, // Adjust the gap here
   },
   mainContent: {
     flexDirection: 'row',
@@ -81,6 +87,7 @@ const styles = StyleSheet.create({
   },
   tricycleContainer: {
     alignItems: 'center',
+    marginRight: 20, // Small gap between Tricycle and Info
   },
   tricycleNumber: {
     fontSize: 72,
@@ -90,6 +97,7 @@ const styles = StyleSheet.create({
   tricycleLabel: {
     fontSize: 16,
     color: '#C6D9D7',
+    marginBottom: 10,
   },
   infoContainer: {
     justifyContent: 'center',
@@ -110,6 +118,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#C6D9D7',
     marginTop: 5,
+  },
+  reserveButton: {
+    backgroundColor: '#62a287', // Button color
+    paddingVertical: 12,
+    paddingHorizontal: 40, // Adjust width
+    borderRadius: 29,
+    marginTop: 20, // Space between the Tricycle Number and the Button
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

@@ -9,7 +9,7 @@ import PasswordInput from '../components/PasswordInput';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { userTypeMap } from '../types/usertype';
+import { userTypeMap } from '../types/userType';
 import OptimisticFeedback from '../components/Loading'; // Import OptimisticFeedback
 
 type RootStackParamList = {

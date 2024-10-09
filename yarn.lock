@@ -2074,6 +2074,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@pusher/pusher-websocket-react-native@npm:^1.3.1":
+  version: 1.3.1
+  resolution: "@pusher/pusher-websocket-react-native@npm:1.3.1"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: b9f62398b9443d9ec02c44071923fb4e8b057db541fcfc37bb35ffdf2fc13dd6c515083ac5dc62cec500d758a249d8a07d830905ca2df5be11bdde2f30eb88e4
+  languageName: node
+  linkType: hard
+
 "@react-native-async-storage/async-storage@npm:^2.0.0":
   version: 2.0.0
   resolution: "@react-native-async-storage/async-storage@npm:2.0.0"
@@ -2473,7 +2483,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-native/typescript-config@npm:0.75.4":
+"@react-native/typescript-config@npm:^0.75.4":
   version: 0.75.4
   resolution: "@react-native/typescript-config@npm:0.75.4"
   checksum: 0c4bdffffbe990671c9e878683c1ac809bf205e35a4185e9ec77a82ecfbd4c8defdd08e5c1741e8d2b460cd29daaea8333f98090fcd01d57f2ec993122a71e98
@@ -3031,11 +3041,12 @@ __metadata:
     "@babel/preset-env": ^7.20.0
     "@babel/runtime": ^7.20.0
     "@expo/vector-icons": ^14.0.4
+    "@pusher/pusher-websocket-react-native": ^1.3.1
     "@react-native-async-storage/async-storage": ^2.0.0
     "@react-native/babel-preset": 0.75.4
     "@react-native/eslint-config": 0.75.4
     "@react-native/metro-config": 0.75.4
-    "@react-native/typescript-config": 0.75.4
+    "@react-native/typescript-config": ^0.75.4
     "@react-navigation/native": ^6.1.18
     "@react-navigation/native-stack": ^6.11.0
     "@types/babel__core": ~7.20.5
@@ -3057,7 +3068,7 @@ __metadata:
     react-native-vector-icons: ^10.2.0
     react-test-renderer: 18.3.1
     tailwind-rn: ^4.2.0
-    typescript: 5.0.4
+    typescript: ^5.6.3
   languageName: unknown
   linkType: soft
 
@@ -9773,23 +9784,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:5.0.4":
-  version: 5.0.4
-  resolution: "typescript@npm:5.0.4"
+"typescript@npm:^5.6.3":
+  version: 5.6.3
+  resolution: "typescript@npm:5.6.3"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 82b94da3f4604a8946da585f7d6c3025fff8410779e5bde2855ab130d05e4fd08938b9e593b6ebed165bda6ad9292b230984f10952cf82f0a0ca07bbeaa08172
+  checksum: ba302f8822777ebefb28b554105f3e074466b671e7444ec6b75dadc008a62f46f373d9e57ceced1c433756d06c8b7dc569a7eefdf3a9573122a49205ff99021a
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@5.0.4#~builtin<compat/typescript>":
-  version: 5.0.4
-  resolution: "typescript@patch:typescript@npm%3A5.0.4#~builtin<compat/typescript>::version=5.0.4&hash=b5f058"
+"typescript@patch:typescript@^5.6.3#~builtin<compat/typescript>":
+  version: 5.6.3
+  resolution: "typescript@patch:typescript@npm%3A5.6.3#~builtin<compat/typescript>::version=5.6.3&hash=29ae49"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: d26b6ba97b6d163c55dbdffd9bbb4c211667ebebc743accfeb2c8c0154aace7afd097b51165a72a5bad2cf65a4612259344ff60f8e642362aa1695c760d303ac
+  checksum: ade87bce2363ee963eed0e4ca8a312ea02c81873ebd53609bc3f6dc0a57f6e61ad7e3fb8cbb7f7ab8b5081cbee801b023f7c4823ee70b1c447eae050e6c7622b
   languageName: node
   linkType: hard
 
