@@ -1,54 +1,52 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
-import { get } from '../../utils/proxy';
-import { Pusher, PusherEvent } from '@pusher/pusher-websocket-react-native';
-
-const pusher = Pusher.getInstance();
+import { get } from '../../utils/proxy'; // Adjust the path based on your project structure
+import { useTimer } from '../../contexts/TimerContext'; 
+interface Dispatch {
+  id: number; // Unique identifier for the dispatch
+  tricycle: {
+    tricycle_number: string;
+  };
+  // Add other dispatch properties if needed
+}
 
 const HeaderMain: React.FC = () => {
-  const [dispatchData, setDispatchData] = useState<any>(null);
-  const [timeLeft, setTimeLeft] = useState(0); // Start with 0 until dispatch data is available
+  const { timeLeft, resetTimer, startTimer } = useTimer(); // Get timer values from context
+  const [dispatchData, setDispatchData] = useState<Dispatch | null>(null);
+  const pollingInterval = useRef<NodeJS.Timeout | null>(null);
 
-  
-  // Function to fetch initial dispatch data
   const fetchDispatchData = async () => {
     try {
       const data = await get('/approved-dispatches');
       if (data && data.dispatches && data.dispatches.length > 0) {
-        setDispatchData(data.dispatches[0]);
-        setTimeLeft(600); // Set initial time left to 10 minutes
+        const newDispatch = data.dispatches[0];
+        if (!dispatchData || newDispatch.id !== dispatchData.id) {
+          setDispatchData(newDispatch);
+          resetTimer(); // Reset timer when new dispatch data arrives
+          startTimer(); // Start the timer
+        }
       } else {
-        console.log('No dispatch data available.');
+        if (dispatchData !== null) {
+          setDispatchData(null);
+        }
       }
     } catch (error) {
       console.error('Error fetching dispatch data:', error);
     }
   };
 
-  // Format today's date
-  const getCurrentDate = () => {
-    const today = new Date();
-    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' };
-    return today.toLocaleDateString('en-US', options);
-  };
-
-  // Countdown logic: decrease timeLeft every second
   useEffect(() => {
-    let timer: NodeJS.Timeout | undefined;
-
-    if (timeLeft > 0) {
-      timer = setInterval(() => {
-        setTimeLeft(prevTime => prevTime - 1);
-      }, 1000);
-    } else if (timeLeft <= 0 && timer) {
-      clearInterval(timer);
-    }
-
-    return () => clearInterval(timer); // Cleanup on unmount
-  }, [timeLeft]);
+    fetchDispatchData();
+    pollingInterval.current = setInterval(fetchDispatchData, 5000);
+    return () => {
+      if (pollingInterval.current) {
+        clearInterval(pollingInterval.current);
+      }
+    };
+  }, [dispatchData]);
 
   // Format timeLeft to display as hh:mm:ss
-  const formatTimeLeft = (seconds: number) => {
+  const formatTimeLeft = (seconds: number): string => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
@@ -56,20 +54,32 @@ const HeaderMain: React.FC = () => {
       .toString()
       .padStart(2, '0')} : ${secs.toString().padStart(2, '0')}`;
   };
-
-  useEffect(() => {
-    fetchDispatchData();
-  }, []);
+  // Format today's date
+  const getCurrentDate = (): string => {
+    const today = new Date();
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    };
+    return today.toLocaleDateString('en-US', options);
+  };
 
   return (
     <View style={styles.headerContainer}>
       {/* Top Bar */}
       <View style={styles.topBar}>
         <TouchableOpacity>
-          <Image source={require('../../assets/profile-user.png')} style={styles.profileIcon} />
+          <Image
+            source={require('../../assets/profile-user.png')}
+            style={styles.profileIcon}
+          />
         </TouchableOpacity>
         <TouchableOpacity>
-          <Image source={require('../../assets/menu.png')} style={styles.drawerIcon} />
+          <Image
+            source={require('../../assets/menu.png')}
+            style={styles.drawerIcon}
+          />
         </TouchableOpacity>
       </View>
 
@@ -140,6 +150,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#C6D9D7',
     marginTop: 30,
+    textAlign: 'center',
   },
   mainContent: {
     flexDirection: 'row',
@@ -175,22 +186,20 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
   },
-  timeUnit: {
-    fontSize: 12,
-    color: '#C6D9D7',
-    marginTop: 5,
-  },
   reserveButton: {
-    backgroundColor: '#62a287',
-    paddingVertical: 12,
-    paddingHorizontal: 40,
-    borderRadius: 29,
-    marginTop: 20,
+    backgroundColor: '#FFCC00',
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 10,
   },
   buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+    color: '#2d665f',
     fontWeight: 'bold',
+  },
+  timeUnit: {
+    fontSize: 12,
+    color: '#A8BAB7',
+    textAlign: 'center',
   },
 });
 
