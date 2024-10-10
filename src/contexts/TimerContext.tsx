@@ -1,58 +1,79 @@
-// src/context/TimerContext.tsx
+// src/contexts/TimerContext.tsx
 
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
 
 interface TimerContextProps {
-  timeLeft: number;
-  resetTimer: () => void;
-  startTimer: () => void;
+  timeLeft: number | null; // Remaining time in seconds
+  setScheduledTime: (scheduledTime: string | null) => void; // Set the scheduled dispatch time
 }
 
-const TimerContext = createContext<TimerContextProps | undefined>(undefined);
+const TimerContext = createContext<TimerContextProps>({
+  timeLeft: null,
+  setScheduledTime: () => {},
+});
 
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [timeLeft, setTimeLeft] = useState<number>(600); // 10 minutes
-  const countdownInterval = useRef<NodeJS.Timeout | null>(null);
+  const [scheduledTime, setScheduledTimeState] = useState<string | null>(null);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const timerInterval = useRef<NodeJS.Timeout | null>(null);
 
-  const startTimer = () => {
-    if (countdownInterval.current) return; // Prevent multiple intervals
-
-    countdownInterval.current = setInterval(() => {
-      setTimeLeft((prevTime) => {
-        if (prevTime <= 1) {
-          clearInterval(countdownInterval.current as NodeJS.Timeout);
-          countdownInterval.current = null;
-          return 0;
-        }
-        return prevTime - 1;
-      });
-    }, 1000);
-  };
-
-  const resetTimer = () => {
-    setTimeLeft(600); // Reset to 10 minutes
+  // Function to set the scheduled dispatch time
+  const setScheduledTime = (scheduledTime: string | null) => {
+    setScheduledTimeState(scheduledTime);
   };
 
   useEffect(() => {
-    // Cleanup on unmount
-    return () => {
-      if (countdownInterval.current) {
-        clearInterval(countdownInterval.current);
+    // Function to update the remaining time
+    const updateTimeLeft = () => {
+      if (!scheduledTime) {
+        setTimeLeft(null);
+        return;
+      }
+
+      const scheduledDate = new Date(scheduledTime);
+      const now = new Date();
+      const diffInSeconds = Math.floor((scheduledDate.getTime() - now.getTime()) / 1000);
+
+      if (diffInSeconds > 0) {
+        setTimeLeft(diffInSeconds);
+      } else {
+        setTimeLeft(0);
+        // Clear the interval if time has elapsed
+        if (timerInterval.current) {
+          clearInterval(timerInterval.current);
+          timerInterval.current = null;
+        }
       }
     };
-  }, []);
+
+    // Initial call to set the timeLeft
+    updateTimeLeft();
+
+    // Clear any existing intervals
+    if (timerInterval.current) {
+      clearInterval(timerInterval.current);
+      timerInterval.current = null;
+    }
+
+    if (scheduledTime) {
+      // Update every second
+      timerInterval.current = setInterval(updateTimeLeft, 1000);
+    }
+
+    // Cleanup on unmount or when scheduledTime changes
+    return () => {
+      if (timerInterval.current) {
+        clearInterval(timerInterval.current);
+        timerInterval.current = null;
+      }
+    };
+  }, [scheduledTime]);
 
   return (
-    <TimerContext.Provider value={{ timeLeft, resetTimer, startTimer }}>
+    <TimerContext.Provider value={{ timeLeft, setScheduledTime }}>
       {children}
     </TimerContext.Provider>
   );
 };
 
-export const useTimer = () => {
-  const context = useContext(TimerContext);
-  if (!context) {
-    throw new Error('useTimer must be used within a TimerProvider');
-  }
-  return context;
-};
+export const useTimer = () => useContext(TimerContext);

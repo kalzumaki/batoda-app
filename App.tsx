@@ -24,7 +24,7 @@ const App: React.FC = () => {
       <NavigationContainer>
         <Stack.Navigator
           initialRouteName="Login"
-          screenOptions={{ headerShown: false, header: () => <HeaderMain /> }}
+          screenOptions={{ headerShown: false}}
         >
           <Stack.Screen name="Login" component={Login} />
           <Stack.Screen name="Register" component={Register} />

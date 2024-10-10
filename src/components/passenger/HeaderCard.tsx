@@ -1,37 +1,63 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
-import { get } from '../../utils/proxy'; // Adjust the path based on your project structure
-import { useTimer } from '../../contexts/TimerContext'; 
-interface Dispatch {
-  id: number; // Unique identifier for the dispatch
-  tricycle: {
-    tricycle_number: string;
-  };
-  // Add other dispatch properties if needed
-}
+import React, {useState, useEffect, useRef} from 'react';
+import {View, Text, TouchableOpacity, Image, StyleSheet} from 'react-native';
+import {get} from '../../utils/proxy'; // Adjust the path based on your project structure
+import {useTimer} from '../../contexts/TimerContext';
+import {Dispatch, DispatchResponse} from '../../types/approved-dispatch'; // Import the Dispatch interfaces
+import Toast from 'react-native-toast-message';
 
 const HeaderMain: React.FC = () => {
-  const { timeLeft, resetTimer, startTimer } = useTimer(); // Get timer values from context
+  const {timeLeft, setScheduledTime} = useTimer(); // Use TimerContext
   const [dispatchData, setDispatchData] = useState<Dispatch | null>(null);
   const pollingInterval = useRef<NodeJS.Timeout | null>(null);
 
+  const TEN_MINUTES_IN_SECONDS = 600;
+
   const fetchDispatchData = async () => {
     try {
-      const data = await get('/approved-dispatches');
+      const data: DispatchResponse = await get('/approved-dispatches');
       if (data && data.dispatches && data.dispatches.length > 0) {
-        const newDispatch = data.dispatches[0];
+        const newDispatch: Dispatch = data.dispatches[0];
+
+        // Check if `is_dispatched` changed from 0 to 1 (from undispached to dispatched)
+        if (
+          dispatchData &&
+          dispatchData.is_dispatched === 0 &&
+          newDispatch.is_dispatched === 1
+        ) {
+          // Show toast if `is_dispatched` became 1
+          Toast.show({
+            type: 'success',
+            text1: 'You are all set!',
+            text2: 'Ready to go! Travel safe!',
+            visibilityTime: 3000, // Duration of the toast (in ms)
+          });
+        }
+
+        // Only update if dispatchData is different
         if (!dispatchData || newDispatch.id !== dispatchData.id) {
           setDispatchData(newDispatch);
-          resetTimer(); // Reset timer when new dispatch data arrives
-          startTimer(); // Start the timer
+
+          // Determine timer based on dispatch status
+          if (
+            newDispatch.is_dispatched === 1 ||
+            newDispatch.actual_dispatch_time !== null
+          ) {
+            // Reset the scheduled time to null, displaying '-- -- --'
+            setScheduledTime(null);
+          } else {
+            // Set the scheduled_dispatch_time in TimerContext
+            setScheduledTime(newDispatch.scheduled_dispatch_time);
+          }
         }
       } else {
-        if (dispatchData !== null) {
-          setDispatchData(null);
-        }
+        // No dispatch data, reset the scheduled time
+        setDispatchData(null);
+        setScheduledTime(null);
       }
     } catch (error) {
       console.error('Error fetching dispatch data:', error);
+      setDispatchData(null);
+      setScheduledTime(null);
     }
   };
 
@@ -43,17 +69,24 @@ const HeaderMain: React.FC = () => {
         clearInterval(pollingInterval.current);
       }
     };
-  }, [dispatchData]);
+  }, []); // Empty dependency array to prevent multiple intervals
 
-  // Format timeLeft to display as hh:mm:ss
-  const formatTimeLeft = (seconds: number): string => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
+  // Format timeLeft to display as "8 mins" or "-- -- --" if no data
+  const formatTimeLeft = (seconds: number | null): string => {
+    if (seconds === null) {
+      return '-- -- --';
+    }
+
+    if (seconds === 0) {
+      return '00:00:00';
+    }
+
+    const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${hours.toString().padStart(2, '0')} : ${minutes
-      .toString()
-      .padStart(2, '0')} : ${secs.toString().padStart(2, '0')}`;
+
+    return `${minutes} mins ${secs > 0 ? `${secs} sec` : ''}`;
   };
+
   // Format today's date
   const getCurrentDate = (): string => {
     const today = new Date();
@@ -86,7 +119,7 @@ const HeaderMain: React.FC = () => {
       {/* Dispatching Status */}
       <Text style={styles.statusText}>Dispatching Now...</Text>
 
-      {/* Main Content: Tricycle Number, Date, Route, Time */}
+      {/* Main Content: Driver Info, Tricycle Number, Date, Time Left */}
       <View style={styles.mainContent}>
         <View style={styles.tricycleContainer}>
           <Text style={styles.tricycleNumber}>
@@ -94,28 +127,31 @@ const HeaderMain: React.FC = () => {
           </Text>
           <Text style={styles.tricycleLabel}>Tricycle Number</Text>
 
-          {/* Button below the tricycle number */}
           <TouchableOpacity style={styles.reserveButton}>
             <Text style={styles.buttonText}>Reserve Now</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.infoContainer}>
-          <View style={styles.infoTextContainer}>
-            <Text style={styles.infoTitle}>Today</Text>
-            <Text style={styles.infoValue}>{getCurrentDate()}</Text>
-          </View>
-
+          {/* Route Section - Always Displayed */}
           <View style={styles.infoTextContainer}>
             <Text style={styles.infoTitle}>Route</Text>
             <Text style={styles.infoValue}>Dumaguete ➔</Text>
             <Text style={styles.infoValue}>Bacong</Text>
           </View>
 
+          {/* Today's Date */}
+          <View style={styles.infoTextContainer}>
+            <Text style={styles.infoTitle}>Today</Text>
+            <Text style={styles.infoValue}>{getCurrentDate()}</Text>
+          </View>
+
+          {/* Time Left */}
           <View style={styles.infoTextContainer}>
             <Text style={styles.infoTitle}>Time Left</Text>
-            <Text style={styles.infoValue}>{formatTimeLeft(timeLeft)}</Text>
-            <Text style={styles.timeUnit}>hr     min     sec</Text>
+            <Text style={styles.infoValue}>
+              {dispatchData ? formatTimeLeft(timeLeft) : '-- -- --'}
+            </Text>
           </View>
         </View>
       </View>
@@ -147,10 +183,10 @@ const styles = StyleSheet.create({
     height: 30,
   },
   statusText: {
-    fontSize: 18,
-    color: '#C6D9D7',
+    fontSize: 16,
+    color: '#ffff',
     marginTop: 30,
-    textAlign: 'center',
+    textAlign: 'left',
   },
   mainContent: {
     flexDirection: 'row',
@@ -171,6 +207,16 @@ const styles = StyleSheet.create({
     color: '#C6D9D7',
     marginBottom: 10,
   },
+  driverName: {
+    fontSize: 24,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  driverLabel: {
+    fontSize: 16,
+    color: '#C6D9D7',
+    marginBottom: 10,
+  },
   infoContainer: {
     justifyContent: 'center',
   },
@@ -187,13 +233,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   reserveButton: {
-    backgroundColor: '#FFCC00',
+    backgroundColor: '#62a287', // Updated to the provided color code
     padding: 10,
-    borderRadius: 5,
+    borderRadius: 30,
     marginTop: 10,
   },
   buttonText: {
-    color: '#2d665f',
+    color: '#FFFFFF', // Ensures the text stands out on the button
     fontWeight: 'bold',
   },
   timeUnit: {
