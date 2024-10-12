@@ -176,7 +176,8 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: 10,
+    marginBottom: 30,
     color: '#c6d9d7',
   },
   pollingText: {
