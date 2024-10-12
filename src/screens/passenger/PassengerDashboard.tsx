@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'; // Added useEffect
-import { View, StyleSheet, Button, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, StyleSheet, Button, FlatList } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -8,7 +8,6 @@ import HeaderMain from '../../components/passenger/HeaderCard';
 import PassengerLoad from '../../components/passenger/PassengerLoad';
 import QueueInfo from '../../components/passenger/QueueInfo';
 import OptimisticFeedback from '../../components/Loading'; // Import OptimisticFeedback
-
 
 type RootStackParamList = {
   Login: undefined;
@@ -19,7 +18,6 @@ type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 const PassengerDashboard: React.FC = () => {
   const navigation = useNavigation<NavigationProps>();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-
 
   const handleLogout = async () => {
     console.log('Logout process started');
@@ -49,29 +47,40 @@ const PassengerDashboard: React.FC = () => {
     }
   };
 
+  // Array to hold the main components
+  const renderItems = [
+    { id: 'header', component: <HeaderMain /> },
+    { id: 'load', component: <PassengerLoad /> },
+    { id: 'queue', component: <QueueInfo /> },
+  ];
+
+  const renderItem = ({ item }: { item: { id: string; component: React.ReactNode } }) => (
+    <View key={item.id}>
+      {item.component}
+    </View>
+  );
+
   return (
-    <ScrollView contentContainerStyle={styles.scrollContainer}>
-      <View style={styles.container}>
-        <HeaderMain />
-        <PassengerLoad />
-        <QueueInfo />
+    <FlatList
+      data={renderItems}
+      keyExtractor={(item) => item.id}
+      renderItem={renderItem}
+      contentContainerStyle={styles.container}
+      ListFooterComponent={
         <Button title="Logout" onPress={handleLogout} color="#FF6F61" disabled={isLoggingOut} />
-        
-        {/* Display optimistic feedback when logging out */}
-        {isLoggingOut && <OptimisticFeedback action="logout" />}
-      </View>
-    </ScrollView>
+      }
+      // Disable scrolling if needed
+      scrollEnabled={true}
+    />
   );
 };
 
 const styles = StyleSheet.create({
-  scrollContainer: {
-    flexGrow: 1,
-  },
   container: {
-    flex: 1,
-    backgroundColor: '#c6d9d7',
+    flexGrow: 1,
+    backgroundColor: 'white',
   },
+ 
 });
 
 export default PassengerDashboard;
