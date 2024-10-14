@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = 'https://pig-positive-gorilla.ngrok-free.app/api'; // Replace with your actual API URL
+const API_BASE_URL = 'https://cosmic-whippet-really.ngrok-free.app/api'; // Replace with your actual API URL
+// const API_BASE_URL = 'https://pig-positive-gorilla.ngrok-free.app/api'; // Replace with your actual API URL
 
 interface RequestConfig {
   method: string;
