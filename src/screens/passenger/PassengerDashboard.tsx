@@ -7,7 +7,7 @@ import { logout } from '../../utils/proxy';
 import HeaderMain from '../../components/passenger/HeaderCard';
 import PassengerLoad from '../../components/passenger/PassengerLoad';
 import QueueInfo from '../../components/passenger/QueueInfo';
-import OptimisticFeedback from '../../components/Loading'; // Import OptimisticFeedback
+
 
 type RootStackParamList = {
   Login: undefined;
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     backgroundColor: 'white',
   },
- 
+
 });
 
 export default PassengerDashboard;

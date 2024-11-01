@@ -1,5 +1,3 @@
-// src/App.tsx
-
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -14,7 +12,7 @@ import DispatcherDashboard from './src/screens/dispatcher/DispatcherDashboard';
 import HeaderMain from './src/components/passenger/HeaderCard';
 
 // Context
-import { TimerProvider } from './src/contexts/TimerContext'; // Import TimerProvider
+import { TimerProvider } from './src/contexts/TimerContext';
 
 const Stack = createNativeStackNavigator();
 

@@ -1,10 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 //zrok api gateway
-const API_BASE_URL = 'https://1bg3rj22olyz.share.zrok.io/api'; 
+//docker
+const API_BASE_URL = 'https://xomsmwo8yy2v.share.zrok.io/api';
+//local
+// const API_BASE_URL = 'https://qml99zdqz3vc.share.zrok.io/api';
 //ngrok api gateway
-// const API_BASE_URL = 'https://cosmic-whippet-really.ngrok-free.app/api'; 
-// const API_BASE_URL = 'https://pig-positive-gorilla.ngrok-free.app/api'; 
+// const API_BASE_URL = 'https://cosmic-whippet-really.ngrok-free.app/api';
+// const API_BASE_URL = 'https://pig-positive-gorilla.ngrok-free.app/api';
 
 interface RequestConfig {
   method: string;
@@ -33,7 +36,7 @@ const request = async (url: string, config: RequestConfig) => {
 export const post = async (url: string, payload: any, needsAuth: boolean = false) => {
   try {
     let token = null;
-    
+
     if (needsAuth) {
       token = await AsyncStorage.getItem('userToken'); // Retrieve token if required for the request
     }
@@ -126,11 +129,11 @@ export const put = async (url: string, payload: any, needsAuth: boolean = false)
 
 export const logout = async () => {
     const token = await AsyncStorage.getItem('userToken'); // Retrieve token from storage
-    
+
     if (!token) {
       throw new Error('No token found');
     }
-  
+
     const config: RequestConfig = {
       method: 'POST', // Assuming the API uses POST for logout
       headers: {
@@ -138,7 +141,7 @@ export const logout = async () => {
         Authorization: `Bearer ${token}`, // Send the token in the Authorization header
       },
     };
-  
+
     try {
       const response = await request('/logout', config); // Adjust the endpoint if needed
       await AsyncStorage.removeItem('userToken'); // Remove the token only if logout request is successful
@@ -147,4 +150,3 @@ export const logout = async () => {
       throw new Error('Logout failed');
     }
   };
-  
