@@ -9,6 +9,7 @@ import PassengerLoad from '../../components/passenger/PassengerLoad';
 import QueueInfo from '../../components/passenger/QueueInfo';
 
 
+
 type RootStackParamList = {
   Login: undefined;
 };
@@ -52,6 +53,7 @@ const PassengerDashboard: React.FC = () => {
     { id: 'header', component: <HeaderMain /> },
     { id: 'load', component: <PassengerLoad /> },
     { id: 'queue', component: <QueueInfo /> },
+
   ];
 
   const renderItem = ({ item }: { item: { id: string; component: React.ReactNode } }) => (

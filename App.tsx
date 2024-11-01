@@ -14,20 +14,15 @@ import HeaderMain from './src/components/passenger/HeaderCard';
 // Context
 import {TimerProvider} from './src/contexts/TimerContext';
 // Socket
-import {io} from 'socket.io-client';
+import io from 'socket.io-client';
 const Stack = createNativeStackNavigator();
 
 const App: React.FC = () => {
   useEffect(() => {
-    const socket = io('192.168.100.39:9000')
+    const socket = io('http://192.168.100.39:9000')
     socket.on('connect', () => {
         console.log('Connected to server');
       });
-
-      socket.on('message', (data) => {
-        console.log('Received message:', data);
-      });
-
       return () => {
         socket.disconnect();
       };

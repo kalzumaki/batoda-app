@@ -1663,6 +1663,11 @@
 "@types/semver@^7.3.12":
   version "7.5.8"
 
+"@types/socket.io-client@^1.4.36":
+  version "1.4.36"
+  resolved "https://registry.npmjs.org/@types/socket.io-client/-/socket.io-client-1.4.36.tgz"
+  integrity sha512-ZJWjtFBeBy1kRSYpVbeGYTElf6BqPQUkXDlHHD4k/42byCN5Rh027f4yARHCink9sKAkbtGZXEAmR0ZCnc2/Ag==
+
 "@types/stack-utils@^2.0.0":
   version "2.0.3"
 
