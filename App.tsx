@@ -1,6 +1,6 @@
-import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import React, {useEffect} from 'react';
+import {NavigationContainer} from '@react-navigation/native';
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
 
 // Screens
@@ -12,23 +12,43 @@ import DispatcherDashboard from './src/screens/dispatcher/DispatcherDashboard';
 import HeaderMain from './src/components/passenger/HeaderCard';
 
 // Context
-import { TimerProvider } from './src/contexts/TimerContext';
-
+import {TimerProvider} from './src/contexts/TimerContext';
+// Socket
+import {io} from 'socket.io-client';
 const Stack = createNativeStackNavigator();
 
 const App: React.FC = () => {
+  useEffect(() => {
+    const socket = io('192.168.100.39:9000')
+    socket.on('connect', () => {
+        console.log('Connected to server');
+      });
+
+      socket.on('message', (data) => {
+        console.log('Received message:', data);
+      });
+
+      return () => {
+        socket.disconnect();
+      };
+  });
   return (
     <TimerProvider>
       <NavigationContainer>
         <Stack.Navigator
           initialRouteName="Login"
-          screenOptions={{ headerShown: false}}
-        >
+          screenOptions={{headerShown: false}}>
           <Stack.Screen name="Login" component={Login} />
           <Stack.Screen name="Register" component={Register} />
-          <Stack.Screen name="PassengerDashboard" component={PassengerDashboard} />
+          <Stack.Screen
+            name="PassengerDashboard"
+            component={PassengerDashboard}
+          />
           <Stack.Screen name="DriverDashboard" component={DriverDashboard} />
-          <Stack.Screen name="DispatcherDashboard" component={DispatcherDashboard} />
+          <Stack.Screen
+            name="DispatcherDashboard"
+            component={DispatcherDashboard}
+          />
         </Stack.Navigator>
         <Toast />
       </NavigationContainer>
