@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Button } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { get, logout } from '../../utils/proxy';
-import { User } from '../../types/User'; // Import the Dispatcher type
+import { User } from '../../types/user'; // Import the Dispatcher type
 import Toast from 'react-native-toast-message';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -26,7 +26,7 @@ const DispatcherDashboard: React.FC = () => {
       if (token) {
         try {
           const data = await get('/dispatchers');
-          setDispatcherData(data.data[0]); 
+          setDispatcherData(data.data[0]);
         } catch (error) {
           console.error('Error fetching dispatcher data:', error);
         }
@@ -39,21 +39,21 @@ const DispatcherDashboard: React.FC = () => {
   const handleLogout = async () => {
     try {
       console.log('Attempting to log out...');
-  
+
       await logout();
-  
+
       console.log('Logout successful, removing token from AsyncStorage...');
-      
+
       Toast.show({
         type: 'success',
         text1: 'Logout Successful',
       });
-  
+
       console.log('Navigating back to the login screen...');
-      navigation.replace('Login'); 
+      navigation.replace('Login');
     } catch (error) {
       console.error('Error logging out:', error);
-  
+
       Toast.show({
         type: 'error',
         text1: 'Logout Failed',
@@ -72,7 +72,7 @@ const DispatcherDashboard: React.FC = () => {
       ) : (
         <Text style={styles.loadingText}>Loading your data...</Text>
       )}
-      
+
       <Button title="Logout" onPress={handleLogout} color="#FF6F61" />
     </View>
   );

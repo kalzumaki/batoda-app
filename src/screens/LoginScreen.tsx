@@ -1,35 +1,29 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { LoginPayload } from '../types/login';
-import { useNavigation } from '@react-navigation/native';
-import { post } from '../utils/proxy';
+import React, {useState} from 'react';
+import {View, Text, StyleSheet} from 'react-native';
+import {LoginPayload} from '../types/login';
+import {useNavigation} from '@react-navigation/native';
+import {post} from '../utils/proxy';
 import ButtonComponent from '../components/Button';
 import InputComponent from '../components/Input';
 import PasswordInput from '../components/PasswordInput';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { userTypeMap } from '../types/userType';
-import OptimisticFeedback from '../components/Loading'; // Import OptimisticFeedback
-import { API_ENDPOINTS } from '../api/api-endpoints';
-
-type RootStackParamList = {
-  PassengerDashboard: undefined;
-  DriverDashboard: undefined;
-  DispatcherDashboard: undefined;
-  Register: undefined;
-};
+import {userTypeMap} from '../types/userType';
+import OptimisticFeedback from '../components/Loading';
+import {API_ENDPOINTS} from '../api/api-endpoints';
+import {RootStackParamList} from '../types/login';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
 const Login: React.FC = () => {
   const [emailOrMobile, setEmailOrMobile] = useState<string>('');
   const [password, setPassword] = useState<string>('');
-  const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false); // Track login state
+  const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
   const navigation = useNavigation<NavigationProps>();
 
   const handleLogin = async () => {
-    setIsLoggingIn(true); // Start optimistic feedback
+    setIsLoggingIn(true);
 
     const payload: LoginPayload = {
       email_or_mobile: emailOrMobile,
@@ -53,7 +47,9 @@ const Login: React.FC = () => {
         Toast.show({
           type: 'success',
           text1: 'Login Successful',
-          text2: `Welcome ${userTypeName.charAt(0).toUpperCase() + userTypeName.slice(1)}!`,
+          text2: `Welcome ${
+            userTypeName.charAt(0).toUpperCase() + userTypeName.slice(1)
+          }!`,
         });
 
         switch (userType) {
@@ -86,13 +82,13 @@ const Login: React.FC = () => {
           text1: 'Login Failed',
           text2: 'Invalid email, mobile number, or password.',
         });
-      }  else if (errorMessage.includes('422')) {
+      } else if (errorMessage.includes('422')) {
         Toast.show({
           type: 'error',
           text1: 'Login Failed',
           text2: 'Input Fields are required to Fill up.',
         });
-      }else {
+      } else {
         Toast.show({
           type: 'error',
           text1: 'Login Failed',
@@ -100,7 +96,7 @@ const Login: React.FC = () => {
         });
       }
     } finally {
-      setIsLoggingIn(false); // End optimistic feedback
+      setIsLoggingIn(false);
     }
   };
 
@@ -123,8 +119,6 @@ const Login: React.FC = () => {
         onPress={() => navigation.navigate('Register')}
         color="#40916C"
       />
-
-      {/* Display optimistic feedback when logging in */}
       {isLoggingIn && <OptimisticFeedback action="login" />}
     </View>
   );

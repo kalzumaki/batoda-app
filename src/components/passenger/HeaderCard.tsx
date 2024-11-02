@@ -1,77 +1,72 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect} from 'react';
 import {View, Text, TouchableOpacity, Image, StyleSheet} from 'react-native';
-import {get} from '../../utils/proxy'; // Adjust the path based on your project structure
+import {get} from '../../utils/proxy';
 import {useTimer} from '../../contexts/TimerContext';
-import {Dispatch, DispatchResponse} from '../../types/approved-dispatch'; // Import the Dispatch interfaces
-import Toast from 'react-native-toast-message';
+import {Dispatch, DispatchResponse} from '../../types/approved-dispatch';
+import {
+  initPusher,
+  subscribeToChannel,
+  unsubscribeFromChannel,
+} from '../../pusher/pusher';
+import {API_ENDPOINTS} from '../../api/api-endpoints';
 
 const HeaderMain: React.FC = () => {
-  const {timeLeft, setScheduledTime} = useTimer(); // Use TimerContext
+  const {timeLeft, setScheduledTime} = useTimer();
   const [dispatchData, setDispatchData] = useState<Dispatch | null>(null);
-  const pollingInterval = useRef<NodeJS.Timeout | null>(null);
 
-  const TEN_MINUTES_IN_SECONDS = 600;
-
-  const fetchDispatchData = async () => {
+  const fetchInitialData = async () => {
+    console.log('Starting fetchInitialData');
     try {
-      const data: DispatchResponse = await get('/approved-dispatches');
+      const data: DispatchResponse = await get(API_ENDPOINTS.APPROVED_DISPATCH);
+      console.log('Fetched data:', JSON.stringify(data));
       if (data && data.dispatches && data.dispatches.length > 0) {
         const newDispatch: Dispatch = data.dispatches[0];
-
-        // Check if `is_dispatched` changed from 0 to 1 (from undispached to dispatched)
-        if (
-          dispatchData &&
-          dispatchData.is_dispatched === 0 &&
-          newDispatch.is_dispatched === 1
-        ) {
-          // Show toast if `is_dispatched` became 1
-          Toast.show({
-            type: 'success',
-            text1: 'You are all set!',
-            text2: 'Ready to go! Travel safe!',
-            visibilityTime: 3000, // Duration of the toast (in ms)
-          });
-        }
-
-        // Only update if dispatchData is different
-        if (!dispatchData || newDispatch.id !== dispatchData.id) {
-          setDispatchData(newDispatch);
-
-          // Determine timer based on dispatch status
-          if (
-            newDispatch.is_dispatched === 1 ||
-            newDispatch.actual_dispatch_time !== null
-          ) {
-            // Reset the scheduled time to null, displaying '-- -- --'
-            setScheduledTime(null);
-          } else {
-            // Set the scheduled_dispatch_time in TimerContext
-            setScheduledTime(newDispatch.scheduled_dispatch_time);
-          }
-        }
+        console.log('Processing new dispatch:', JSON.stringify(newDispatch));
+        setDispatchData(newDispatch);
+        setScheduledTime(newDispatch.scheduled_dispatch_time);
       } else {
-        // No dispatch data, reset the scheduled time
+        console.log('No valid dispatches found');
         setDispatchData(null);
         setScheduledTime(null);
       }
     } catch (error) {
-      console.error('Error fetching dispatch data:', error);
+      console.error('Error fetching initial data:', error);
       setDispatchData(null);
       setScheduledTime(null);
     }
   };
 
   useEffect(() => {
-    fetchDispatchData();
-    pollingInterval.current = setInterval(fetchDispatchData, 5000);
-    return () => {
-      if (pollingInterval.current) {
-        clearInterval(pollingInterval.current);
+    fetchInitialData();
+
+    const onEvent = (event: any) => {
+      console.log('Event received:', event);
+      if (
+        event.eventName === 'DispatchUpdated' ||
+        event.eventName === 'DispatchFinalized'
+      ) {
+        console.log('Refreshing data due to event...');
+        fetchInitialData();
       }
     };
-  }, []); // Empty dependency array to prevent multiple intervals
 
-  // Format timeLeft to display as "8 mins" or "-- -- --" if no data
+    const subscribeToDispatches = async () => {
+      await initPusher();
+      await subscribeToChannel('dispatches', onEvent);
+    };
+
+    subscribeToDispatches();
+
+    return () => {
+      console.log('Cleaning up Pusher subscription...');
+      unsubscribeFromChannel('dispatches', onEvent);
+    };
+  }, []);
+
+  useEffect(() => {
+    console.log('Current dispatchData:', JSON.stringify(dispatchData));
+  }, [dispatchData]);
+
   const formatTimeLeft = (seconds: number | null): string => {
     if (seconds === null) {
       return '-- -- --';
@@ -87,7 +82,6 @@ const HeaderMain: React.FC = () => {
     return `${minutes} mins ${secs > 0 ? `${secs} sec` : ''}`;
   };
 
-  // Format today's date
   const getCurrentDate = (): string => {
     const today = new Date();
     const options: Intl.DateTimeFormatOptions = {

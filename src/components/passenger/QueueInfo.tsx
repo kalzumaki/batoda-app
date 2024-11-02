@@ -1,67 +1,111 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome'; // Import FontAwesomeIcon
-import Toast from 'react-native-toast-message'; // Import your toast library
-import { get } from '../../utils/proxy'; // Adjust path to your utility
-import { Dispatch, DispatchResponse } from '../../types/approved-dispatch';
+import React, {useEffect, useState} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+} from 'react-native';
+import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome';
+import Toast from 'react-native-toast-message';
+import {get} from '../../utils/proxy';
+import {
+  initPusher,
+  subscribeToChannel,
+  unsubscribeFromChannel,
+} from '../../pusher/pusher';
+import {Dispatch, DispatchResponse} from '../../types/approved-dispatch';
+import {API_ENDPOINTS} from '../../api/api-endpoints';
 
 const DispatchQueue: React.FC = () => {
   const [dispatches, setDispatches] = useState<Dispatch[]>([]);
   const [noUpcomingQueue, setNoUpcomingQueue] = useState<boolean>(false);
-  const [polling, setPolling] = useState<boolean>(false);
-  const pollingInterval = useRef<NodeJS.Timeout | null>(null);
+  const [minutesLeft, setMinutesLeft] = useState<{[id: number]: number}>({});
 
   const fetchDispatches = async () => {
-    setPolling(true);
     try {
-      const response: DispatchResponse = await get('/in-queue');
+      const response: DispatchResponse = await get(API_ENDPOINTS.IN_QUEUE);
       if (response.status) {
         console.log('Fetched dispatches:', response.dispatches);
-  
-        // Filter out dispatched items
+
         const activeDispatches = response.dispatches.filter(
-          (dispatch) => dispatch.is_dispatched !== 1
+          dispatch => dispatch.is_dispatched !== 1,
         );
-  
-        // Check if activeDispatches is empty
+
+        const initialMinutesLeft = activeDispatches.reduce((acc, dispatch) => {
+          const scheduledTimeMs = new Date(
+            dispatch.scheduled_dispatch_time,
+          ).getTime();
+          const currentTimeMs = new Date().getTime();
+          acc[dispatch.id] = Math.max(
+            0,
+            Math.ceil((scheduledTimeMs - currentTimeMs) / 60000),
+          );
+          return acc;
+        }, {} as {[id: number]: number});
+
+        setMinutesLeft(initialMinutesLeft);
         if (activeDispatches.length > 0) {
           setDispatches(activeDispatches);
-          setNoUpcomingQueue(false); // There are tricycles in the queue
+          setNoUpcomingQueue(false);
         } else {
-          setDispatches([]); // Clear the queue
-          setNoUpcomingQueue(true); // No tricycles in queue
+          setDispatches([]);
+          setNoUpcomingQueue(true);
         }
-  
       } else {
-        setNoUpcomingQueue(true); // No tricycles in queue if response is invalid
+        setNoUpcomingQueue(true);
       }
     } catch (error) {
       console.error('Error fetching dispatches:', error);
-      setNoUpcomingQueue(true); // No tricycles in queue on error
-    } finally {
-      setPolling(false);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to fetch dispatch queue.',
+      });
+      setNoUpcomingQueue(true);
     }
   };
-  
+
   useEffect(() => {
     fetchDispatches();
-    pollingInterval.current = setInterval(fetchDispatches, 5000);
-    return () => {
-      if (pollingInterval.current) {
-        clearInterval(pollingInterval.current);
+
+    const handleEvent = (event: any) => {
+      console.log('Received event:', event);
+      if (['DispatchUpdated', 'DispatchFinalized'].includes(event.eventName)) {
+        console.log('Updating queue due to Pusher event...');
+        fetchDispatches();
       }
+    };
+
+    const subscribeToDispatches = async () => {
+      await initPusher();
+      await subscribeToChannel('dispatches', handleEvent);
+    };
+
+    subscribeToDispatches();
+
+    return () => {
+      console.log('Unsubscribing from Pusher...');
+      unsubscribeFromChannel('dispatches', handleEvent);
     };
   }, []);
 
-  const renderMinutesLeft = (scheduledTime: string) => {
-    const timeLeft = Math.max(
-      0,
-      Math.ceil(
-        (new Date(scheduledTime).getTime() - new Date().getTime()) / 60000,
-      ),
-    );
-    return `${timeLeft} mins left`;
-  };
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMinutesLeft(prevMinutesLeft => {
+        const updatedMinutesLeft = {...prevMinutesLeft};
+        Object.keys(updatedMinutesLeft).forEach(id => {
+          updatedMinutesLeft[parseInt(id)] = Math.max(
+            0,
+            updatedMinutesLeft[parseInt(id)] - 1,
+          );
+        });
+        return updatedMinutesLeft;
+      });
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [dispatches]);
 
   return (
     <View style={styles.container}>
@@ -71,26 +115,20 @@ const DispatchQueue: React.FC = () => {
         <Text style={styles.headerText}>Standby Time</Text>
       </View>
 
-      {/* Polling message limited to ScrollView area */}
-      <View style={styles.pollingContainer}>
-        {polling && dispatches.length > 0 && (
-          <Text style={styles.pollingText}>Updating queue...</Text>
-        )}
-      </View>
-
       <ScrollView>
-        {/* Conditional rendering for dispatches */}
         {noUpcomingQueue ? (
           <Text style={styles.emptyText}>No tricycles in queue.</Text>
         ) : (
-          dispatches.map((item) => (
+          dispatches.map(item => (
             <View key={item.id} style={styles.dispatchItem}>
               <Text style={styles.tricycleNumber}>
                 {item.tricycle.tricycle_number}
               </Text>
               <View style={styles.timeContainer}>
                 <Text style={styles.timeText}>
-                  {renderMinutesLeft(item.scheduled_dispatch_time)}
+                  {minutesLeft[item.id] !== undefined
+                    ? `${minutesLeft[item.id]} mins left`
+                    : ''}
                 </Text>
                 <TouchableOpacity>
                   <FontAwesomeIcon name="ellipsis-v" style={styles.icon} />
@@ -121,18 +159,12 @@ const styles = StyleSheet.create({
     color: 'black',
     marginBottom: 10,
   },
-  pollingContainer: {
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     padding: 10,
     backgroundColor: '#469c8f',
     borderRadius: 20,
-    // marginBottom: 10,
   },
   headerText: {
     fontSize: 14,
@@ -179,11 +211,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 30,
     color: '#c6d9d7',
-  },
-  pollingText: {
-    textAlign: 'center',
-    color: '#ffffff',
-    zIndex: 1
   },
 });
 
