@@ -1,18 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Button, FlatList } from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {View, StyleSheet, Button, FlatList} from 'react-native';
 import Toast from 'react-native-toast-message';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { logout } from '../../utils/proxy';
+import {useNavigation} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {logout} from '../../utils/proxy';
 import HeaderMain from '../../components/passenger/HeaderCard';
 import PassengerLoad from '../../components/passenger/PassengerLoad';
 import QueueInfo from '../../components/passenger/QueueInfo';
-
-
-
-type RootStackParamList = {
-  Login: undefined;
-};
+import {RootStackParamList} from '../../types/passenger-dashboard';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
@@ -22,7 +17,7 @@ const PassengerDashboard: React.FC = () => {
 
   const handleLogout = async () => {
     console.log('Logout process started');
-    setIsLoggingOut(true); // Start optimistic feedback
+    setIsLoggingOut(true);
 
     try {
       await logout();
@@ -50,26 +45,30 @@ const PassengerDashboard: React.FC = () => {
 
   // Array to hold the main components
   const renderItems = [
-    { id: 'header', component: <HeaderMain /> },
-    { id: 'load', component: <PassengerLoad /> },
-    { id: 'queue', component: <QueueInfo /> },
-
+    {id: 'header', component: <HeaderMain />},
+    {id: 'load', component: <PassengerLoad />},
+    {id: 'queue', component: <QueueInfo />},
   ];
 
-  const renderItem = ({ item }: { item: { id: string; component: React.ReactNode } }) => (
-    <View key={item.id}>
-      {item.component}
-    </View>
-  );
+  const renderItem = ({
+    item,
+  }: {
+    item: {id: string; component: React.ReactNode};
+  }) => <View key={item.id}>{item.component}</View>;
 
   return (
     <FlatList
       data={renderItems}
-      keyExtractor={(item) => item.id}
+      keyExtractor={item => item.id}
       renderItem={renderItem}
       contentContainerStyle={styles.container}
       ListFooterComponent={
-        <Button title="Logout" onPress={handleLogout} color="#FF6F61" disabled={isLoggingOut} />
+        <Button
+          title="Logout"
+          onPress={handleLogout}
+          color="#FF6F61"
+          disabled={isLoggingOut}
+        />
       }
       // Disable scrolling if needed
       scrollEnabled={true}
@@ -82,7 +81,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     backgroundColor: 'white',
   },
-
 });
 
 export default PassengerDashboard;

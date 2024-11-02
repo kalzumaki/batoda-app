@@ -1,39 +1,61 @@
-// Import necessary functions
-import React, { useEffect, useState } from 'react';
-import { View, Text, Image, StyleSheet, Animated } from 'react-native';
-import { get } from '../../utils/proxy'; // Assuming the proxy.ts file is in the utils folder
+import React, {useEffect, useState} from 'react';
+import {View, Text, Image, StyleSheet, Animated} from 'react-native';
+import {get} from '../../utils/proxy';
+import {
+  initPusher,
+  subscribeToChannel,
+  unsubscribeFromChannel,
+} from '../../pusher/pusher';
+import {DispatchResponse} from '../../types/approved-dispatch';
+import {API_ENDPOINTS} from '../../api/api-endpoints';
 
 const ApprovedDispatches: React.FC = () => {
-  const [passengerCount, setPassengerCount] = useState<number>(0); // Initializing with 0 passengers
+  const [passengerCount, setPassengerCount] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
-  const [pulseAnim] = useState(new Animated.Value(1)); // For special effects when 6 passengers
+  const pulseAnim = new Animated.Value(1);
+
+  const fetchPassengerCount = async () => {
+    try {
+      console.log('Fetching Passenger Count:');
+      const data: DispatchResponse = await get(API_ENDPOINTS.PASSENGER_COUNT);
+      console.log('Fetched Data:', JSON.stringify(data));
+
+      if (data.dispatches && data.dispatches.length > 0) {
+        setPassengerCount(data.dispatches[0].passenger_count);
+        setError(null);
+      } else {
+        console.log('No approved dispatches found.');
+      }
+    } catch (err) {
+      console.error('Error fetching passenger count:', err);
+      setError('Failed to fetch passenger count data.');
+    }
+  };
 
   useEffect(() => {
-    const fetchApprovedDispatches = async () => {
-      try {
-        const response = await get('/passenger-count');
+    fetchPassengerCount();
 
-        // Assuming the response contains a "dispatches" array
-        if (response && response.dispatches && response.dispatches.length > 0) {
-          setPassengerCount(response.dispatches[0].passenger_count); // Set passenger_count based on response
-        } else {
-          setError('No approved dispatches found.');
-        }
-      } catch (err) {
-        setError('Failed to fetch data.');
-        console.error('Error fetching approved dispatches:', err);
+    const handleEvent = (event: any) => {
+      console.log('Event received:', event);
+      if (['DispatchUpdated', 'DispatchFinalized'].includes(event.eventName)) {
+        console.log('Refreshing data due to event...');
+        fetchPassengerCount();
       }
     };
 
-    // Fetching data every 3 seconds (polling)
-    const interval = setInterval(() => {
-      fetchApprovedDispatches();
-    }, 3000); // Changed to 3 seconds
+    const subscribeToDispatches = async () => {
+      await initPusher();
+      await subscribeToChannel('dispatches', handleEvent);
+    };
 
-    return () => clearInterval(interval); // Clear the interval when the component unmounts
+    subscribeToDispatches();
+
+    return () => {
+      console.log('Cleaning up Pusher subscription...');
+      unsubscribeFromChannel('dispatches', handleEvent); // Ensure we unsubscribe from the channel
+    };
   }, []);
 
-  // Special effect (pulsing animation) when passenger count reaches 6
   useEffect(() => {
     if (passengerCount === 6) {
       Animated.loop(
@@ -48,25 +70,23 @@ const ApprovedDispatches: React.FC = () => {
             duration: 500,
             useNativeDriver: true,
           }),
-        ])
+        ]),
       ).start();
     } else {
-      pulseAnim.setValue(1); // Reset pulse effect if not full
+      pulseAnim.setValue(1);
     }
   }, [passengerCount]);
 
-  // Generate array for displaying passenger icons based on passengerCount
-  const passengers = [...Array(6)].map((_, index) => (
+  const passengers = Array.from({length: 6}, (_, index) => (
     <Animated.View
       key={index}
       style={[
         styles.iconContainer,
         index < passengerCount ? styles.filled : styles.empty,
-        passengerCount === 6 ? { transform: [{ scale: pulseAnim }] } : null, // Apply pulsing effect if full
-      ]}
-    >
+        passengerCount === 6 ? {transform: [{scale: pulseAnim}]} : null,
+      ]}>
       <Image
-        source={require('../../assets/passenger.png')} // Passenger icon
+        source={require('../../assets/passenger.png')}
         style={styles.icon}
       />
     </Animated.View>
@@ -80,13 +100,14 @@ const ApprovedDispatches: React.FC = () => {
       ) : (
         <>
           <View style={styles.passengerIcons}>{passengers}</View>
-          <Text style={styles.passengerCount}>Passenger Count: {passengerCount}/6</Text>
+          <Text style={styles.passengerCount}>
+            Passenger Count: {passengerCount}/6
+          </Text>
         </>
       )}
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     padding: 20,
@@ -109,10 +130,10 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   filled: {
-    backgroundColor: '#62a287', 
+    backgroundColor: '#62a287',
   },
   empty: {
-    backgroundColor: '#c6d9d7', // Light gray background for empty slots
+    backgroundColor: '#c6d9d7',
   },
   icon: {
     width: 40,

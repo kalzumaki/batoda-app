@@ -1,10 +1,14 @@
-// src/contexts/TimerContext.tsx
-
-import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useRef,
+  useEffect,
+} from 'react';
 
 interface TimerContextProps {
-  timeLeft: number | null; // Remaining time in seconds
-  setScheduledTime: (scheduledTime: string | null) => void; // Set the scheduled dispatch time
+  timeLeft: number | null;
+  setScheduledTime: (scheduledTime: string | null) => void;
 }
 
 const TimerContext = createContext<TimerContextProps>({
@@ -12,7 +16,9 @@ const TimerContext = createContext<TimerContextProps>({
   setScheduledTime: () => {},
 });
 
-export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const TimerProvider: React.FC<{children: React.ReactNode}> = ({
+  children,
+}) => {
   const [scheduledTime, setScheduledTimeState] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const timerInterval = useRef<NodeJS.Timeout | null>(null);
@@ -32,7 +38,9 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       const scheduledDate = new Date(scheduledTime);
       const now = new Date();
-      const diffInSeconds = Math.floor((scheduledDate.getTime() - now.getTime()) / 1000);
+      const diffInSeconds = Math.floor(
+        (scheduledDate.getTime() - now.getTime()) / 1000,
+      );
 
       if (diffInSeconds > 0) {
         setTimeLeft(diffInSeconds);
@@ -70,7 +78,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [scheduledTime]);
 
   return (
-    <TimerContext.Provider value={{ timeLeft, setScheduledTime }}>
+    <TimerContext.Provider value={{timeLeft, setScheduledTime}}>
       {children}
     </TimerContext.Provider>
   );

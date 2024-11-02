@@ -1,92 +1,96 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
-import { get } from '../../utils/proxy';
-import { useTimer } from '../../contexts/TimerContext';
-import { Dispatch, DispatchResponse } from '../../types/approved-dispatch';
-import Toast from 'react-native-toast-message';
-import { pusher, initPusher, subscribeToChannel } from '../../pusher/pusher';
-
+import React, {useState, useEffect} from 'react';
+import {View, Text, TouchableOpacity, Image, StyleSheet} from 'react-native';
+import {get} from '../../utils/proxy';
+import {useTimer} from '../../contexts/TimerContext';
+import {Dispatch, DispatchResponse} from '../../types/approved-dispatch';
+import {
+  initPusher,
+  subscribeToChannel,
+  unsubscribeFromChannel,
+} from '../../pusher/pusher';
+import {API_ENDPOINTS} from '../../api/api-endpoints';
 
 const HeaderMain: React.FC = () => {
-    const { timeLeft, setScheduledTime } = useTimer();
-    const [dispatchData, setDispatchData] = useState<Dispatch | null>(null);
+  const {timeLeft, setScheduledTime} = useTimer();
+  const [dispatchData, setDispatchData] = useState<Dispatch | null>(null);
 
-    // Function to fetch the initial data
-    const fetchInitialData = async () => {
-        console.log('Starting fetchInitialData');
-        try {
-            const data: DispatchResponse = await get('/approved-dispatches');
-            console.log('Fetched data:', JSON.stringify(data));
-            if (data && data.dispatches && data.dispatches.length > 0) {
-                const newDispatch: Dispatch = data.dispatches[0];
-                console.log('Processing new dispatch:', JSON.stringify(newDispatch));
-                setDispatchData(newDispatch);
-                setScheduledTime(newDispatch.scheduled_dispatch_time);
-            } else {
-                console.log('No valid dispatches found');
-                setDispatchData(null);
-                setScheduledTime(null);
-            }
-        } catch (error) {
-            console.error('Error fetching initial data:', error);
-            setDispatchData(null);
-            setScheduledTime(null);
-        }
+  const fetchInitialData = async () => {
+    console.log('Starting fetchInitialData');
+    try {
+      const data: DispatchResponse = await get(API_ENDPOINTS.APPROVED_DISPATCH);
+      console.log('Fetched data:', JSON.stringify(data));
+      if (data && data.dispatches && data.dispatches.length > 0) {
+        const newDispatch: Dispatch = data.dispatches[0];
+        console.log('Processing new dispatch:', JSON.stringify(newDispatch));
+        setDispatchData(newDispatch);
+        setScheduledTime(newDispatch.scheduled_dispatch_time);
+      } else {
+        console.log('No valid dispatches found');
+        setDispatchData(null);
+        setScheduledTime(null);
+      }
+    } catch (error) {
+      console.error('Error fetching initial data:', error);
+      setDispatchData(null);
+      setScheduledTime(null);
+    }
+  };
+
+  useEffect(() => {
+    fetchInitialData();
+
+    const onEvent = (event: any) => {
+      console.log('Event received:', event);
+      if (
+        event.eventName === 'DispatchUpdated' ||
+        event.eventName === 'DispatchFinalized'
+      ) {
+        console.log('Refreshing data due to event...');
+        fetchInitialData();
+      }
     };
 
-    useEffect(() => {
-        fetchInitialData(); // Fetch initial data on mount
-
-        const onEvent = (event: any) => {
-            console.log('Event received:', event);
-            if (event.eventName === 'DispatchUpdated' || event.eventName === 'DispatchFinalized') {
-                console.log('Refreshing data due to event...');
-                fetchInitialData(); // Refresh data when relevant events are received
-            }
-        };
-
-        // Subscribe to events after the initial data fetch
-        const subscribeToDispatches = async () => {
-            await initPusher();
-            await subscribeToChannel('dispatches', onEvent);
-        };
-
-        subscribeToDispatches();
-
-        return () => {
-            console.log('Cleaning up Pusher subscription...');
-            pusher.unsubscribe({channelName:'dispatches'}); // Correctly unsubscribe using the channel name
-        };
-    }, []);
-
-    useEffect(() => {
-        console.log('Current dispatchData:', JSON.stringify(dispatchData));
-    }, [dispatchData]);
-
-    const formatTimeLeft = (seconds: number | null): string => {
-        if (seconds === null) {
-            return '-- -- --';
-        }
-
-        if (seconds === 0) {
-            return '00:00:00';
-        }
-
-        const minutes = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-
-        return `${minutes} mins ${secs > 0 ? `${secs} sec` : ''}`;
+    const subscribeToDispatches = async () => {
+      await initPusher();
+      await subscribeToChannel('dispatches', onEvent);
     };
 
-    const getCurrentDate = (): string => {
-        const today = new Date();
-        const options: Intl.DateTimeFormatOptions = {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-        };
-        return today.toLocaleDateString('en-US', options);
+    subscribeToDispatches();
+
+    return () => {
+      console.log('Cleaning up Pusher subscription...');
+      unsubscribeFromChannel('dispatches', onEvent);
     };
+  }, []);
+
+  useEffect(() => {
+    console.log('Current dispatchData:', JSON.stringify(dispatchData));
+  }, [dispatchData]);
+
+  const formatTimeLeft = (seconds: number | null): string => {
+    if (seconds === null) {
+      return '-- -- --';
+    }
+
+    if (seconds === 0) {
+      return '00:00:00';
+    }
+
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+
+    return `${minutes} mins ${secs > 0 ? `${secs} sec` : ''}`;
+  };
+
+  const getCurrentDate = (): string => {
+    const today = new Date();
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    };
+    return today.toLocaleDateString('en-US', options);
+  };
 
   return (
     <View style={styles.headerContainer}>
