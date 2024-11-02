@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import Toast from 'react-native-toast-message';
@@ -9,24 +9,33 @@ import Register from './src/screens/RegisterScreen';
 import PassengerDashboard from './src/screens/passenger/PassengerDashboard';
 import DriverDashboard from './src/screens/driver/DriverDashboard';
 import DispatcherDashboard from './src/screens/dispatcher/DispatcherDashboard';
-import HeaderMain from './src/components/passenger/HeaderCard';
 
 // Context
 import {TimerProvider} from './src/contexts/TimerContext';
-// Socket
-import io from 'socket.io-client';
+
+//Pusher
+
+import {initPusher} from './src/pusher/pusher';
+
 const Stack = createNativeStackNavigator();
 
 const App: React.FC = () => {
+  const [isPusherInitialized, setIsPusherInitialized] = useState(false);
+
   useEffect(() => {
-    const socket = io('http://192.168.100.39:9000')
-    socket.on('connect', () => {
-        console.log('Connected to server');
-      });
-      return () => {
-        socket.disconnect();
-      };
-  });
+    const initializePusher = async () => {
+      try {
+        await initPusher();
+        setIsPusherInitialized(true);
+      } catch (error) {
+        console.error('Error initializing Pusher:', error);
+      }
+    };
+
+    initializePusher();
+
+    return () => {};
+  }, []);
   return (
     <TimerProvider>
       <NavigationContainer>
