@@ -12,7 +12,7 @@ import DispatcherDashboard from './src/screens/dispatcher/DispatcherDashboard';
 
 // Contexts
 import {TimerProvider} from './src/contexts/TimerContext';
-import {PusherProvider} from './src/pusher/PusherProvider'; // Adjust path as needed
+import {PusherProvider} from './src/pusher/PusherProvider'; 
 
 const Stack = createNativeStackNavigator();
 
