@@ -3,6 +3,7 @@ import { RequestConfig } from '../types/request-config';
 //zrok api gateway
 //docker
 const API_BASE_URL = 'https://xomsmwo8yy2v.share.zrok.io/api';
+// const API_BASE_URL = 'https://l7c2ne9pitvh.share.zrok.io/api';
 
 //local
 // const API_BASE_URL = 'https://qml99zdqz3vc.share.zrok.io/api';

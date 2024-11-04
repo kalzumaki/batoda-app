@@ -9,6 +9,8 @@ import {
 import {DispatchResponse} from '../../types/approved-dispatch';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
 
+const MAX_PASSENGERS = 6; 
+
 const ApprovedDispatches: React.FC = () => {
   const [passengerCount, setPassengerCount] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
@@ -24,6 +26,7 @@ const ApprovedDispatches: React.FC = () => {
         setPassengerCount(data.dispatches[0].passenger_count);
         setError(null);
       } else {
+        setPassengerCount(0); // Reset passenger count if no dispatches found
         console.log('No approved dispatches found.');
       }
     } catch (err) {
@@ -52,12 +55,12 @@ const ApprovedDispatches: React.FC = () => {
 
     return () => {
       console.log('Cleaning up Pusher subscription...');
-      unsubscribeFromChannel('dispatches', handleEvent); // Ensure we unsubscribe from the channel
+      unsubscribeFromChannel('dispatches', handleEvent);
     };
   }, []);
 
   useEffect(() => {
-    if (passengerCount === 6) {
+    if (passengerCount === MAX_PASSENGERS) {
       Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
@@ -77,13 +80,15 @@ const ApprovedDispatches: React.FC = () => {
     }
   }, [passengerCount]);
 
-  const passengers = Array.from({length: 6}, (_, index) => (
+  const passengers = Array.from({length: MAX_PASSENGERS}, (_, index) => (
     <Animated.View
       key={index}
       style={[
         styles.iconContainer,
         index < passengerCount ? styles.filled : styles.empty,
-        passengerCount === 6 ? {transform: [{scale: pulseAnim}]} : null,
+        passengerCount === MAX_PASSENGERS
+          ? {transform: [{scale: pulseAnim}]}
+          : null,
       ]}>
       <Image
         source={require('../../assets/passenger.png')}
@@ -101,13 +106,14 @@ const ApprovedDispatches: React.FC = () => {
         <>
           <View style={styles.passengerIcons}>{passengers}</View>
           <Text style={styles.passengerCount}>
-            Passenger Count: {passengerCount}/6
+            Passenger Count: {passengerCount}/{MAX_PASSENGERS}
           </Text>
         </>
       )}
     </View>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     padding: 20,
