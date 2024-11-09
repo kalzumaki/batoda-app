@@ -8,42 +8,53 @@ import HeaderMain from '../../components/passenger/HeaderCard';
 import PassengerLoad from '../../components/passenger/PassengerLoad';
 import QueueInfo from '../../components/passenger/QueueInfo';
 import {RootStackParamList} from '../../types/passenger-dashboard';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
 const PassengerDashboard: React.FC = () => {
   const navigation = useNavigation<NavigationProps>();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = await AsyncStorage.getItem('userToken');
+      console.log('User Token: ', token);
+      if (token) {
+        setIsAuthenticated(true);
+      } else {
+        navigation.replace('Login');
+      }
+    };
 
+    checkAuth();
+  }, [navigation]);
   const handleLogout = async () => {
-    console.log('Logout process started');
     setIsLoggingOut(true);
 
     try {
       await logout();
-      console.log('Logout successful');
-
+      await AsyncStorage.removeItem('userToken');
+      console.log('Logging out...');
       Toast.show({
         type: 'success',
         text1: 'Logout Successful',
       });
-
       navigation.replace('Login');
-      console.log('Navigating to Login screen');
     } catch (error) {
-      console.log('Logout failed: ', error);
-
       Toast.show({
         type: 'error',
         text1: 'Logout Failed',
         text2: 'Please try again.',
       });
     } finally {
-      setIsLoggingOut(false); // End optimistic feedback
+      setIsLoggingOut(false);
     }
   };
 
-  // Array to hold the main components
+  if (!isAuthenticated) {
+    return null;
+  }
   const renderItems = [
     {id: 'header', component: <HeaderMain />},
     {id: 'load', component: <PassengerLoad />},
@@ -70,7 +81,6 @@ const PassengerDashboard: React.FC = () => {
           disabled={isLoggingOut}
         />
       }
-      // Disable scrolling if needed
       scrollEnabled={true}
     />
   );

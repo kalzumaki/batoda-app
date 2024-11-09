@@ -23,13 +23,11 @@ export const TimerProvider: React.FC<{children: React.ReactNode}> = ({
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const timerInterval = useRef<NodeJS.Timeout | null>(null);
 
-  // Function to set the scheduled dispatch time
   const setScheduledTime = (scheduledTime: string | null) => {
     setScheduledTimeState(scheduledTime);
   };
 
   useEffect(() => {
-    // Function to update the remaining time
     const updateTimeLeft = () => {
       if (!scheduledTime) {
         setTimeLeft(null);
@@ -46,7 +44,7 @@ export const TimerProvider: React.FC<{children: React.ReactNode}> = ({
         setTimeLeft(diffInSeconds);
       } else {
         setTimeLeft(0);
-        // Clear the interval if time has elapsed
+
         if (timerInterval.current) {
           clearInterval(timerInterval.current);
           timerInterval.current = null;
@@ -54,21 +52,17 @@ export const TimerProvider: React.FC<{children: React.ReactNode}> = ({
       }
     };
 
-    // Initial call to set the timeLeft
     updateTimeLeft();
 
-    // Clear any existing intervals
     if (timerInterval.current) {
       clearInterval(timerInterval.current);
       timerInterval.current = null;
     }
 
     if (scheduledTime) {
-      // Update every second
       timerInterval.current = setInterval(updateTimeLeft, 1000);
     }
 
-    // Cleanup on unmount or when scheduledTime changes
     return () => {
       if (timerInterval.current) {
         clearInterval(timerInterval.current);
