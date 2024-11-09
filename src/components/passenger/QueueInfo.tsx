@@ -16,6 +16,7 @@ import {
 } from '../../pusher/pusher';
 import {Dispatch, DispatchResponse} from '../../types/approved-dispatch';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
+import {PusherEvent} from '@pusher/pusher-websocket-react-native';
 
 const DispatchQueue: React.FC = () => {
   const [dispatches, setDispatches] = useState<Dispatch[]>([]);
@@ -69,10 +70,13 @@ const DispatchQueue: React.FC = () => {
   useEffect(() => {
     fetchDispatches();
 
-    const handleEvent = (event: any) => {
+    const handleEvent = (event: PusherEvent) => {
       console.log('Received event:', event);
-      if (['DispatchUpdated', 'DispatchFinalized'].includes(event.eventName)) {
-        console.log('Updating queue due to Pusher event...');
+      if (
+        event.eventName === 'DispatchUpdated' ||
+        event.eventName === 'DispatchFinalized'
+      ) {
+        console.log('Refreshing data due to event...');
         fetchDispatches();
       }
     };
@@ -114,27 +118,25 @@ const DispatchQueue: React.FC = () => {
         <Text style={styles.headerText}>Tricycle No.</Text>
         <Text style={styles.headerText}>Standby Time</Text>
       </View>
-
       <ScrollView>
         {noUpcomingQueue ? (
           <Text style={styles.emptyText}>No tricycles in queue.</Text>
         ) : (
           dispatches.map(item => (
-            <View key={item.id} style={styles.dispatchItem}>
-              <Text style={styles.tricycleNumber}>
-                {item.tricycle.tricycle_number}
-              </Text>
-              <View style={styles.timeContainer}>
-                <Text style={styles.timeText}>
-                  {minutesLeft[item.id] !== undefined
-                    ? `${minutesLeft[item.id]} mins left`
-                    : ''}
+            <TouchableOpacity key={item.id}>
+              <View style={styles.dispatchItem}>
+                <Text style={styles.tricycleNumber}>
+                  {item.tricycle.tricycle_number}
                 </Text>
-                <TouchableOpacity>
-                  <FontAwesomeIcon name="ellipsis-v" style={styles.icon} />
-                </TouchableOpacity>
+                <View style={styles.timeContainer}>
+                  <Text style={styles.timeText}>
+                    {minutesLeft[item.id] !== undefined
+                      ? `${minutesLeft[item.id]} mins left`
+                      : ''}
+                  </Text>
+                </View>
               </View>
-            </View>
+            </TouchableOpacity>
           ))
         )}
       </ScrollView>
@@ -164,7 +166,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 10,
     backgroundColor: '#469c8f',
-    borderRadius: 20,
+    borderRadius: 10,
+    marginBottom: 10,
   },
   headerText: {
     fontSize: 14,
@@ -177,7 +180,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 10,
     backgroundColor: '#c6d9d7',
-    borderRadius: 25,
+    borderRadius: 10,
     marginBottom: 10,
     elevation: 2,
     shadowColor: '#000',
@@ -192,6 +195,8 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#2d665f',
+    // color: 'black',
+    marginLeft: 10,
   },
   timeContainer: {
     flexDirection: 'row',
@@ -200,6 +205,7 @@ const styles = StyleSheet.create({
   timeText: {
     fontSize: 16,
     color: '#2d665f',
+    // color: 'black',
     marginRight: 10,
   },
   icon: {
