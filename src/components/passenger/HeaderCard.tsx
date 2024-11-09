@@ -1,6 +1,6 @@
 import React, {useState, useEffect} from 'react';
 import {View, Text, TouchableOpacity, Image, StyleSheet} from 'react-native';
-import {get} from '../../utils/proxy';
+import {BASE_URL, get} from '../../utils/proxy';
 import {useTimer} from '../../contexts/TimerContext';
 import {Dispatch, DispatchResponse} from '../../types/approved-dispatch';
 import {
@@ -17,7 +17,6 @@ const HeaderMain: React.FC = () => {
   const [dispatchData, setDispatchData] = useState<Dispatch | null>(null);
   const [authenticatedUser, setAuthenticatedUser] = useState<any>(null);
   const [profileImage, setProfileImage] = useState<string | null>(null);
-
   useEffect(() => {
     const checkAuth = async () => {
       const token = await AsyncStorage.getItem('userToken');
@@ -31,11 +30,17 @@ const HeaderMain: React.FC = () => {
           setAuthenticatedUser(data);
           console.log('data found in header component: ', data);
 
+          if (data && data.profile) {
+            const fullImageUrl = `${BASE_URL}storage/${data.profile}`;
+            console.log('Full profile image URL:', fullImageUrl);
+            setProfileImage(fullImageUrl);
+          } else {
+            // Fallback avatar image if no profile picture
             const fullName = `${data.fname} ${data.lname}`;
             const encodedName = encodeURIComponent(fullName);
             const imageUrl = `https://avatar.iran.liara.run/username?username=${encodedName}`;
             setProfileImage(imageUrl);
-
+          }
         } catch (error) {
           console.error('Error fetching authenticated user:', error);
         }
@@ -132,11 +137,12 @@ const HeaderMain: React.FC = () => {
       <View style={styles.topBar}>
         <Image
           source={
-            profileImage ? {uri: profileImage} : require('../../assets/25.png')
+            profileImage && profileImage.startsWith('http')
+              ? {uri: profileImage}
+              : require('../../assets/25.png') // Local fallback image
           }
           style={styles.profileIcon}
         />
-
         {/* Right Icons (Notification and Drawer) */}
         <View style={styles.rightIcons}>
           <TouchableOpacity>
