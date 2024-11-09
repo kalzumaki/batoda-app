@@ -4,6 +4,7 @@ export const API_ENDPOINTS = {
     APPROVED_DISPATCH: '/approved-dispatches',
     PASSENGER_COUNT: '/passenger-count',
     IN_QUEUE: '/in-queue',
+    USERS_TOKEN : '/users/token',
 
 
 }

@@ -10,10 +10,43 @@ import {
 } from '../../pusher/pusher';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
 import {PusherEvent} from '@pusher/pusher-websocket-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const HeaderMain: React.FC = () => {
   const {timeLeft, setScheduledTime} = useTimer();
   const [dispatchData, setDispatchData] = useState<Dispatch | null>(null);
+  const [authenticatedUser, setAuthenticatedUser] = useState<any>(null);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = await AsyncStorage.getItem('userToken');
+
+      if (token) {
+        console.log('User Token from headercomponent: ', token);
+
+        try {
+          const response = await get(API_ENDPOINTS.USERS_TOKEN);
+          const data = response.data;
+          setAuthenticatedUser(data);
+          console.log('data found in header component: ', data);
+
+            const fullName = `${data.fname} ${data.lname}`;
+            const encodedName = encodeURIComponent(fullName);
+            const imageUrl = `https://avatar.iran.liara.run/username?username=${encodedName}`;
+            setProfileImage(imageUrl);
+
+        } catch (error) {
+          console.error('Error fetching authenticated user:', error);
+        }
+      } else {
+        console.log('No token fetched from headercomponent');
+      }
+    };
+
+    checkAuth();
+  }, []);
+
 
   const fetchInitialData = async () => {
     console.log('Starting fetchInitialData');
@@ -97,12 +130,12 @@ const HeaderMain: React.FC = () => {
     <View style={styles.headerContainer}>
       {/* Top Bar */}
       <View style={styles.topBar}>
-        <TouchableOpacity>
-          <Image
-            source={require('../../assets/25.png')}
-            style={styles.profileIcon}
-          />
-        </TouchableOpacity>
+        <Image
+          source={
+            profileImage ? {uri: profileImage} : require('../../assets/25.png')
+          }
+          style={styles.profileIcon}
+        />
 
         {/* Right Icons (Notification and Drawer) */}
         <View style={styles.rightIcons}>
