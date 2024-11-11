@@ -7,6 +7,7 @@ import {logout} from '../../utils/proxy';
 import HeaderMain from '../../components/passenger/HeaderCard';
 import PassengerLoad from '../../components/passenger/PassengerLoad';
 import QueueInfo from '../../components/passenger/QueueInfo';
+import Ticket from '../../components/passenger/Ticket';
 import {RootStackParamList} from '../../types/passenger-dashboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -16,6 +17,7 @@ const PassengerDashboard: React.FC = () => {
   const navigation = useNavigation<NavigationProps>();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+
   useEffect(() => {
     const checkAuth = async () => {
       const token = await AsyncStorage.getItem('userToken');
@@ -29,6 +31,7 @@ const PassengerDashboard: React.FC = () => {
 
     checkAuth();
   }, [navigation]);
+
   const handleLogout = async () => {
     setIsLoggingOut(true);
 
@@ -55,9 +58,11 @@ const PassengerDashboard: React.FC = () => {
   if (!isAuthenticated) {
     return null;
   }
+
   const renderItems = [
     {id: 'header', component: <HeaderMain />},
     {id: 'load', component: <PassengerLoad />},
+    {id: 'ticket', component: <Ticket />}, // Added Ticket component here
     {id: 'queue', component: <QueueInfo />},
   ];
 

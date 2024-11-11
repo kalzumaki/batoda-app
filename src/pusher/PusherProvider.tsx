@@ -1,6 +1,6 @@
 // PusherProvider.tsx
 import React, {createContext, useContext, useEffect, ReactNode} from 'react';
-import {pusher, initPusher, subscribeToChannel} from './pusher';
+import {pusher, initPusher, subscribeToChannel, unsubscribeFromChannel} from './pusher';
 import {PusherEvent} from '@pusher/pusher-websocket-react-native';
 
 interface PusherContextType {
@@ -8,6 +8,10 @@ interface PusherContextType {
     channelName: string,
     onEvent: (event: PusherEvent) => void,
   ) => Promise<void>;
+  unsubscribeFromChannel: (
+    channelName: string,
+    onEvent: (event: PusherEvent) => void,
+  ) => void;
 }
 
 const PusherContext = createContext<PusherContextType | undefined>(undefined);
@@ -34,12 +38,13 @@ export const PusherProvider: React.FC<PusherProviderProps> = ({children}) => {
 
     return () => {
       console.log('Cleaning up Pusher instance...');
-      pusher.unsubscribe({channelName: 'dispatches'});
       pusher.disconnect();
     };
   }, []);
+
   const contextValue = {
     subscribeToChannel,
+    unsubscribeFromChannel,
   };
 
   return (

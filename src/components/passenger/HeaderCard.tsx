@@ -11,12 +11,14 @@ import {
 import {API_ENDPOINTS} from '../../api/api-endpoints';
 import {PusherEvent} from '@pusher/pusher-websocket-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import ProfilePictureListener from '../../pusher/ProfilePictureUploaded';
 
 const HeaderMain: React.FC = () => {
   const {timeLeft, setScheduledTime} = useTimer();
   const [dispatchData, setDispatchData] = useState<Dispatch | null>(null);
   const [authenticatedUser, setAuthenticatedUser] = useState<any>(null);
   const [profileImage, setProfileImage] = useState<string | null>(null);
+
   useEffect(() => {
     const checkAuth = async () => {
       const token = await AsyncStorage.getItem('userToken');
@@ -35,7 +37,6 @@ const HeaderMain: React.FC = () => {
             console.log('Full profile image URL:', fullImageUrl);
             setProfileImage(fullImageUrl);
           } else {
-            // Fallback avatar image if no profile picture
             const fullName = `${data.fname} ${data.lname}`;
             const encodedName = encodeURIComponent(fullName);
             const imageUrl = `https://avatar.iran.liara.run/username?username=${encodedName}`;
@@ -51,7 +52,6 @@ const HeaderMain: React.FC = () => {
 
     checkAuth();
   }, []);
-
 
   const fetchInitialData = async () => {
     console.log('Starting fetchInitialData');
@@ -133,13 +133,17 @@ const HeaderMain: React.FC = () => {
 
   return (
     <View style={styles.headerContainer}>
+      {/* Profile Picture Listener */}
+      {authenticatedUser && authenticatedUser.id && (
+        <ProfilePictureListener userId={authenticatedUser.id} />
+      )}
       {/* Top Bar */}
       <View style={styles.topBar}>
         <Image
           source={
             profileImage && profileImage.startsWith('http')
               ? {uri: profileImage}
-              : require('../../assets/25.png') // Local fallback image
+              : require('../../assets/25.png')
           }
           style={styles.profileIcon}
         />
