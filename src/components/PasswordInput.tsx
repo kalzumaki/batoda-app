@@ -1,5 +1,5 @@
-import React, {useState} from 'react';
-import {View, TextInput, StyleSheet, TouchableOpacity} from 'react-native';
+import React, { useState } from 'react';
+import { View, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome';
 
 interface PasswordInputProps {
@@ -33,7 +33,8 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
       />
       <TouchableOpacity
         onPress={togglePasswordVisibility}
-        style={styles.iconContainer}>
+        style={styles.iconContainer}
+        activeOpacity={0.7}>
         <FontAwesomeIcon
           name={isPasswordVisible ? 'eye' : 'eye-slash'}
           size={20}
