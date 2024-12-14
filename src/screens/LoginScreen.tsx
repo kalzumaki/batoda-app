@@ -13,6 +13,7 @@ import {userTypeMap} from '../types/userType';
 import OptimisticFeedback from '../components/Loading';
 import {API_ENDPOINTS} from '../api/api-endpoints';
 import {RootStackParamList} from '../types/login';
+import LoginButtonComponent from '../components/LoginButton';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
@@ -113,9 +114,14 @@ const Login: React.FC = () => {
         value={password}
         onChangeText={setPassword}
       />
-      <ButtonComponent title="Login" onPress={handleLogin} color="#2D6A4F" />
+      <LoginButtonComponent
+        title="Login"
+        onPress={handleLogin}
+        color="#2D6A4F"
+        loading={isLoggingIn}
+      />
       <ButtonComponent
-        title="Go to Register"
+        title="Register"
         onPress={() => navigation.navigate('Register')}
         color="#40916C"
       />

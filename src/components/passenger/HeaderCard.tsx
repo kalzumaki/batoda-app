@@ -1,6 +1,6 @@
 import React, {useState, useEffect} from 'react';
 import {View, Text, TouchableOpacity, Image, StyleSheet} from 'react-native';
-import {get} from '../../utils/proxy';
+import {BASE_URL, get} from '../../utils/proxy';
 import {useTimer} from '../../contexts/TimerContext';
 import {Dispatch, DispatchResponse} from '../../types/approved-dispatch';
 import {
@@ -9,10 +9,49 @@ import {
   unsubscribeFromChannel,
 } from '../../pusher/pusher';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
+import {PusherEvent} from '@pusher/pusher-websocket-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import ProfilePictureListener from '../../pusher/ProfilePictureUploaded';
 
 const HeaderMain: React.FC = () => {
   const {timeLeft, setScheduledTime} = useTimer();
   const [dispatchData, setDispatchData] = useState<Dispatch | null>(null);
+  const [authenticatedUser, setAuthenticatedUser] = useState<any>(null);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = await AsyncStorage.getItem('userToken');
+
+      if (token) {
+        console.log('User Token from headercomponent: ', token);
+
+        try {
+          const response = await get(API_ENDPOINTS.USERS_TOKEN);
+          const data = response.data;
+          setAuthenticatedUser(data);
+          console.log('data found in header component: ', data);
+
+          if (data && data.profile) {
+            const fullImageUrl = `${BASE_URL}storage/${data.profile}`;
+            console.log('Full profile image URL:', fullImageUrl);
+            setProfileImage(fullImageUrl);
+          } else {
+            const fullName = `${data.fname} ${data.lname}`;
+            const encodedName = encodeURIComponent(fullName);
+            const imageUrl = `https://avatar.iran.liara.run/username?username=${encodedName}`;
+            setProfileImage(imageUrl);
+          }
+        } catch (error) {
+          console.error('Error fetching authenticated user:', error);
+        }
+      } else {
+        console.log('No token fetched from headercomponent');
+      }
+    };
+
+    checkAuth();
+  }, []);
 
   const fetchInitialData = async () => {
     console.log('Starting fetchInitialData');
@@ -39,7 +78,7 @@ const HeaderMain: React.FC = () => {
   useEffect(() => {
     fetchInitialData();
 
-    const onEvent = (event: any) => {
+    const onEvent = (event: PusherEvent) => {
       console.log('Event received:', event);
       if (
         event.eventName === 'DispatchUpdated' ||
@@ -94,20 +133,35 @@ const HeaderMain: React.FC = () => {
 
   return (
     <View style={styles.headerContainer}>
+      {/* Profile Picture Listener */}
+      {authenticatedUser && authenticatedUser.id && (
+        <ProfilePictureListener userId={authenticatedUser.id} />
+      )}
       {/* Top Bar */}
       <View style={styles.topBar}>
-        <TouchableOpacity>
-          <Image
-            source={require('../../assets/profile-user.png')}
-            style={styles.profileIcon}
-          />
-        </TouchableOpacity>
-        <TouchableOpacity>
-          <Image
-            source={require('../../assets/menu.png')}
-            style={styles.drawerIcon}
-          />
-        </TouchableOpacity>
+        <Image
+          source={
+            profileImage && profileImage.startsWith('http')
+              ? {uri: profileImage}
+              : require('../../assets/25.png')
+          }
+          style={styles.profileIcon}
+        />
+        {/* Right Icons (Notification and Drawer) */}
+        <View style={styles.rightIcons}>
+          <TouchableOpacity>
+            <Image
+              source={require('../../assets/3.png')}
+              style={styles.notifIcon}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity>
+            <Image
+              source={require('../../assets/4.png')}
+              style={styles.drawerIcon}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Dispatching Status */}
@@ -120,19 +174,10 @@ const HeaderMain: React.FC = () => {
             {dispatchData ? dispatchData.tricycle.tricycle_number : '---'}
           </Text>
           <Text style={styles.tricycleLabel}>Tricycle Number</Text>
-
-          <TouchableOpacity style={styles.reserveButton}>
-            <Text style={styles.buttonText}>Reserve Now</Text>
-          </TouchableOpacity>
         </View>
 
         <View style={styles.infoContainer}>
           {/* Route Section - Always Displayed */}
-          <View style={styles.infoTextContainer}>
-            <Text style={styles.infoTitle}>Route</Text>
-            <Text style={styles.infoValue}>Dumaguete ➔</Text>
-            <Text style={styles.infoValue}>Bacong</Text>
-          </View>
 
           {/* Today's Date */}
           <View style={styles.infoTextContainer}>
@@ -141,6 +186,11 @@ const HeaderMain: React.FC = () => {
           </View>
 
           {/* Time Left */}
+          <View style={styles.infoTextContainer}>
+            <Text style={styles.infoTitle}>Route</Text>
+            <Text style={styles.infoValue}>Dumaguete ➔</Text>
+            <Text style={styles.infoValue}>Bacong</Text>
+          </View>
           <View style={styles.infoTextContainer}>
             <Text style={styles.infoTitle}>Time Left</Text>
             <Text style={styles.infoValue}>
@@ -156,9 +206,9 @@ const HeaderMain: React.FC = () => {
 const styles = StyleSheet.create({
   headerContainer: {
     backgroundColor: '#2d665f',
-    padding: 20,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    padding: 18,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
     width: '100%',
     marginHorizontal: 0,
   },
@@ -167,19 +217,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  rightIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  notifIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 15,
+  },
   profileIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
   },
   drawerIcon: {
-    width: 30,
-    height: 30,
+    width: 20,
+    height: 20,
   },
   statusText: {
-    fontSize: 16,
+    fontWeight: 'bold',
+    fontSize: 18,
     color: '#ffff',
-    marginTop: 30,
+    marginTop: 20,
     textAlign: 'left',
   },
   mainContent: {
@@ -189,16 +249,18 @@ const styles = StyleSheet.create({
   },
   tricycleContainer: {
     alignItems: 'center',
-    marginRight: 20,
+    marginRight: 10,
   },
   tricycleNumber: {
-    fontSize: 72,
+    fontSize: 60,
+    marginLeft: 30,
     color: '#FFFFFF',
     fontWeight: 'bold',
   },
   tricycleLabel: {
     fontSize: 16,
-    color: '#C6D9D7',
+    marginLeft: 30,
+    color: '#ffffff',
     marginBottom: 10,
   },
   driverName: {
@@ -219,21 +281,21 @@ const styles = StyleSheet.create({
   },
   infoTitle: {
     fontSize: 14,
-    color: '#A8BAB7',
+    color: '#ffffff',
   },
   infoValue: {
-    fontSize: 18,
+    fontSize: 17,
     color: '#FFFFFF',
     fontWeight: 'bold',
   },
   reserveButton: {
-    backgroundColor: '#62a287', // Updated to the provided color code
+    backgroundColor: '#62a287',
     padding: 10,
     borderRadius: 30,
     marginTop: 10,
   },
   buttonText: {
-    color: '#FFFFFF', // Ensures the text stands out on the button
+    color: '#FFFFFF',
     fontWeight: 'bold',
   },
   timeUnit: {

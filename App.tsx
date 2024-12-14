@@ -7,12 +7,13 @@ import Toast from 'react-native-toast-message';
 import Login from './src/screens/LoginScreen';
 import Register from './src/screens/RegisterScreen';
 import PassengerDashboard from './src/screens/passenger/PassengerDashboard';
+import TicketScreen from './src/screens/passenger/TicketScreen';
 import DriverDashboard from './src/screens/driver/DriverDashboard';
 import DispatcherDashboard from './src/screens/dispatcher/DispatcherDashboard';
 
 // Contexts
 import {TimerProvider} from './src/contexts/TimerContext';
-import {PusherProvider} from './src/pusher/PusherProvider'; 
+import {PusherProvider} from './src/pusher/PusherProvider';
 
 const Stack = createNativeStackNavigator();
 
@@ -35,6 +36,7 @@ const App: React.FC = () => {
               name="DispatcherDashboard"
               component={DispatcherDashboard}
             />
+            <Stack.Screen name="TicketScreen" component={TicketScreen} />
           </Stack.Navigator>
           <Toast />
         </NavigationContainer>

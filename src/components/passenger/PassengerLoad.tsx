@@ -8,6 +8,9 @@ import {
 } from '../../pusher/pusher';
 import {DispatchResponse} from '../../types/approved-dispatch';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
+import {PusherEvent} from '@pusher/pusher-websocket-react-native';
+
+const MAX_PASSENGERS = 6;
 
 const ApprovedDispatches: React.FC = () => {
   const [passengerCount, setPassengerCount] = useState<number>(0);
@@ -24,6 +27,7 @@ const ApprovedDispatches: React.FC = () => {
         setPassengerCount(data.dispatches[0].passenger_count);
         setError(null);
       } else {
+        setPassengerCount(0);
         console.log('No approved dispatches found.');
       }
     } catch (err) {
@@ -35,9 +39,12 @@ const ApprovedDispatches: React.FC = () => {
   useEffect(() => {
     fetchPassengerCount();
 
-    const handleEvent = (event: any) => {
+    const handleEvent = (event: PusherEvent) => {
       console.log('Event received:', event);
-      if (['DispatchUpdated', 'DispatchFinalized'].includes(event.eventName)) {
+      if (
+        event.eventName === 'DispatchUpdated' ||
+        event.eventName === 'DispatchFinalized'
+      ) {
         console.log('Refreshing data due to event...');
         fetchPassengerCount();
       }
@@ -52,12 +59,12 @@ const ApprovedDispatches: React.FC = () => {
 
     return () => {
       console.log('Cleaning up Pusher subscription...');
-      unsubscribeFromChannel('dispatches', handleEvent); // Ensure we unsubscribe from the channel
+      unsubscribeFromChannel('dispatches', handleEvent);
     };
   }, []);
 
   useEffect(() => {
-    if (passengerCount === 6) {
+    if (passengerCount === MAX_PASSENGERS) {
       Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
@@ -77,46 +84,45 @@ const ApprovedDispatches: React.FC = () => {
     }
   }, [passengerCount]);
 
-  const passengers = Array.from({length: 6}, (_, index) => (
+  const passengers = Array.from({length: MAX_PASSENGERS}, (_, index) => (
     <Animated.View
       key={index}
       style={[
         styles.iconContainer,
         index < passengerCount ? styles.filled : styles.empty,
-        passengerCount === 6 ? {transform: [{scale: pulseAnim}]} : null,
+        passengerCount === MAX_PASSENGERS
+          ? {transform: [{scale: pulseAnim}]}
+          : null,
       ]}>
-      <Image
-        source={require('../../assets/passenger.png')}
-        style={styles.icon}
-      />
+      <Image source={require('../../assets/2.png')} style={styles.icon} />
     </Animated.View>
   ));
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Passenger Count</Text>
+      <Text style={styles.title}>Number of Passengers Boarded</Text>
       {error ? (
         <Text style={styles.error}>{error}</Text>
       ) : (
         <>
           <View style={styles.passengerIcons}>{passengers}</View>
           <Text style={styles.passengerCount}>
-            Passenger Count: {passengerCount}/6
+            {passengerCount}/{MAX_PASSENGERS}
           </Text>
         </>
       )}
     </View>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     padding: 20,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#ffffff',
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#469c8f',
+    fontSize: 16,
+    color: 'black',
     marginBottom: 10,
   },
   passengerIcons: {
@@ -140,7 +146,7 @@ const styles = StyleSheet.create({
     height: 40,
   },
   passengerCount: {
-    fontSize: 20,
+    fontSize: 16,
     color: '#2d665f',
     textAlign: 'center',
   },

@@ -24,7 +24,7 @@ export async function initPusher(): Promise<void> {
 
 export async function subscribeToChannel(
   channelName: string,
-  onEvent: (event: any) => void,
+  onEvent: (event: PusherEvent) => void,
 ): Promise<void> {
   try {
     if (!eventListeners[channelName]) {
@@ -42,7 +42,7 @@ export async function subscribeToChannel(
 
 export function unsubscribeFromChannel(
   channelName: string,
-  onEvent: (event: any) => void,
+  onEvent: (event: PusherEvent) => void,
 ): void {
   if (eventListeners[channelName]) {
     eventListeners[channelName] = eventListeners[channelName].filter(
