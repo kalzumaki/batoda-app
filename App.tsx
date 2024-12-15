@@ -10,6 +10,8 @@ import PassengerDashboard from './src/screens/passenger/PassengerDashboard';
 import TicketScreen from './src/screens/passenger/TicketScreen';
 import DriverDashboard from './src/screens/driver/DriverDashboard';
 import DispatcherDashboard from './src/screens/dispatcher/DispatcherDashboard';
+import ReserveRideScreen from './src/screens/passenger/ReserveRideScreen';
+import ScanQRScreen from './src/screens/passenger/ScanQR';
 
 // Contexts
 import {TimerProvider} from './src/contexts/TimerContext';
@@ -37,6 +39,9 @@ const App: React.FC = () => {
               component={DispatcherDashboard}
             />
             <Stack.Screen name="TicketScreen" component={TicketScreen} />
+            {/* floating nav */}
+            <Stack.Screen name="ReserveRide" component={ReserveRideScreen} />
+            <Stack.Screen name="ScanQR" component={ScanQRScreen} />
           </Stack.Navigator>
           <Toast />
         </NavigationContainer>

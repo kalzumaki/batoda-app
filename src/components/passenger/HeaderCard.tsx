@@ -12,6 +12,7 @@ import {API_ENDPOINTS} from '../../api/api-endpoints';
 import {PusherEvent} from '@pusher/pusher-websocket-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ProfilePictureListener from '../../pusher/ProfilePictureUploaded';
+import CustomDropdown from '../MenuDropdown';
 
 const HeaderMain: React.FC = () => {
   const {timeLeft, setScheduledTime} = useTimer();
@@ -155,12 +156,13 @@ const HeaderMain: React.FC = () => {
               style={styles.notifIcon}
             />
           </TouchableOpacity>
-          <TouchableOpacity>
+          {/* <TouchableOpacity>
             <Image
               source={require('../../assets/4.png')}
               style={styles.drawerIcon}
             />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
+          <CustomDropdown />
         </View>
       </View>
 
