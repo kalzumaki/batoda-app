@@ -10,54 +10,56 @@ const Ticket: React.FC = () => {
   const navigation = useNavigation<NavigationProps>();
 
   const handlePress = () => {
-    navigation.navigate('TicketScreen'); // Navigate to ticketScreen when clicked
+    navigation.navigate('TicketScreen');
   };
 
   return (
-    <TouchableOpacity style={styles.container} onPress={handlePress}>
-      <View style={styles.ticketContent}>
-        <Text style={styles.ticketLabel}>Your Ticket Number</Text>
-        <View style={styles.ticketNumberContainer}>
+    <View style={styles.container}>
+      {/* Left-aligned text */}
+      <Text style={styles.ticketLabel}>Your Ticket Number</Text>
+
+      {/* Clickable ticket */}
+      <TouchableOpacity style={styles.ticketBox} onPress={handlePress}>
+        <View style={styles.ticketContent}>
           <Text style={styles.ticketNumber}>RA 1</Text>
           <Text style={styles.arrow}>→</Text>
         </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#2d665f', // Matches the color from your design
-    borderRadius: 10,
-    padding: 15,
-    marginVertical: 10,
-    marginHorizontal: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ticketContent: {
-    width: '100%',
-    alignItems: 'center',
+    marginVertical: 0,
+    marginHorizontal: 10,
   },
   ticketLabel: {
     fontSize: 16,
-    color: 'white',
+    color: 'black',
     marginBottom: 5,
-    fontWeight: 'bold',
+    textAlign: 'left',
   },
-  ticketNumberContainer: {
+  ticketBox: {
+    backgroundColor: '#2d665f',
+    borderRadius: 10,
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+  },
+  ticketContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   ticketNumber: {
     fontSize: 24,
     fontWeight: 'bold',
     color: 'white',
-    marginRight: 10,
+    textAlign: 'center',
+    flex: 1,
   },
   arrow: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: 'white',
   },
