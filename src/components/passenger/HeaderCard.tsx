@@ -54,18 +54,26 @@ const HeaderMain: React.FC = () => {
     checkAuth();
   }, []);
 
+
   const fetchInitialData = async () => {
-    console.log('Starting fetchInitialData');
+    console.log('Starting fetchInitialData...');
+
     try {
       const data: DispatchResponse = await get(API_ENDPOINTS.APPROVED_DISPATCH);
       console.log('Fetched data:', JSON.stringify(data));
-      if (data && data.dispatches && data.dispatches.length > 0) {
+
+      if (data?.dispatches?.length) {
         const newDispatch: Dispatch = data.dispatches[0];
-        console.log('Processing new dispatch:', JSON.stringify(newDispatch));
+
+        console.log(
+          'Scheduled Dispatch Time from API:',
+          newDispatch.scheduled_dispatch_time,
+        );
+
         setDispatchData(newDispatch);
-        setScheduledTime(newDispatch.scheduled_dispatch_time);
+        setScheduledTime(newDispatch.scheduled_dispatch_time || null);
       } else {
-        console.log('No valid dispatches found');
+        // console.warn('No valid dispatches found.');
         setDispatchData(null);
         setScheduledTime(null);
       }
@@ -75,6 +83,7 @@ const HeaderMain: React.FC = () => {
       setScheduledTime(null);
     }
   };
+
 
   useEffect(() => {
     fetchInitialData();
