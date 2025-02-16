@@ -66,21 +66,23 @@ const HeaderMain: React.FC = () => {
         const newDispatch: Dispatch = data.dispatches[0];
 
         console.log(
-          'Scheduled Dispatch Time from API:',
-          newDispatch.scheduled_dispatch_time,
+          'Dispatcher Response Time:', newDispatch.dispatcher_response_time,
+          'Scheduled Dispatch Time:', newDispatch.scheduled_dispatch_time
         );
 
         setDispatchData(newDispatch);
-        setScheduledTime(newDispatch.scheduled_dispatch_time || null);
+        setScheduledTime(
+          newDispatch.dispatcher_response_time ?? "",
+          newDispatch.scheduled_dispatch_time ?? ""
+        );
       } else {
-        // console.warn('No valid dispatches found.');
         setDispatchData(null);
-        setScheduledTime(null);
+        setScheduledTime("", "");
       }
     } catch (error) {
       console.error('Error fetching initial data:', error);
       setDispatchData(null);
-      setScheduledTime(null);
+      setScheduledTime("", "");
     }
   };
 
