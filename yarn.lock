@@ -1303,10 +1303,22 @@
     prompts "^2.4.2"
     semver "^7.5.2"
 
+"@react-native-community/datetimepicker@^8.3.0":
+  version "8.3.0"
+  resolved "https://registry.npmjs.org/@react-native-community/datetimepicker/-/datetimepicker-8.3.0.tgz"
+  integrity sha512-K/KgaJbLtjMpx4PaG4efrVIcSe6+DbLufeX1lwPB5YY8i3sq9dOh6WcAcMTLbaRTUpurebQTkl7puHPFm9GalA==
+  dependencies:
+    invariant "^2.2.4"
+
 "@react-native-community/hooks@^2.8.1":
   version "2.8.1"
   resolved "https://registry.npmjs.org/@react-native-community/hooks/-/hooks-2.8.1.tgz"
   integrity sha512-DCmCIC0Gn9m6K0Mlg2MwNmTxMEpBu5lTLsI6b/XUAv/vLGa6o+X7RhCai4FWeqkjCU36+ZOwaLzDo4NBWMXaoQ==
+
+"@react-native-picker/picker@^2.11.0":
+  version "2.11.0"
+  resolved "https://registry.npmjs.org/@react-native-picker/picker/-/picker-2.11.0.tgz"
+  integrity sha512-QuZU6gbxmOID5zZgd/H90NgBnbJ3VV6qVzp6c7/dDrmWdX8S0X5YFYgDcQFjE3dRen9wB9FWnj2VVdPU64adSg==
 
 "@react-native/assets-registry@0.75.4":
   version "0.75.4"

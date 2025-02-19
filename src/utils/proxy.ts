@@ -2,8 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RequestConfig } from '../types/request-config';
 //zrok api gateway
 //docker
-const API_BASE_URL = 'https://b004t2tgbtc9.share.zrok.io/api';
-export const BASE_URL = 'https://b004t2tgbtc9.share.zrok.io/';
+const API_BASE_URL = 'https://zna0brw6skqo.share.zrok.io/api';
+export const BASE_URL = 'https://zna0brw6skqo.share.zrok.io/';
 // const API_BASE_URL = 'https://l7c2ne9pitvh.share.zrok.io/api';
 
 //local

@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {View, Text, StyleSheet} from 'react-native';
+import {View, Text, StyleSheet, Image} from 'react-native';
 import {LoginPayload} from '../types/login';
 import {useNavigation} from '@react-navigation/native';
 import {post} from '../utils/proxy';
@@ -83,7 +83,14 @@ const Login: React.FC = () => {
           text1: 'Login Failed',
           text2: 'Invalid email, mobile number, or password.',
         });
-      } else if (errorMessage.includes('422')) {
+      } else if(errorMessage.includes('403')) {
+        Toast.show({
+            type: 'error',
+            text1: 'Email not Verified',
+            text2: 'Please Verify your Email',
+          });
+      }
+      else if (errorMessage.includes('422')) {
         Toast.show({
           type: 'error',
           text1: 'Login Failed',
@@ -103,7 +110,11 @@ const Login: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Login</Text>
+      <View style={styles.logoContainer}>
+        <Image source={require('../assets/logo.png')} style={styles.logo} />
+      </View>
+      {/* <Text style={styles.title}>BATODA</Text> */}
+
       <InputComponent
         placeholder="Email or Mobile"
         value={emailOrMobile}
@@ -143,6 +154,15 @@ const styles = StyleSheet.create({
     color: '#081C15',
     marginBottom: 24,
     textAlign: 'center',
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  logo: {
+    width: 120,
+    height: 120,
+    resizeMode: 'contain',
   },
 });
 
