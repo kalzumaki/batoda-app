@@ -31,9 +31,26 @@ const Login: React.FC = () => {
       password: password,
     };
 
-    console.log('Logging in with payload:', payload);
+    console.log('Checking user approval status:', payload.email_or_mobile);
 
     try {
+      // First, check if the user exists and is approved
+      const userStatus = await post(API_ENDPOINTS.CHECK_USER_STATUS, {
+        email_or_mobile: emailOrMobile,
+      });
+
+      if (userStatus?.is_approved === 0) {
+        Toast.show({
+          type: 'error',
+          text1: 'Account Pending Approval',
+          text2: 'Your account has not been approved by the president yet.',
+        });
+        return;
+      }
+
+      console.log('Logging in with payload:', payload);
+
+      // Proceed with login
       const data = await post(API_ENDPOINTS.LOGIN, payload);
       console.log('Login response:', data);
 
@@ -75,26 +92,34 @@ const Login: React.FC = () => {
       }
     } catch (error: any) {
       console.log('API request error:', error);
-      const errorMessage = error?.message || 'An unexpected error occurred.';
+      const errorMessage =
+        error?.response?.data?.message || 'An unexpected error occurred.';
 
-      if (errorMessage.includes('401')) {
+      if (error?.response?.status === 403) {
+        if (errorMessage.toLowerCase().includes('not approved')) {
+          Toast.show({
+            type: 'error',
+            text1: 'Account Not Approved',
+            text2: 'Your account has not been approved by the president yet.',
+          });
+        } else {
+          Toast.show({
+            type: 'error',
+            text1: 'Email Not Verified',
+            text2: 'Please verify your email before logging in.',
+          });
+        }
+      } else if (error?.response?.status === 401) {
         Toast.show({
           type: 'error',
           text1: 'Login Failed',
           text2: 'Invalid email, mobile number, or password.',
         });
-      } else if(errorMessage.includes('403')) {
-        Toast.show({
-            type: 'error',
-            text1: 'Email not Verified',
-            text2: 'Please Verify your Email',
-          });
-      }
-      else if (errorMessage.includes('422')) {
+      } else if (error?.response?.status === 422) {
         Toast.show({
           type: 'error',
           text1: 'Login Failed',
-          text2: 'Input Fields are required to Fill up.',
+          text2: 'Input Fields are required.',
         });
       } else {
         Toast.show({

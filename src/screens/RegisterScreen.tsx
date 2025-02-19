@@ -22,6 +22,7 @@ import OptimisticFeedback from '../components/Loading';
 import {Picker} from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import DropdownComponent from '../components/Dropdown';
+import DatePickerComponent from '../components/DatePicker';
 
 // Define the navigation types
 type RootStackParamList = {
@@ -43,14 +44,14 @@ const Register: React.FC = () => {
     mobile_number: '',
     address: '',
     birthday: '',
-    gender: '',
+    gender: 'male',
     user_type_id: null,
   });
   const [isRegistering, setIsRegistering] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   const handleChange = (key: string, value: string | number) => {
-    setFormData((prev) => ({ ...prev, [key]: value }));
+    setFormData(prev => ({...prev, [key]: value}));
   };
 
   const validateEmail = (email: string) => {
@@ -144,20 +145,25 @@ const Register: React.FC = () => {
         <InputComponent
           placeholder="Mobile Number"
           value={formData.mobile_number}
-          onChangeText={text => handleChange('mobile_number', text)}
+          keyboardType="numeric"
+          maxLength={11}
+          onChangeText={text => {
+            const numericText = text.replace(/[^0-9]/g, ''); // Remove non-numeric characters
+            handleChange('mobile_number', numericText);
+          }}
         />
+
         <InputComponent
           placeholder="Address"
           value={formData.address}
           onChangeText={text => handleChange('address', text)}
         />
-
-        {/* Date Picker */}
-        <ButtonComponent
-          title={formData.birthday || 'Select Birthday'}
-          onPress={() => setShowDatePicker(true)}
-          color="#2D6A4F"
+        {/* DATE PICKER */}
+        <DatePickerComponent
+          value={formData.birthday}
+          onChange={date => handleChange('birthday', date)}
         />
+
         {showDatePicker && (
           <DateTimePicker
             value={formData.birthday ? new Date(formData.birthday) : new Date()}
@@ -176,7 +182,7 @@ const Register: React.FC = () => {
 
         <DropdownComponent
           label="Gender"
-          selectedValue={formData.gender}
+          selectedValue={formData.gender ?? 'male'}
           onValueChange={value => handleChange('gender', value)}
           options={[
             {label: 'Male', value: 'male'},
