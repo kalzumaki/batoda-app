@@ -1,17 +1,26 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../types/passenger-dashboard';
+import React, {useState, useEffect} from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {
+  RefreshTriggerProp,
+  RootStackParamList,
+} from '../../types/passenger-dashboard';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
-const { width, height } = Dimensions.get('window');
+const {width, height} = Dimensions.get('window');
 
-const FloatingNavigation: React.FC = () => {
+const FloatingNavigation: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const navigation = useNavigation<NavigationProps>();
   const [isExpanded, setIsExpanded] = useState(false);
-
+  useEffect(() => {}, [refreshTrigger]);
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
   };
@@ -24,6 +33,7 @@ const FloatingNavigation: React.FC = () => {
     navigation.navigate('ScanQR');
   };
 
+
   return (
     <View style={styles.wrapper}>
       {/* Black Overlay when expanded */}
@@ -34,31 +44,31 @@ const FloatingNavigation: React.FC = () => {
         <View style={styles.expandedContainer}>
           <TouchableOpacity
             style={[styles.circleButton, styles.focusedButton]}
-            onPress={handleReserveRide}
-          >
-            <Text style={[styles.buttonText, styles.focusedButtonText]}>Reserve</Text>
+            onPress={handleReserveRide}>
+            <Text style={[styles.buttonText, styles.focusedButtonText]}>
+              Reserve
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.circleButton, styles.focusedButton]}
-            onPress={handleScanQR}
-          >
-            <Text style={[styles.buttonText, styles.focusedButtonText]}>Scan</Text>
+            onPress={handleScanQR}>
+            <Text style={[styles.buttonText, styles.focusedButtonText]}>
+              Scan
+            </Text>
           </TouchableOpacity>
         </View>
       )}
 
       {/* Main floating button */}
       <TouchableOpacity
-        style={[
-          styles.mainButton,
-          isExpanded && styles.mainButtonFocused,
-        ]}
-        onPress={toggleExpand}
-      >
+        style={[styles.mainButton, isExpanded && styles.mainButtonFocused]}
+        onPress={toggleExpand}>
         <Text
-          style={[styles.mainButtonText, isExpanded && styles.mainButtonTextFocused]}
-        >
+          style={[
+            styles.mainButtonText,
+            isExpanded && styles.mainButtonTextFocused,
+          ]}>
           BATODA
         </Text>
       </TouchableOpacity>

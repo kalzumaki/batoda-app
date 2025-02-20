@@ -13,8 +13,9 @@ import {PusherEvent} from '@pusher/pusher-websocket-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ProfilePictureListener from '../../pusher/ProfilePictureUploaded';
 import CustomDropdown from '../MenuDropdown';
+import {RefreshTriggerProp} from '../../types/passenger-dashboard';
 
-const HeaderMain: React.FC = () => {
+const HeaderMain: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const {timeLeft, setScheduledTime} = useTimer();
   const [dispatchData, setDispatchData] = useState<Dispatch | null>(null);
   const [authenticatedUser, setAuthenticatedUser] = useState<any>(null);
@@ -54,7 +55,6 @@ const HeaderMain: React.FC = () => {
     checkAuth();
   }, []);
 
-
   const fetchInitialData = async () => {
     console.log('Starting fetchInitialData...');
 
@@ -66,26 +66,27 @@ const HeaderMain: React.FC = () => {
         const newDispatch: Dispatch = data.dispatches[0];
 
         console.log(
-          'Dispatcher Response Time:', newDispatch.dispatcher_response_time,
-          'Scheduled Dispatch Time:', newDispatch.scheduled_dispatch_time
+          'Dispatcher Response Time:',
+          newDispatch.dispatcher_response_time,
+          'Scheduled Dispatch Time:',
+          newDispatch.scheduled_dispatch_time,
         );
 
         setDispatchData(newDispatch);
         setScheduledTime(
-          newDispatch.dispatcher_response_time ?? "",
-          newDispatch.scheduled_dispatch_time ?? ""
+          newDispatch.dispatcher_response_time ?? '',
+          newDispatch.scheduled_dispatch_time ?? '',
         );
       } else {
         setDispatchData(null);
-        setScheduledTime("", "");
+        setScheduledTime('', '');
       }
     } catch (error) {
       console.error('Error fetching initial data:', error);
       setDispatchData(null);
-      setScheduledTime("", "");
+      setScheduledTime('', '');
     }
   };
-
 
   useEffect(() => {
     fetchInitialData();
@@ -112,7 +113,7 @@ const HeaderMain: React.FC = () => {
       console.log('Cleaning up Pusher subscription...');
       unsubscribeFromChannel('dispatches', onEvent);
     };
-  }, []);
+  }, [refreshTrigger]);
 
   useEffect(() => {
     console.log('Current dispatchData:', JSON.stringify(dispatchData));

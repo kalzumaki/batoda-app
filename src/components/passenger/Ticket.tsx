@@ -1,17 +1,22 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import {RootStackParamList} from '../../types/passenger-dashboard';
+import {
+  RefreshTriggerProp,
+  RootStackParamList,
+} from '../../types/passenger-dashboard';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
-const Ticket: React.FC = () => {
+const Ticket: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const navigation = useNavigation<NavigationProps>();
 
   const handlePress = () => {
     navigation.navigate('TicketScreen');
   };
+
+  useEffect(() => {}, [refreshTrigger]);
 
   return (
     <View style={styles.container}>

@@ -4,3 +4,6 @@ export type RootStackParamList = {
   ReserveRide: undefined;
   ScanQR: undefined
 };
+export interface RefreshTriggerProp {
+    refreshTrigger: number;
+  }

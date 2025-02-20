@@ -17,8 +17,9 @@ import {
 import {Dispatch, DispatchResponse} from '../../types/approved-dispatch';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
 import {PusherEvent} from '@pusher/pusher-websocket-react-native';
+import { RefreshTriggerProp } from '../../types/passenger-dashboard';
 
-const DispatchQueue: React.FC = () => {
+const DispatchQueue: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const [dispatches, setDispatches] = useState<Dispatch[]>([]);
   const [noUpcomingQueue, setNoUpcomingQueue] = useState<boolean>(false);
   const [minutesLeft, setMinutesLeft] = useState<{[id: number]: number}>({});
@@ -92,7 +93,7 @@ const DispatchQueue: React.FC = () => {
       console.log('Unsubscribing from Pusher...');
       unsubscribeFromChannel('dispatches', handleEvent);
     };
-  }, []);
+  }, [refreshTrigger]);
 
   useEffect(() => {
     const interval = setInterval(() => {

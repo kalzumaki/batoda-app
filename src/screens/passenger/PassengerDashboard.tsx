@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
-import Toast from 'react-native-toast-message';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import HeaderMain from '../../components/passenger/HeaderCard';
@@ -17,6 +16,7 @@ const PassengerDashboard: React.FC = () => {
   const navigation = useNavigation<NavigationProps>();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0); // Force re-fetch
 
   const checkAuth = async () => {
     const token = await AsyncStorage.getItem('userToken');
@@ -34,7 +34,8 @@ const PassengerDashboard: React.FC = () => {
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await checkAuth(); // Recheck authentication on refresh
+    await checkAuth(); // Ensure user authentication is refreshed
+    setRefreshTrigger(prev => prev + 1); // Force child components to re-fetch
     setRefreshing(false);
   }, []);
 
@@ -43,11 +44,11 @@ const PassengerDashboard: React.FC = () => {
   }
 
   const renderItems = [
-    { id: 'header', component: <HeaderMain /> },
-    { id: 'load', component: <PassengerLoad /> },
-    { id: 'ticket', component: <Ticket /> },
-    { id: 'queue', component: <QueueInfo /> },
-    { id: 'floatnav', component: <FloatingNavigation /> },
+    { id: 'header', component: <HeaderMain refreshTrigger={refreshTrigger} /> },
+    { id: 'load', component: <PassengerLoad refreshTrigger={refreshTrigger} /> },
+    { id: 'ticket', component: <Ticket refreshTrigger={refreshTrigger} /> },
+    { id: 'queue', component: <QueueInfo refreshTrigger={refreshTrigger} /> },
+    { id: 'floatnav', component: <FloatingNavigation refreshTrigger={refreshTrigger} /> },
   ];
 
   const renderItem = ({
