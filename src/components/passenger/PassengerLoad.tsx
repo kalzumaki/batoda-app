@@ -1,254 +1,264 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
   Image,
   StyleSheet,
   TouchableOpacity,
-  Modal,
   Switch,
+  Alert,
 } from 'react-native';
-import { get } from '../../utils/proxy';
+import {get, post} from '../../utils/proxy';
 import {
   initPusher,
   subscribeToChannel,
   unsubscribeFromChannel,
 } from '../../pusher/pusher';
-import { DispatchResponse } from '../../types/approved-dispatch';
-import { API_ENDPOINTS } from '../../api/api-endpoints';
-import { PusherEvent } from '@pusher/pusher-websocket-react-native';
+import {DispatchResponse} from '../../types/approved-dispatch';
+import {API_ENDPOINTS} from '../../api/api-endpoints';
+import {PusherEvent} from '@pusher/pusher-websocket-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const MAX_PASSENGERS = 6;
-
-
-const SEAT_NAMES = {
-  front_small_1: 'Front Small Seat 1',
-  front_small_2: 'Front Small Seat 2',
-  front_big_2: 'Front Big Seat 2',
-  front_big_1: 'Front Big Seat 1',
-  back_small_2: 'Back Small Seat 2',
-  back_small_1: 'Back Small Seat 1',
-};
-
-type SeatKey = keyof typeof SEAT_NAMES;
-
-const SEAT_POSITIONS: SeatKey[] = [
-  'front_small_1',
-  'front_small_2',
-  'front_big_2',
-  'front_big_1',
-  'back_small_2',
-  'back_small_1',
+const SEAT_POSITIONS = [
+  ['back_small_1', 'front_small_1', 'front_small_2'],
+  ['back_small_2', 'front_big_1', 'front_big_2'],
 ];
+const formatSeatName = (seat: string) => {
+  return seat
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
 
 const ApprovedDispatches: React.FC = () => {
   const [passengerCount, setPassengerCount] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [multiSelectEnabled, setMultiSelectEnabled] = useState(false);
-  const [selectedSeats, setSelectedSeats] = useState<SeatKey[]>([]);
-  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+  const [reservedSeats, setReservedSeats] = useState<string[]>([]);
+  const [dispatchId, setDispatchId] = useState<number | null>(null);
 
   const fetchPassengerCount = async () => {
     try {
-      console.log('Fetching Passenger Count:');
       const data: DispatchResponse = await get(API_ENDPOINTS.PASSENGER_COUNT);
-      console.log('Fetched Data:', JSON.stringify(data));
-
-      if (data.dispatches && data.dispatches.length > 0) {
+      if (data.dispatches?.length > 0) {
         setPassengerCount(data.dispatches[0].passenger_count);
-        setError(null);
       } else {
         setPassengerCount(0);
-        console.log('No approved dispatches found.');
       }
+      setError(null);
     } catch (err) {
-      console.error('Error fetching passenger count:', err);
-      setError('Failed to fetch passenger count data.');
+      setError('Failed to fetch passenger count.');
     }
   };
 
   useEffect(() => {
     fetchPassengerCount();
-
     const handleEvent = (event: PusherEvent) => {
-      console.log('Event received:', event);
-      if (
-        event.eventName === 'DispatchUpdated' ||
-        event.eventName === 'DispatchFinalized'
-      ) {
-        console.log('Refreshing data due to event...');
+      if (['DispatchUpdated', 'DispatchFinalized'].includes(event.eventName)) {
         fetchPassengerCount();
       }
     };
-
-    const subscribeToDispatches = async () => {
-      await initPusher();
-      await subscribeToChannel('dispatches', handleEvent);
-    };
-
-    subscribeToDispatches();
-
-    return () => {
-      console.log('Cleaning up Pusher subscription...');
-      unsubscribeFromChannel('dispatches', handleEvent);
-    };
+    initPusher().then(() => subscribeToChannel('dispatches', handleEvent));
+    return () => unsubscribeFromChannel('dispatches', handleEvent);
   }, []);
 
-  const toggleSeatSelection = (seat: SeatKey) => {
-    if (multiSelectEnabled) {
-      setSelectedSeats(prevSelected =>
-        prevSelected.includes(seat)
-          ? prevSelected.filter(s => s !== seat)
-          : [...prevSelected, seat],
-      );
+  const toggleSeatSelection = (seat: string) => {
+    if (reservedSeats.includes(seat)) return; // Prevent selecting reserved seats
+    setSelectedSeats(prev =>
+      multiSelectEnabled
+        ? prev.includes(seat)
+          ? prev.filter(s => s !== seat)
+          : [...prev, seat]
+        : [seat],
+    );
+  };
+
+  const fetchApprovedSeats = async () => {
+    try {
+      const response = await get(API_ENDPOINTS.DISPLAY_APPROVED_SEATS);
+
+      if (response.status) {
+        console.log('Approved seats response:', response.dispatches);
+
+        // Extract all reserved seat positions
+        const reserved = response.dispatches.flatMap(
+          (dispatch: any) => dispatch.seat_position || [],
+        );
+
+        setReservedSeats(reserved);
+        await AsyncStorage.setItem('reservedSeats', JSON.stringify(reserved));
+
+        // Get the first dispatch_id
+        if (response.dispatches.length > 0) {
+          setDispatchId(response.dispatches[0].id);
+        }
+      } else {
+        console.warn('No approved seats available.');
+      }
+    } catch (error) {
+      console.error('Error fetching approved seats:', error);
+    }
+  };
+  const loadReservedSeats = async () => {
+    const storedSeats = await AsyncStorage.getItem('reservedSeats');
+    if (storedSeats) {
+      setReservedSeats(JSON.parse(storedSeats));
     }
   };
 
-  const resetSelection = () => {
-    setSelectedSeats([]);
-  };
+  useEffect(() => {
+    loadReservedSeats();
+    fetchApprovedSeats();
+  }, []);
 
-  const confirmSelection = () => {
-    console.log('Selected Seats:', selectedSeats);
-    setModalVisible(false);
-  };
+  // Confirm reservation using fetched dispatch_id
+  const confirmReservation = async () => {
+    if (selectedSeats.length === 0 || !dispatchId) return;
 
-  const passengers = SEAT_POSITIONS.map(seat => (
-    <TouchableOpacity
-      key={seat}
-      style={[
-        styles.iconContainer,
-        selectedSeats.includes(seat) ? styles.selected : styles.empty,
-      ]}
-      onPress={() => toggleSeatSelection(seat)}>
-      <Image source={require('../../assets/2.png')} style={styles.icon} />
-      <Text style={styles.seatLabel}>{SEAT_NAMES[seat]}</Text>
-    </TouchableOpacity>
-  ));
+    try {
+      const payload = {
+        dispatch_id: dispatchId, // Automatically retrieved from the backend
+        seat_position: selectedSeats,
+      };
+
+      console.log('Sending reservation payload:', payload);
+      const response = await post(API_ENDPOINTS.RESERVE_SEAT, payload, true);
+
+      if (response.status) {
+        setReservedSeats(response.reserved_seats);
+        setSelectedSeats([]);
+        Alert.alert('Success', response.message);
+      } else {
+        Alert.alert('Error', 'Reservation failed.');
+      }
+    } catch (error) {
+      console.error('Reservation error:', error);
+      Alert.alert('Error', 'Failed to reserve seats.');
+    }
+  };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Approved Dispatches</Text>
+      <Text style={styles.title}>Seat Reservation</Text>
 
-      {/* Multi-Selection Toggle */}
-      <View style={styles.multiSelectToggle}>
-        <Text style={styles.toggleLabel}>Enable Multi-Selection</Text>
-        <Switch
-          value={multiSelectEnabled}
-          onValueChange={value => {
-            setMultiSelectEnabled(value);
-            if (!value) resetSelection(); // Reset selection if disabled
-          }}
-        />
-      </View>
-
-      {/* Seats Display */}
-      <View style={styles.passengerIcons}>{passengers}</View>
-
-      {/* Modal for Seat Selection */}
-      <Modal visible={modalVisible} animationType="slide">
-        <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Select Seats</Text>
-          <View style={styles.passengerIcons}>{passengers}</View>
-
-          {multiSelectEnabled && selectedSeats.length > 0 && (
-            <TouchableOpacity
-              style={styles.confirmButton}
-              onPress={confirmSelection}>
-              <Text style={styles.confirmButtonText}>Confirm Selection</Text>
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => setModalVisible(false)}>
-            <Text style={styles.closeButtonText}>Close</Text>
-          </TouchableOpacity>
+      {/* Card Background */}
+      <View style={styles.card}>
+        <View style={styles.toggleContainer}>
+          <Text style={styles.toggleLabel}>Multi-Select</Text>
+          <Switch
+            value={multiSelectEnabled}
+            onValueChange={value => {
+              setMultiSelectEnabled(value);
+              if (!value) setSelectedSeats([]);
+            }}
+          />
         </View>
-      </Modal>
+
+        <View style={styles.seatGrid}>
+          {SEAT_POSITIONS.map((row, rowIndex) => (
+            <View key={rowIndex} style={styles.row}>
+              {row.map((seat: string) => {
+                const isReserved = reservedSeats.includes(seat);
+                const isSelected = selectedSeats.includes(seat);
+
+                return (
+                  <TouchableOpacity
+                    key={seat}
+                    style={[
+                      styles.seat,
+                      isReserved
+                        ? styles.reserved
+                        : isSelected
+                        ? styles.selected
+                        : null,
+                    ]}
+                    onPress={() => toggleSeatSelection(seat)}
+                    disabled={isReserved}>
+                    <Image
+                      source={require('../../assets/2.png')}
+                      style={styles.icon}
+                    />
+                    <Text style={styles.seatLabel}>{formatSeatName(seat)}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ))}
+        </View>
+
+        {/* Confirm Reservation Button (Shown Only When a Seat is Selected) */}
+        {selectedSeats.length > 0 && (
+          <TouchableOpacity
+            style={styles.confirmButton}
+            onPress={confirmReservation}>
+            <Text style={styles.confirmButtonText}>Confirm Reservation</Text>
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    backgroundColor: '#ffffff',
-    flex: 1,
-  },
+  container: {flex: 1, padding: 20, backgroundColor: '#fff'},
   title: {
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
     color: 'black',
-    marginBottom: 10,
+    marginBottom: 20,
   },
-  multiSelectToggle: {
+  card: {
+    backgroundColor: '#f8f8f8',
+    borderRadius: 12,
+    padding: 15,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+  },
+  toggleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
-  },
-  toggleLabel: {
-    fontSize: 14,
-    color: '#000',
-    marginRight: 10,
-  },
-  passengerIcons: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: 15,
   },
-  iconContainer: {
+  toggleLabel: {fontSize: 14, marginRight: 10, color: 'black'},
+  seatGrid: {
+    alignItems: 'center',
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  seat: {
+    width: 90,
+    height: 90,
     margin: 5,
     alignItems: 'center',
-    borderRadius: 5,
+    justifyContent: 'center',
     padding: 10,
+    borderRadius: 10,
+    backgroundColor: '#e0e0e0',
   },
-  empty: {
-    backgroundColor: '#c6d9d7',
-  },
-  selected: {
-    backgroundColor: '#f0ad4e',
-  },
-  icon: {
-    width: 40,
-    height: 40,
-  },
-  seatLabel: {
-    marginTop: 5,
-    fontSize: 12,
-    color: '#000',
-  },
-  modalContainer: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: '#ffffff',
-  },
-  modalTitle: {
-    fontSize: 18,
-    color: 'black',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
+  selected: {backgroundColor: '#62a287'},
+  reserved: {backgroundColor: '#a3a3a3'},
+  icon: {width: 40, height: 40, resizeMode: 'contain'},
+  seatLabel: {marginTop: 5, fontSize: 12, textAlign: 'center'},
   confirmButton: {
-    backgroundColor: '#62a287',
-    padding: 10,
-    borderRadius: 5,
+    backgroundColor: '#4CAF50',
+    padding: 12,
+    borderRadius: 10,
+    marginTop: 20,
     alignItems: 'center',
-    marginBottom: 10,
   },
   confirmButtonText: {
     color: '#fff',
-    fontSize: 14,
-  },
-  closeButton: {
-    backgroundColor: '#d9534f',
-    padding: 10,
-    borderRadius: 5,
-    alignItems: 'center',
-  },
-  closeButtonText: {
-    color: '#fff',
-    fontSize: 14,
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
