@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, FlatList } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -11,26 +11,32 @@ import { RootStackParamList } from '../../types/passenger-dashboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import FloatingNavigation from '../../components/passenger/FloatingNav';
 
-
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
 const PassengerDashboard: React.FC = () => {
   const navigation = useNavigation<NavigationProps>();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  const checkAuth = async () => {
+    const token = await AsyncStorage.getItem('userToken');
+    console.log('User Token: ', token);
+    if (token) {
+      setIsAuthenticated(true);
+    } else {
+      navigation.replace('Login');
+    }
+  };
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const token = await AsyncStorage.getItem('userToken');
-      console.log('User Token: ', token);
-      if (token) {
-        setIsAuthenticated(true);
-      } else {
-        navigation.replace('Login');
-      }
-    };
-
     checkAuth();
   }, [navigation]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await checkAuth(); // Recheck authentication on refresh
+    setRefreshing(false);
+  }, []);
 
   if (!isAuthenticated) {
     return null;
@@ -52,15 +58,15 @@ const PassengerDashboard: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* The Dropdown Component with Logout */}
-
-
       <FlatList
         data={renderItems}
         keyExtractor={item => item.id}
         renderItem={renderItem}
         contentContainerStyle={styles.contentContainer}
         scrollEnabled={true}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
       />
     </View>
   );
