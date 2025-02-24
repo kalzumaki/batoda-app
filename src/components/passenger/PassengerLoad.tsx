@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -18,9 +18,7 @@ import {DispatchResponse} from '../../types/approved-dispatch';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
 import {PusherEvent} from '@pusher/pusher-websocket-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { RefreshTriggerProp } from '../../types/passenger-dashboard';
-
-
+import {RefreshTriggerProp} from '../../types/passenger-dashboard';
 
 const SEAT_POSITIONS = [
   ['back_small_1', 'front_small_1', 'front_small_2'],
@@ -40,6 +38,8 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [reservedSeats, setReservedSeats] = useState<string[]>([]);
   const [dispatchId, setDispatchId] = useState<number | null>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchPassengerCount = async () => {
     try {
@@ -83,28 +83,85 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
         : [seat],
     );
   };
+  const fetchReservedSeats = async () => {
+    try {
+      if (!dispatchId) return; // Ensure dispatchId exists before fetching
+
+      const response = await get(
+        `${API_ENDPOINTS.DISPLAY_SEATS}?dispatch_id=${dispatchId}`,
+      );
+
+      if (response.status) {
+        const reserved = response.reserved_seats.map(
+          (seat: {seat_position: string}) => seat.seat_position,
+        );
+        setReservedSeats(reserved);
+        await AsyncStorage.setItem('reservedSeats', JSON.stringify(reserved));
+      }
+    } catch (error) {
+      console.error('Error fetching reserved seats:', error);
+    }
+  };
+  useEffect(() => {
+    if (dispatchId) {
+      fetchReservedSeats();
+    }
+  }, [dispatchId]);
+
+  const startCountdown = () => {
+    setCountdown(120); // Set 2 minutes (120 seconds)
+
+    countdownRef.current = setInterval(() => {
+      setCountdown(prev => {
+        if (prev !== null && prev > 0) {
+          return prev - 1;
+        } else {
+          clearInterval(countdownRef.current!);
+          return null;
+        }
+      });
+    }, 1000);
+  };
 
   const confirmReservation = async () => {
     if (selectedSeats.length === 0 || !dispatchId) return;
-    try {
-      const response = await post(
-        API_ENDPOINTS.RESERVE_SEAT,
+
+    Alert.alert(
+      'Confirm Reservation',
+      'Complete the payment within 2 minutes, or your reservation will be canceled automatically.',
+      [
         {
-          dispatch_id: dispatchId,
-          seat_position: selectedSeats,
+          text: 'Cancel',
+          style: 'cancel',
         },
-        true,
-      );
-      if (response.status) {
-        setReservedSeats(response.reserved_seats);
-        setSelectedSeats([]);
-        Alert.alert('Success', response.message);
-      } else {
-        Alert.alert('Error', 'Reservation failed.');
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to reserve seats.');
-    }
+        {
+          text: 'Proceed',
+          onPress: async () => {
+            try {
+              const response = await post(
+                API_ENDPOINTS.RESERVE_SEAT,
+                {
+                  dispatch_id: dispatchId,
+                  seat_position: selectedSeats,
+                },
+                true,
+              );
+
+              if (response.status) {
+                setReservedSeats(response.reserved_seats);
+                setSelectedSeats([]);
+                Alert.alert('Success', response.message);
+                startCountdown(); // Start the countdown timer
+              } else {
+                Alert.alert('Error', 'Reservation failed.');
+              }
+            } catch (error) {
+              Alert.alert('Error', 'Failed to reserve seats.');
+            }
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -120,6 +177,14 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
               if (!value) setSelectedSeats([]);
             }}
           />
+        </View>
+        <View>
+          {countdown !== null && (
+            <Text style={{fontSize: 16, fontWeight: 'bold', color: 'red'}}>
+              Payment expires in: {Math.floor(countdown / 60)}:
+              {(countdown % 60).toString().padStart(2, '0')}
+            </Text>
+          )}
         </View>
         <View style={styles.seatGrid}>
           {SEAT_POSITIONS.map((row, rowIndex) => (
