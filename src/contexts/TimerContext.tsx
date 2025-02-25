@@ -33,37 +33,30 @@ import React, {
     };
 
     useEffect(() => {
-      const updateTimeLeft = () => {
-        if (!dispatcherResponseTime || !scheduledTime) {
-          setTimeLeft(null);
-          return;
-        }
+        const updateTimeLeft = () => {
+            if (!dispatcherResponseTime || !scheduledTime) {
+              setTimeLeft(null);
+              return;
+            }
 
-        const responseDate = new Date(dispatcherResponseTime);
-        const scheduledDate = new Date(scheduledTime);
+            // Convert backend timestamps to Date objects
+            const scheduledDate = new Date(scheduledTime);
 
-        // Ensure scheduled time is exactly 10 minutes after response time
-        const expectedScheduledTime = new Date(responseDate.getTime() + 10 * 60000);
+            // Get time remaining from now
+            const now = new Date();
+            const diffInSeconds = Math.floor((scheduledDate.getTime() - now.getTime()) / 1000);
 
-        // If the scheduled time differs, use the backend-specified one
-        if (expectedScheduledTime.getTime() !== scheduledDate.getTime()) {
-          console.warn("Scheduled time does not match expected 10 minutes after response time.");
-        }
+            if (diffInSeconds > 0) {
+              setTimeLeft(diffInSeconds);
+            } else {
+              setTimeLeft(0);
+              if (timerInterval.current) {
+                clearInterval(timerInterval.current);
+                timerInterval.current = null;
+              }
+            }
+          };
 
-        // Get the time remaining from the current time (use scheduled dispatch time)
-        const now = new Date();
-        const diffInSeconds = Math.floor((scheduledDate.getTime() - now.getTime()) / 1000);
-
-        if (diffInSeconds > 0) {
-          setTimeLeft(diffInSeconds);
-        } else {
-          setTimeLeft(0);
-          if (timerInterval.current) {
-            clearInterval(timerInterval.current);
-            timerInterval.current = null;
-          }
-        }
-      };
 
       updateTimeLeft();
 

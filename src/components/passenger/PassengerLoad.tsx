@@ -74,15 +74,19 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   }, [refreshTrigger]);
 
   const toggleSeatSelection = (seat: string) => {
-    if (reservedSeats.includes(seat)) return;
-    setSelectedSeats(prev =>
-      multiSelectEnabled
-        ? prev.includes(seat)
-          ? prev.filter(s => s !== seat)
-          : [...prev, seat]
-        : [seat],
-    );
+    if (reservedSeats.includes(seat)) return; // Prevent selecting reserved seats
+
+    setSelectedSeats(prevSeats => {
+      if (multiSelectEnabled) {
+        return prevSeats.includes(seat)
+          ? prevSeats.filter(s => s !== seat)
+          : [...prevSeats, seat];
+      } else {
+        return prevSeats.includes(seat) ? [] : [seat]; // Only allow one selection
+      }
+    });
   };
+
   const fetchReservedSeats = async () => {
     try {
       if (!dispatchId) return; // Ensure dispatchId exists before fetching
@@ -109,8 +113,9 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   }, [dispatchId]);
 
   const startCountdown = () => {
-    setCountdown(120); // Set 2 minutes (120 seconds)
+    if (countdownRef.current) clearInterval(countdownRef.current); // Prevent multiple timers
 
+    setCountdown(120);
     countdownRef.current = setInterval(() => {
       setCountdown(prev => {
         if (prev !== null && prev > 0) {
@@ -148,7 +153,11 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
               );
 
               if (response.status) {
-                setReservedSeats(response.reserved_seats);
+                // Merge newly reserved seats with the existing ones
+                setReservedSeats(prevSeats => [
+                  ...new Set([...prevSeats, ...response.reserved_seats]),
+                ]);
+
                 setSelectedSeats([]);
                 Alert.alert('Success', response.message);
                 startCountdown(); // Start the countdown timer
@@ -163,6 +172,7 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
       ],
     );
   };
+
 
   return (
     <View style={styles.container}>
