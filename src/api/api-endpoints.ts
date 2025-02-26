@@ -10,5 +10,6 @@ export const API_ENDPOINTS = {
     RESERVE_SEAT: '/dispatches/ride',
     DISPLAY_SEATS: '/dispatch/reserved-seats',
     DISPLAY_APPROVED_SEATS: '/dispatch/approved-seats',
+    DISPLAY_TICKET:'/approved-tickets',
 
 }
