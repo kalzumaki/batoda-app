@@ -12,6 +12,7 @@ import {useNavigation} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {get} from '../../utils/proxy';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
+import {Ticket} from '../../types/ticket';
 
 const TicketScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -22,12 +23,30 @@ const TicketScreen: React.FC = () => {
 
   const fetchTicket = async () => {
     try {
-      const response = await get(API_ENDPOINTS.DISPLAY_TICKET);
-      if (response.status) {
-        setTicket(response.ticket);
-        console.log('Fetched Ticket Data:', response.ticket);
+      const ticketResponse = await get(API_ENDPOINTS.DISPLAY_TICKET);
 
+      if (ticketResponse.status) {
+        const fetchedTicket: Ticket = ticketResponse.ticket;
+        setTicket(fetchedTicket);
         setError(null);
+
+        // Fetch ticket price
+        const ticketId = fetchedTicket.id;
+        const priceEndpoint = API_ENDPOINTS.DISPLAY_QUANTITY_AMOUNT.replace(
+          '{id}',
+          ticketId,
+        );
+        const priceResponse = await get(priceEndpoint);
+
+        if (priceResponse.status) {
+          setTicket((prevTicket: any) =>
+            prevTicket
+              ? {...prevTicket, total_price: priceResponse.total_price}
+              : prevTicket,
+          );
+        } else {
+          setError('Failed to fetch ticket price');
+        }
       } else {
         setError('Failed to fetch ticket details');
       }
@@ -133,12 +152,16 @@ const TicketScreen: React.FC = () => {
             </View>
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Total Amount</Text>
-              <Text style={styles.detailValue}>₱20.00</Text>
+              <Text style={styles.detailValue}>
+                ₱{ticket.total_price ? ticket.total_price.toFixed(2) : '0.00'}
+              </Text>
             </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Total Payment Sent</Text>
-              <Text style={styles.detailValue}>₱20.00</Text>
-            </View>
+            {ticket?.status === 'reserved' && (
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Total Payment Sent</Text>
+                <Text style={styles.detailValue}>₱20.00</Text>
+              </View>
+            )}
           </View>
 
           {/* Reference Number and Date */}
