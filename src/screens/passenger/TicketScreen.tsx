@@ -159,7 +159,9 @@ const TicketScreen: React.FC = () => {
             {ticket?.status === 'reserved' && (
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Total Payment Sent</Text>
-                <Text style={styles.detailValue}>₱20.00</Text>
+                <Text style={styles.detailValue}>
+                  ₱{ticket.total_price ? ticket.total_price.toFixed(2) : '0.00'}
+                </Text>
               </View>
             )}
           </View>
