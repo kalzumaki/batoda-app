@@ -14,5 +14,6 @@ export const API_ENDPOINTS = {
     DISPLAY_RECEIPT:'/transaction-receipt',
     DISPLAY_TRANSACTION_AMOUNT:'/transaction/ticket/{id}',
     DISPLAY_QUANTITY_AMOUNT: '/ticket/price/{id}',
+    PAY_SEATS: '/transaction/reserve',
 
 }

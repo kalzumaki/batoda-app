@@ -7,10 +7,11 @@ import {
   ActivityIndicator,
   ScrollView,
   RefreshControl,
+  Alert,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import {get} from '../../utils/proxy';
+import {get, post} from '../../utils/proxy';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
 import {Ticket} from '../../types/ticket';
 
@@ -20,6 +21,7 @@ const TicketScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [buttonLoading, setButtonLoading] = useState(false);
 
   const fetchTicket = async () => {
     try {
@@ -66,6 +68,67 @@ const TicketScreen: React.FC = () => {
     setRefreshing(true);
     fetchTicket();
   }, []);
+  const handlePayNow = async () => {
+    try {
+      setButtonLoading(true);
+      await processPayment();
+    } finally {
+      setButtonLoading(false); // Hide button loading after process
+    }
+  };
+  const processPayment = async () => {
+    if (!ticket || !ticket.dispatch_id) {
+      Alert.alert('Error', 'No dispatch ID found.');
+      return;
+    }
+
+    Alert.alert(
+      'Confirm Payment',
+      'Are you sure you want to proceed with this payment?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Confirm',
+          onPress: async () => {
+            setLoading(true);
+            try {
+              const response = await post(
+                API_ENDPOINTS.PAY_SEATS,
+                {dispatch_id: ticket.dispatch_id},
+                true,
+              );
+
+              if (response.status) {
+                Alert.alert('Success', 'Seat paid successfully!', [
+                  {text: 'OK', onPress: () => setRefreshing(prev => !prev)},
+                ]);
+              } else {
+                Alert.alert('Error', 'Failed to pay the seat.');
+              }
+            } catch (error) {
+              console.error('Failed to reserve seat:', error);
+              Alert.alert(
+                'Error',
+                'An error occurred while reserving the seat.',
+              );
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      // Reload ticket details or fetch latest data
+      fetchTicket();
+    }, [refreshing]),
+  );
 
   if (loading) {
     return (
@@ -76,111 +139,131 @@ const TicketScreen: React.FC = () => {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }>
-      {/* Header with Back Button */}
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => navigation.goBack()}>
-        <Icon name="arrow-back" size={24} color="black" />
-      </TouchableOpacity>
+    <View style={styles.container}>
+      <ScrollView
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }>
+        {/* Header with Back Button */}
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}>
+          <Icon name="arrow-back" size={24} color="black" />
+        </TouchableOpacity>
 
-      {error || !ticket ? (
-        <View style={styles.ticketContainer}>
-          <Text style={styles.errorText}>{error || 'No ticket found'}</Text>
-        </View>
-      ) : (
-        <View style={styles.ticketContainer}>
-          <Icon
-            name={
-              ticket.status === 'reserved'
-                ? 'check-circle'
-                : ticket.status === 'cancelled'
-                ? 'cancel'
-                : 'error'
-            }
-            size={50}
-            color={
-              ticket.status === 'reserved'
-                ? 'green'
-                : ticket.status === 'cancelled'
-                ? 'red'
-                : 'orange'
-            }
-            style={styles.icon}
-          />
-          <Text
-            style={[
-              styles.statusText,
-              {
-                color:
-                  ticket.status === 'reserved'
-                    ? 'green'
-                    : ticket.status === 'cancelled'
-                    ? 'red'
-                    : 'orange',
-              },
-            ]}>
-            {ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
-          </Text>
-          <Text style={styles.subText}>
-            Your reservation status is {ticket.status}!
-          </Text>
+        {error || !ticket ? (
+          <View style={styles.ticketContainer}>
+            <Text style={styles.errorText}>{error || 'No ticket found'}</Text>
+          </View>
+        ) : (
+          <View style={styles.ticketContainer}>
+            {/* Ticket Content */}
+            <Icon
+              name={
+                ticket.status === 'reserved'
+                  ? 'check-circle'
+                  : ticket.status === 'cancelled'
+                  ? 'cancel'
+                  : 'error'
+              }
+              size={50}
+              color={
+                ticket.status === 'reserved'
+                  ? 'green'
+                  : ticket.status === 'cancelled'
+                  ? 'red'
+                  : 'orange'
+              }
+              style={styles.icon}
+            />
+            <Text
+              style={[
+                styles.statusText,
+                {
+                  color:
+                    ticket.status === 'reserved'
+                      ? 'green'
+                      : ticket.status === 'cancelled'
+                      ? 'red'
+                      : 'orange',
+                },
+              ]}>
+              {ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
+            </Text>
+            <Text style={styles.subText}>
+              Your reservation status is {ticket.status}!
+            </Text>
 
-          {/* Ticket Number */}
-          <Text style={styles.ticketLabel}>Your Ticket Number is</Text>
-          <Text style={styles.ticketNumber}>{ticket.ticket_number}</Text>
+            {/* Ticket Number */}
+            <Text style={styles.ticketLabel}>Your Ticket Number is</Text>
+            <Text style={styles.ticketNumber}>{ticket.ticket_number}</Text>
 
-          {/* Ticket Details */}
-          <View style={styles.detailsContainer}>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Dispatch ID:</Text>
-              <Text style={styles.detailValue}>{ticket.dispatch_id}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Tricycle No.</Text>
-              <Text style={styles.detailValue}>{ticket.tricycle_number}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Number of seats avail</Text>
-              <Text style={styles.detailValue}>
-                {ticket.number_of_seats_avail}
-              </Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Total Amount</Text>
-              <Text style={styles.detailValue}>
-                ₱{ticket.total_price ? ticket.total_price.toFixed(2) : '0.00'}
-              </Text>
-            </View>
-            {ticket?.status === 'reserved' && (
+            {/* Ticket Details */}
+            <View style={styles.detailsContainer}>
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Total Payment Sent</Text>
+                <Text style={styles.detailLabel}>Tricycle No.</Text>
+                <Text style={styles.detailValue}>{ticket.tricycle_number}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Number of seats avail</Text>
+                <Text style={styles.detailValue}>
+                  {ticket.number_of_seats_avail}
+                </Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Total Amount To Pay</Text>
                 <Text style={styles.detailValue}>
                   ₱{ticket.total_price ? ticket.total_price.toFixed(2) : '0.00'}
                 </Text>
               </View>
-            )}
-          </View>
+              {ticket?.status === 'reserved' && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Total Payment Sent</Text>
+                  <Text style={styles.detailValue}>
+                    ₱
+                    {ticket.total_price
+                      ? ticket.total_price.toFixed(2)
+                      : '0.00'}
+                  </Text>
+                </View>
+              )}
+            </View>
 
-          {/* Reference Number and Date */}
-          <View style={styles.footer}>
-            <Text style={styles.refNumber}>Ref No: {ticket.reference_no}</Text>
-            <Text style={styles.dateText}>
-              {new Date(ticket.created_at).toLocaleString()}
-            </Text>
+            {/* Reference Number and Date */}
+            <View style={styles.footer}>
+              <Text style={styles.refNumber}>
+                Ref No: {ticket.reference_no}
+              </Text>
+              <Text style={styles.dateText}>
+                {new Date(ticket.created_at).toLocaleString()}
+              </Text>
+            </View>
           </View>
-
-          {/* Download Button */}
+        )}
+        {/* Buttons Container - Positioned Outside */}
+      </ScrollView>
+      <View style={styles.buttonContainer}>
+        {/* Download Button - Bottom Left */}
+        {ticket?.status === 'reserved' && (
           <TouchableOpacity style={styles.downloadButton}>
             <Icon name="file-download" size={24} color="green" />
           </TouchableOpacity>
-        </View>
-      )}
-    </ScrollView>
+        )}
+
+        {/* Pay Here Button - Bottom Center */}
+        {ticket?.status === 'unpaid' && (
+          <TouchableOpacity
+            style={styles.payButton}
+            onPress={handlePayNow}
+            disabled={buttonLoading} // Only this button is disabled when loading
+          >
+            <Text style={styles.payButtonText}>
+              {buttonLoading ? 'Processing...' : 'Pay Here'}
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
   );
 };
 
@@ -257,10 +340,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: 'gray',
   },
-  downloadButton: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
+  //   downloadButton: {
+  //     marginTop: 20,
+  //     alignItems: 'center',
+  //   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -269,6 +352,56 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 16,
     color: 'red',
+  },
+  scrollViewContainer: {
+    flexGrow: 1,
+    justifyContent: 'space-between', // Pushes the button to the bottom
+    paddingBottom: 100, // Ensures space for the buttons
+  },
+
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'absolute',
+    bottom: 20, // Ensures buttons stay above the bottom edge
+    left: 0,
+    right: 0,
+    paddingVertical: 10,
+  },
+
+  downloadButton: {
+    position: 'absolute',
+    left: 20,
+    backgroundColor: '#f0f0f0',
+    padding: 12,
+    borderRadius: 50,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+
+  payButton: {
+    backgroundColor: 'green',
+    // marginTop: 50,
+    marginLeft: 180,
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 30,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+
+  payButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textTransform: 'capitalize',
   },
 });
 
