@@ -82,45 +82,69 @@ const TicketScreen: React.FC = () => {
       return;
     }
 
-    Alert.alert(
-      'Confirm Payment',
-      'Are you sure you want to proceed with this payment?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Confirm',
-          onPress: async () => {
-            setLoading(true);
-            try {
-              const response = await post(
-                API_ENDPOINTS.PAY_SEATS,
-                {dispatch_id: ticket.dispatch_id},
-                true,
-              );
+    try {
+      // Fetch the user's e-wallet balance
+      const walletResponse = await get(API_ENDPOINTS.SHOW_EWALLET);
 
-              if (response.status) {
-                Alert.alert('Success', 'Seat paid successfully!', [
-                  {text: 'OK', onPress: () => setRefreshing(prev => !prev)},
-                ]);
-              } else {
-                Alert.alert('Error', 'Failed to pay the seat.');
-              }
-            } catch (error) {
-              console.error('Failed to reserve seat:', error);
-              Alert.alert(
-                'Error',
-                'An error occurred while reserving the seat.',
-              );
-            } finally {
-              setLoading(false);
-            }
+      if (!walletResponse.status) {
+        Alert.alert('Error', 'Failed to retrieve wallet details.');
+        return;
+      }
+
+      const balance = parseFloat(walletResponse.data.balance); // Convert balance to number
+
+      if (balance < ticket.total_price) {
+        Alert.alert(
+          'Insufficient Balance',
+          `Your balance is ₱${balance}, but the ticket costs ₱${ticket.total_price}. Please top up.`,
+        );
+        return; // Stop the transaction if balance is insufficient
+      }
+
+      // Proceed with payment confirmation
+      Alert.alert(
+        'Confirm Payment',
+        'Are you sure you want to proceed with this payment?',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
           },
-        },
-      ],
-    );
+          {
+            text: 'Confirm',
+            onPress: async () => {
+              setLoading(true);
+              try {
+                const response = await post(
+                  API_ENDPOINTS.PAY_SEATS,
+                  {dispatch_id: ticket.dispatch_id},
+                  true,
+                );
+
+                if (response.status) {
+                  Alert.alert('Success', 'Seat paid successfully!', [
+                    {text: 'OK', onPress: () => setRefreshing(prev => !prev)},
+                  ]);
+                } else {
+                  Alert.alert('Error', 'Failed to pay the seat.');
+                }
+              } catch (error) {
+                console.error('Failed to reserve seat:', error);
+                Alert.alert(
+                  'Error',
+                  'An error occurred while reserving the seat.',
+                );
+              } finally {
+                setLoading(false);
+              }
+            },
+          },
+        ],
+      );
+    } catch (error) {
+      console.error('Error fetching wallet details:', error);
+      Alert.alert('Error', 'Failed to fetch wallet details.');
+    }
   };
 
   useFocusEffect(
@@ -200,6 +224,10 @@ const TicketScreen: React.FC = () => {
 
             {/* Ticket Details */}
             <View style={styles.detailsContainer}>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Dispatch ID:</Text>
+                <Text style={styles.detailValue}>{ticket.dispatch_id}</Text>
+              </View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Tricycle No.</Text>
                 <Text style={styles.detailValue}>{ticket.tricycle_number}</Text>
