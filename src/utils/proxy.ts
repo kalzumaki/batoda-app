@@ -1,17 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RequestConfig } from '../types/request-config';
+import { API_ENDPOINTS } from '../api/api-endpoints';
 //zrok api gateway
 //docker
 const API_BASE_URL = 'https://zna0brw6skqo.share.zrok.io/api';
 export const BASE_URL = 'https://zna0brw6skqo.share.zrok.io/';
-// const API_BASE_URL = 'https://l7c2ne9pitvh.share.zrok.io/api';
-
-//local
-// const API_BASE_URL = 'https://qml99zdqz3vc.share.zrok.io/api';
-
-//ngrok api gateway
-// const API_BASE_URL = 'https://cosmic-whippet-really.ngrok-free.app/api';
-// const API_BASE_URL = 'https://pig-positive-gorilla.ngrok-free.app/api';
 
 
 // Request from API
@@ -54,6 +47,29 @@ export const post = async (url: string, payload: any, needsAuth: boolean = false
     throw error;
   }
 };
+// POST w/o Payload
+export const postWithoutPayload = async (url: string, needsAuth: boolean = false) => {
+    try {
+      let token = null;
+
+      if (needsAuth) {
+        token = await AsyncStorage.getItem('userToken');
+      }
+
+      const config: RequestConfig = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: token ? `Bearer ${token}` : '',
+        },
+      };
+
+      return request(url, config);
+    } catch (error) {
+      console.error('Error making POST request (without payload):', error);
+      throw error;
+    }
+  };
 
 // GET
 export const get = async (url: string) => {
@@ -138,7 +154,7 @@ export const logout = async () => {
     };
 
     try {
-      const response = await request('/logout', config);
+      const response = await request(API_ENDPOINTS.LOGOUT, config);
       await AsyncStorage.removeItem('userToken');
       return response;
     } catch (error) {

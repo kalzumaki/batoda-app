@@ -1,6 +1,7 @@
 export const API_ENDPOINTS = {
     LOGIN: '/login',
     REGISTER: '/register',
+    LOGOUT: '/logout',
     APPROVED_DISPATCH: '/approved-dispatches',
     PASSENGER_COUNT: '/passenger-count',
     IN_QUEUE: '/in-queue',
@@ -16,5 +17,6 @@ export const API_ENDPOINTS = {
     DISPLAY_QUANTITY_AMOUNT: '/ticket/price/{id}',
     PAY_SEATS: '/transaction/reserve',
     SHOW_EWALLET: '/e-wallets',
+    REGISTER_EWALLET: '/e-wallet/register',
 
 }
