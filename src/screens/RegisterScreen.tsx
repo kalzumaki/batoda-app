@@ -45,7 +45,7 @@ const Register: React.FC = () => {
     address: '',
     birthday: '',
     gender: 'male',
-    user_type_id: null,
+    user_type_id: 8,
   });
   const [isRegistering, setIsRegistering] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);

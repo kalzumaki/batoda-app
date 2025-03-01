@@ -14,6 +14,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import {get, post} from '../../utils/proxy';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
 import {Ticket} from '../../types/ticket';
+import ReceiptDownloader from '../../components/passenger/ReceiptDownloader';
 
 const TicketScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -272,11 +273,7 @@ const TicketScreen: React.FC = () => {
       </ScrollView>
       <View style={styles.buttonContainer}>
         {/* Download Button - Bottom Left */}
-        {ticket?.status === 'reserved' && (
-          <TouchableOpacity style={styles.downloadButton}>
-            <Icon name="file-download" size={24} color="green" />
-          </TouchableOpacity>
-        )}
+        {ticket?.status === 'reserved' && <ReceiptDownloader dispatchId={ticket.dispatch_id} />}
 
         {/* Pay Here Button - Bottom Center */}
         {ticket?.status === 'unpaid' && (
