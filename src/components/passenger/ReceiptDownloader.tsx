@@ -41,6 +41,7 @@ const ReceiptDownloader: React.FC<ReceiptProps> = ({dispatchId}) => {
           ...receipt,
           date: transaction.date, // Separate date field
           time: transaction.time, // Separate time field
+          reference_no: transaction.reference_no,
         });
         setIsModalVisible(true); // ✅ Show modal after fetching receipt
       } else {
@@ -90,6 +91,10 @@ const ReceiptDownloader: React.FC<ReceiptProps> = ({dispatchId}) => {
 
           {receiptData ? (
             <View style={styles.receiptContainer}>
+              <Text style={styles.receiptText}>
+                <Text style={styles.text}>Transaction No:</Text>{' '}
+                {receiptData.reference_no}
+              </Text>
               <Text style={styles.receiptText}>
                 <Text style={styles.text}>Date: </Text>
                 <Text>
