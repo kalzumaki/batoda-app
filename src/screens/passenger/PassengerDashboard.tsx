@@ -28,7 +28,6 @@ const PassengerDashboard: React.FC = () => {
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
 
-
   const checkAuth = async () => {
     setLoading(true);
     const token = await AsyncStorage.getItem('userToken');
@@ -150,21 +149,31 @@ const PassengerDashboard: React.FC = () => {
   return (
     <View style={styles.container}>
       {loading ? (
-        // Show skeleton loader when loading
         <View style={styles.loaderContainer}>
           <ActivityIndicator size="large" color="#007bff" />
         </View>
       ) : (
-        <FlatList
-          data={renderItems}
-          keyExtractor={item => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={styles.contentContainer}
-          scrollEnabled={true}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
-        />
+        <>
+          {/* Scrollable FlatList */}
+          <FlatList
+            data={renderItems.filter(item => item.id !== 'floatnav')} // Exclude FloatingNav from FlatList
+            keyExtractor={item => item.id}
+            renderItem={renderItem}
+            contentContainerStyle={styles.contentContainer}
+            scrollEnabled={true}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+              />
+            }
+          />
+
+          {/* Fixed Floating Navigation */}
+          <View style={styles.floatingNavWrapper} pointerEvents="box-none">
+            <FloatingNavigation refreshTrigger={refreshTrigger} />
+          </View>
+        </>
       )}
     </View>
   );
@@ -177,7 +186,9 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flexGrow: 1,
+    paddingBottom:80,
   },
+
   loaderContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -226,6 +237,14 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  floatingNavWrapper: {
+    position: 'absolute',
+    bottom: 20,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    pointerEvents: 'box-none', // Ensures touch events pass through
   },
 });
 
