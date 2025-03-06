@@ -22,13 +22,8 @@ const {width, height} = Dimensions.get('window');
 const FloatingNavigation: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const navigation = useNavigation<NavigationProps>();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [buttonPosition, setButtonPosition] = useState({bottom: 1.0}); // Default position
 
-  const toggleExpand = (event?: any) => {
-    if (event) {
-      const {pageY} = event.nativeEvent;
-      setButtonPosition({bottom: height - pageY - 42.5}); // Adjust to center
-    }
+  const toggleExpand = () => {
     setIsExpanded(!isExpanded);
   };
 
@@ -49,10 +44,9 @@ const FloatingNavigation: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
         transparent
         visible={isExpanded}
         animationType="fade"
-        onRequestClose={() => toggleExpand()}>
+        onRequestClose={toggleExpand}>
         <View style={styles.modalOverlay}>
-          <View
-            style={[styles.expandedContainer, {bottom: buttonPosition.bottom}]}>
+          <View style={styles.expandedContainer}>
             <View style={styles.topButtons}>
               {/* Reserve Ride */}
               <View style={styles.buttonWrapper}>
@@ -81,10 +75,8 @@ const FloatingNavigation: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
               </View>
             </View>
 
-            {/* BATODA Button (Inside Modal, Same Position) */}
-            <TouchableOpacity
-              style={styles.batodaButton}
-              onPress={() => toggleExpand()}>
+            {/* BATODA Button (Inside Modal, Fixed at Bottom) */}
+            <TouchableOpacity style={styles.batodaButton} onPress={toggleExpand}>
               <Text style={styles.batodaButtonText}>BATODA</Text>
             </TouchableOpacity>
           </View>
@@ -93,9 +85,7 @@ const FloatingNavigation: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
 
       {/* Floating BATODA Button (Triggers Modal) */}
       {!isExpanded && (
-        <TouchableOpacity
-          style={[styles.mainButton, {bottom: buttonPosition.bottom}]}
-          onPress={toggleExpand}>
+        <TouchableOpacity style={styles.mainButton} onPress={toggleExpand}>
           <Text style={styles.mainButtonText}>BATODA</Text>
         </TouchableOpacity>
       )}
@@ -108,7 +98,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: '100%',
     height: '100%',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     alignItems: 'center',
   },
   modalOverlay: {
@@ -120,7 +110,7 @@ const styles = StyleSheet.create({
   expandedContainer: {
     alignItems: 'center',
     position: 'absolute',
-    bottom: 20, // Keep BATODA button at the bottom
+    bottom: 20, // Ensures BATODA button stays fixed at the bottom
   },
 
   topButtons: {
@@ -133,7 +123,7 @@ const styles = StyleSheet.create({
   },
   buttonWrapper: {
     alignItems: 'center',
-    marginHorizontal: 30, // Increase this value for more spacing
+    marginHorizontal: 50, // Increase this value for more spacing
   },
 
   circleButton: {
@@ -158,7 +148,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
     color: 'white',
   },
-  /* BATODA Button */
+  /* BATODA Button inside modal */
   batodaButton: {
     width: 85,
     height: 85,
@@ -184,7 +174,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 3,
     position: 'absolute',
-    bottom: 1.0,
+    bottom: 0, // Fixed position at the bottom
   },
   mainButtonText: {
     color: 'white',
