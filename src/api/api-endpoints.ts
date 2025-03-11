@@ -18,5 +18,6 @@ export const API_ENDPOINTS = {
     PAY_SEATS: '/transaction/reserve',
     SHOW_EWALLET: '/e-wallets',
     REGISTER_EWALLET: '/e-wallet/register',
+    PAY_SEATS_QR: '/transaction/reserveqr',
 
 }
