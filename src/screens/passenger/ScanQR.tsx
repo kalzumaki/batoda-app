@@ -1,20 +1,15 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import QRCodeScanner from 'react-native-qrcode-scanner';
 import { RNCamera } from 'react-native-camera';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { post } from '../../utils/proxy';
 import { API_ENDPOINTS } from '../../api/api-endpoints';
+import { RootStackParamList, UserQRCodeData } from '../../types/passenger-dashboard';
 
-// Define types
-interface QRCodeData {
+// Define QR code data structures
+interface DispatchQRCodeData {
   dispatch_id: number;
   wallet_id: number;
 }
@@ -24,26 +19,49 @@ interface QRCodeEvent {
 }
 
 const ScanQRScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const [loading, setLoading] = useState(false);
 
+  // Handles QR Code scanning
   const handleQRCodeRead = async (event: QRCodeEvent) => {
+    if (loading) return; // Prevent multiple scans while processing
+
+    setLoading(true); // Show loading indicator
     console.log('QR Code Data:', event.data);
 
     try {
-      const parsedData: QRCodeData = JSON.parse(event.data);
+      const parsedData = JSON.parse(event.data);
 
-      // Define API endpoint and correct payload
-      const apiUrl = API_ENDPOINTS.PAY_SEATS_QR;
-      const payload = {
-        dispatch_id: parsedData.dispatch_id, // Ensure this field is present in the QR data
-        wallet_id: parsedData.wallet_id,
-      };
+      if (isDispatchQRCode(parsedData)) {
+        await handleTransactionQRCode(parsedData);
+      } else if (isUserQRCode(parsedData)) {
+        handleUserQRCodeRead(parsedData);
+      } else {
+        throw new Error('Invalid QR Code format');
+      }
+    } catch (error) {
+      console.error('QR Processing Error:', error);
+      Alert.alert('Error', 'Invalid QR Code data. Please try again.');
+    } finally {
+      setLoading(false); // Hide loading indicator
+    }
+  };
 
-      // Send transaction request
-      const response = await post(apiUrl, payload, true);
+  // Type guards for QR code validation
+  const isDispatchQRCode = (data: any): data is DispatchQRCodeData => {
+    return data && typeof data.dispatch_id === 'number' && typeof data.wallet_id === 'number';
+  };
+
+  const isUserQRCode = (data: any): data is UserQRCodeData => {
+    return data && typeof data.id === 'number' && typeof data.name === 'string';
+  };
+
+  // Handle transaction QR codes
+  const handleTransactionQRCode = async (data: DispatchQRCodeData) => {
+    try {
+      const response = await post(API_ENDPOINTS.PAY_SEATS_QR, data, true);
       console.log('API Response:', response);
 
-      // Handle response
       if (response.status) {
         Alert.alert('Success', 'Transaction completed successfully!', [
           { text: 'OK', onPress: () => navigation.goBack() },
@@ -53,38 +71,47 @@ const ScanQRScreen: React.FC = () => {
       }
     } catch (error) {
       console.error('Transaction Error:', error);
-      Alert.alert('Error', 'Invalid QR Code data. Please try again.');
+      Alert.alert('Error', 'Transaction failed. Please try again.');
     }
+  };
+
+  // Handle user QR codes (redirect to UserDetailsScreen)
+  const handleUserQRCodeRead = (data: UserQRCodeData) => {
+    navigation.navigate('UserDetailsScreen', { user: data });
   };
 
   return (
     <View style={styles.container}>
       {/* Back Button */}
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => navigation.goBack()}>
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
         <Icon name="arrow-back" size={24} color="#fff" />
       </TouchableOpacity>
 
-      {/* QR Scanner */}
+      {/* QR Code Scanner */}
       <QRCodeScanner
         onRead={handleQRCodeRead}
         flashMode={RNCamera.Constants.FlashMode.auto}
-        reactivate={true}
+        reactivate={!loading} // Disable reactivation while loading
         reactivateTimeout={2000}
         showMarker={true}
         markerStyle={styles.marker}
         cameraStyle={styles.camera}
       />
 
-      {/* Overlay Text */}
-      <Text style={styles.description}>
-        Align the QR code within the frame to scan.
-      </Text>
+      {/* Loading Indicator */}
+      {loading && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#00FF00" />
+          <Text style={styles.loadingText}>Processing QR Code...</Text>
+        </View>
+      )}
+
+      <Text style={styles.description}>Align the QR code within the frame to scan.</Text>
     </View>
   );
 };
 
+// Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -116,6 +143,19 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     textAlign: 'center',
+  },
+  loadingContainer: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+
+  loadingText: {
+    color: '#FFF',
+    marginTop: 10,
+    fontSize: 16,
   },
 });
 

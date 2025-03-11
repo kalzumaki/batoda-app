@@ -1,9 +1,28 @@
 export type RootStackParamList = {
   Login: undefined;
+  Register: undefined;
+  PassengerDashboard: undefined;
+  DriverDashboard: undefined;
+  DispatcherDashboard: undefined;
   TicketScreen: undefined;
   ReserveRide: undefined;
-  ScanQR: undefined
+  ScanQR: undefined;
+  UserDetailsScreen: {user: UserQRCodeData}; // Ensure this is correctly defined
 };
+
+export interface UserQRCodeData {
+  id: number;
+  name: string;
+  email: string;
+  age: number;
+  address: string;
+  mobile: string;
+  gender: string;
+  role: string;
+  tricycle: string;
+  profile?: string; // Optional profile image URL
+}
+
 export interface RefreshTriggerProp {
-    refreshTrigger: number;
-  }
+  refreshTrigger: number;
+}
