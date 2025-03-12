@@ -173,7 +173,6 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
     );
   };
 
-
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Seat Reservation</Text>

@@ -52,8 +52,8 @@ const CustomDropdown: React.FC = () => {
           <Text style={styles.menuTitle}>Menu</Text>
           <TouchableOpacity
             style={styles.dropdownItem}
-            onPress={() => console.log('Travel History')}>
-            <Text style={styles.itemText}>Travel History</Text>
+            onPress={() => console.log('Profile')}>
+            <Text style={styles.itemText}>Profile</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.dropdownItem}

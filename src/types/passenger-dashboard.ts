@@ -5,9 +5,10 @@ export type RootStackParamList = {
   DriverDashboard: undefined;
   DispatcherDashboard: undefined;
   TicketScreen: undefined;
-  ReserveRide: undefined;
   ScanQR: undefined;
+  TravelHistory: undefined;
   UserDetailsScreen: {user: UserQRCodeData}; // Ensure this is correctly defined
+  ReserveRide: {dispatchId: number; tricycleNumber: string};
 };
 
 export interface UserQRCodeData {

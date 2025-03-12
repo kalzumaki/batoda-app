@@ -29,7 +29,7 @@ const FloatingNavigation: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
 
   const handleReserveRide = () => {
     setIsExpanded(false);
-    navigation.navigate('ReserveRide');
+    navigation.navigate('TravelHistory');
   };
 
   const handleScanQR = () => {
@@ -58,7 +58,7 @@ const FloatingNavigation: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
                     style={styles.buttonImage}
                   />
                 </TouchableOpacity>
-                <Text style={styles.buttonText}>Reserve a ride</Text>
+                <Text style={styles.buttonText}>Travel History</Text>
               </View>
 
               {/* Scan QR */}

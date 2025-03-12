@@ -1,12 +1,23 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import React, {useState} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
 import QRCodeScanner from 'react-native-qrcode-scanner';
-import { RNCamera } from 'react-native-camera';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
+import {RNCamera} from 'react-native-camera';
+import {useNavigation, NavigationProp} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { post } from '../../utils/proxy';
-import { API_ENDPOINTS } from '../../api/api-endpoints';
-import { RootStackParamList, UserQRCodeData } from '../../types/passenger-dashboard';
+import {post} from '../../utils/proxy';
+import {API_ENDPOINTS} from '../../api/api-endpoints';
+import {
+  RootStackParamList,
+  UserQRCodeData,
+} from '../../types/passenger-dashboard';
+import BackButton from '../../components/BackButton';
 
 // Define QR code data structures
 interface DispatchQRCodeData {
@@ -49,7 +60,11 @@ const ScanQRScreen: React.FC = () => {
 
   // Type guards for QR code validation
   const isDispatchQRCode = (data: any): data is DispatchQRCodeData => {
-    return data && typeof data.dispatch_id === 'number' && typeof data.wallet_id === 'number';
+    return (
+      data &&
+      typeof data.dispatch_id === 'number' &&
+      typeof data.wallet_id === 'number'
+    );
   };
 
   const isUserQRCode = (data: any): data is UserQRCodeData => {
@@ -64,7 +79,7 @@ const ScanQRScreen: React.FC = () => {
 
       if (response.status) {
         Alert.alert('Success', 'Transaction completed successfully!', [
-          { text: 'OK', onPress: () => navigation.goBack() },
+          {text: 'OK', onPress: () => navigation.goBack()},
         ]);
       } else {
         Alert.alert('Error', response.message || 'Transaction failed');
@@ -77,15 +92,13 @@ const ScanQRScreen: React.FC = () => {
 
   // Handle user QR codes (redirect to UserDetailsScreen)
   const handleUserQRCodeRead = (data: UserQRCodeData) => {
-    navigation.navigate('UserDetailsScreen', { user: data });
+    navigation.navigate('UserDetailsScreen', {user: data});
   };
 
   return (
     <View style={styles.container}>
       {/* Back Button */}
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-        <Icon name="arrow-back" size={24} color="#fff" />
-      </TouchableOpacity>
+      <BackButton />
 
       {/* QR Code Scanner */}
       <QRCodeScanner
@@ -106,7 +119,9 @@ const ScanQRScreen: React.FC = () => {
         </View>
       )}
 
-      <Text style={styles.description}>Align the QR code within the frame to scan.</Text>
+      <Text style={styles.description}>
+        Align the QR code within the frame to scan.
+      </Text>
     </View>
   );
 };
@@ -150,7 +165,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
 
   loadingText: {
     color: '#FFF',

@@ -19,5 +19,6 @@ export const API_ENDPOINTS = {
     SHOW_EWALLET: '/e-wallets',
     REGISTER_EWALLET: '/e-wallet/register',
     PAY_SEATS_QR: '/transaction/reserveqr',
+    DISPLAY_APPROVED_DISPATCH_BY_ID: '/approved-dispatches/{id}',
 
 }
