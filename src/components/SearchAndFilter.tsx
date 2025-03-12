@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   TextInput,
@@ -30,8 +30,16 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
     const today = new Date();
 
     // Reset both today and selected date to midnight for accurate comparison
-    const selectedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const selectedDate = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+    );
+    const currentDate = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+    );
 
     if (selectedDate > currentDate) {
       Alert.alert('Future dates are not allowed.');
@@ -39,7 +47,11 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
       return;
     }
 
-    const formattedDate = selectedDate.toISOString().split('T')[0]; 
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day}`;
+
     setSelectedDate(formattedDate);
     onDateSelected?.(formattedDate);
     hideDatePicker();
@@ -65,9 +77,9 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
       <DateTimePickerModal
         isVisible={isDatePickerVisible}
         mode="date"
-        maximumDate={new Date()} // Prevents selecting future dates
         onConfirm={handleConfirm}
         onCancel={hideDatePicker}
+        maximumDate={new Date()} 
       />
     </View>
   );

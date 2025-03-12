@@ -20,5 +20,8 @@ export const API_ENDPOINTS = {
     REGISTER_EWALLET: '/e-wallet/register',
     PAY_SEATS_QR: '/transaction/reserveqr',
     DISPLAY_APPROVED_DISPATCH_BY_ID: '/approved-dispatches/{id}',
+    DISPLAY_TRANSACTIONS_PER_USER: '/transaction/user',
+    DISPLAY_CANCELLED_TICKETS_PER_USER: '/tickets/cancelled',
+    DISPLAY_TRAVEL_HISTORY_PER_PASSENGER: '/travel-history/user',
 
 }

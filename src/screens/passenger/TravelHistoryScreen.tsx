@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -10,80 +10,116 @@ import {
 } from 'react-native';
 import BackButton from '../../components/BackButton';
 import SearchAndFilter from '../../components/SearchAndFilter';
+import {get} from '../../utils/proxy';
+import {API_ENDPOINTS} from '../../api/api-endpoints';
+import {Transaction, CancelledTicket} from '../../types/travel-history';
 
-interface TravelData {
-  id: string;
-  tricycleNumber: string;
-  amount: string;
-  time: string;
+type TravelHistoryItem = Transaction | CancelledTicket;
+
+type GroupedHistory = {
   date: string;
-}
+  items: TravelHistoryItem[];
+};
+
+const isTransaction = (item: TravelHistoryItem): item is Transaction =>
+  'transaction_id' in item;
+const isCancelledTicket = (item: TravelHistoryItem): item is CancelledTicket =>
+  'ticket_id' in item;
 
 const TravelHistoryScreen: React.FC = () => {
-  const [travelData, setTravelData] = useState<TravelData[]>([]);
+  const [groupedHistory, setGroupedHistory] = useState<GroupedHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
 
-  // Simulated data fetch
-  const fetchData = () => {
+  const fetchTravelHistory = async () => {
     setLoading(true);
-    setTimeout(() => {
-      setTravelData([
-        {
-          id: '1',
-          tricycleNumber: '123',
-          amount: '₱20.00',
-          time: '8:30 AM',
-          date: '2024-10-17',
-        },
-        {
-          id: '2',
-          tricycleNumber: '456',
-          amount: '₱30.00',
-          time: '9:00 AM',
-          date: '2024-10-16',
-        },
-        {
-          id: '3',
-          tricycleNumber: '789',
-          amount: '₱25.00',
-          time: '9:30 AM',
-          date: '2024-10-17',
-        },
-      ]);
+    try {
+      const transactionsResponse = await get(
+        API_ENDPOINTS.DISPLAY_TRANSACTIONS_PER_USER,
+      );
+      const cancelledTicketsResponse = await get(
+        API_ENDPOINTS.DISPLAY_CANCELLED_TICKETS_PER_USER,
+      );
+
+      const transactions: Transaction[] = transactionsResponse.status
+        ? transactionsResponse.transactions
+        : [];
+      const cancelledTickets: CancelledTicket[] =
+        cancelledTicketsResponse.status
+          ? cancelledTicketsResponse.cancelled_tickets
+          : [];
+
+      const combinedHistory: TravelHistoryItem[] = [
+        ...transactions,
+        ...cancelledTickets,
+      ].sort((a, b) => b.time.localeCompare(a.time));
+
+      const grouped = combinedHistory.reduce((acc: GroupedHistory[], item) => {
+        const dateGroup = acc.find(group => group.date === item.date);
+        if (dateGroup) {
+          dateGroup.items.push(item);
+        } else {
+          acc.push({date: item.date, items: [item]});
+        }
+        return acc;
+      }, []);
+
+      setGroupedHistory(grouped);
+    } catch (error) {
+      console.error('Error fetching travel history:', error);
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
   useEffect(() => {
-    fetchData();
+    fetchTravelHistory();
   }, []);
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchData();
-    setRefreshing(false);
+    fetchTravelHistory().finally(() => setRefreshing(false));
   };
 
   const handleSearch = (text: string) => setSearch(text);
   const handleDateSelected = (date: string) => setSelectedDate(date);
 
-  const filteredData = travelData.filter((item) =>
-    item.tricycleNumber.includes(search) &&
-    (!selectedDate || item.date === selectedDate)
-  );
+  const filteredHistory = groupedHistory
+    .filter(({date}) => !selectedDate || date === selectedDate)
+    .map(group => ({
+      ...group,
+      items: group.items.filter(item =>
+        item.tricycle_number.toString().includes(search),
+      ),
+    }))
+    .filter(group => group.items.length > 0);
 
-  const renderItem = ({ item }: { item: TravelData }) => (
-    <TouchableOpacity style={styles.itemContainer}>
-      <View style={styles.card}>
-        <Text style={styles.number}>{item.tricycleNumber}</Text>
-      </View>
-      <Text style={styles.amount}>{item.amount}</Text>
-      <Text style={styles.time}>{item.time}</Text>
-    </TouchableOpacity>
-  );
+  const renderItem = ({item}: {item: TravelHistoryItem}) => {
+    const containerStyle = [
+      styles.itemContainer,
+      isTransaction(item) ? styles.transactionItem : styles.cancelledItem,
+    ];
+
+    return (
+      <TouchableOpacity style={containerStyle}>
+        <View style={styles.leftSection}>
+          <Text style={styles.tricycleNumber}>{item.tricycle_number}</Text>
+        </View>
+        <View style={styles.middleSection}>
+          {isTransaction(item) ? (
+            <Text style={styles.amount}>₱{item.amount}</Text>
+          ) : (
+            <Text style={styles.status}>Cancelled</Text>
+          )}
+        </View>
+        <View style={styles.rightSection}>
+          <Text style={styles.time}>{item.time}</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   if (loading) {
     return (
@@ -95,43 +131,48 @@ const TravelHistoryScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <BackButton />
       <View style={styles.headerContainer}>
         <Text style={styles.header}>Travel History</Text>
-        <View style={{ width: 24 }} />
+        <View style={{width: 24}} />
       </View>
-
-      {/* Search and Date Filter */}
       <SearchAndFilter
         onSearchChange={handleSearch}
         onDateSelected={handleDateSelected}
       />
-
-      {/* Travel List with Refresh */}
-      <FlatList
-        data={filteredData}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      />
+      {filteredHistory.length === 0 ? (
+        <Text style={styles.noDataText}>No travel history found.</Text>
+      ) : (
+        <FlatList
+          data={filteredHistory}
+          keyExtractor={item => item.date}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          renderItem={({item}) => (
+            <View>
+              <Text style={styles.date}>{item.date}</Text>
+              {item.items.map(historyItem => (
+                <View
+                  key={
+                    'ticket_id' in historyItem
+                      ? String((historyItem as CancelledTicket).ticket_id)
+                      : String((historyItem as Transaction).transaction_id)
+                  }>
+                  {renderItem({item: historyItem})}
+                </View>
+              ))}
+            </View>
+          )}
+        />
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f8f8',
-    padding: 20,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  container: {flex: 1, backgroundColor: '#f8f8f8', padding: 20},
+  loadingContainer: {flex: 1, justifyContent: 'center', alignItems: 'center'},
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -145,6 +186,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     flex: 1,
   },
+  date: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#469c8f',
+    marginVertical: 10,
+  },
   itemContainer: {
     backgroundColor: '#62a287',
     borderRadius: 10,
@@ -155,30 +202,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     shadowColor: '#000',
     shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowRadius: 4,
     elevation: 3,
   },
-  number: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: 'white',
-  },
-  amount: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  time: {
-    color: 'white',
-  },
-  card: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  label: {
-    fontSize: 9,
-    color: 'white',
-  },
+  cancelledItem: {backgroundColor: '#d9534f'},
+  number: {fontSize: 20, fontWeight: 'bold', color: 'white'},
+  amount: {color: 'white', fontWeight: 'bold'},
+  status: {color: 'white', fontWeight: 'bold'},
+  time: {color: 'white'},
+  card: {alignItems: 'center', justifyContent: 'center'},
+  label: {fontSize: 9, color: 'white'},
+  transactionItem: {backgroundColor: '#62a287'},
+  leftSection: {flex: 1, alignItems: 'flex-start'},
+  middleSection: {flex: 1, alignItems: 'center'},
+  rightSection: {flex: 1, alignItems: 'flex-end'},
+  tricycleNumber: {fontSize: 20, fontWeight: 'bold', color: 'white'},
+  noDataText: {fontSize: 18, color: 'gray', textAlign: 'center', marginTop: 20},
 });
 
 export default TravelHistoryScreen;
