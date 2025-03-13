@@ -3,7 +3,7 @@ import {
   View,
   Text,
   TouchableOpacity,
-  FlatList,
+  SectionList,
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
@@ -12,22 +12,18 @@ import BackButton from '../../components/BackButton';
 import SearchAndFilter from '../../components/SearchAndFilter';
 import {get} from '../../utils/proxy';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
-import {Transaction, CancelledTicket} from '../../types/travel-history';
-
-type TravelHistoryItem = Transaction | CancelledTicket;
-
-type GroupedHistory = {
-  date: string;
-  items: TravelHistoryItem[];
-};
-
-const isTransaction = (item: TravelHistoryItem): item is Transaction =>
-  'transaction_id' in item;
-const isCancelledTicket = (item: TravelHistoryItem): item is CancelledTicket =>
-  'ticket_id' in item;
+import {TravelHistory} from '../../types/travel-history';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import {useNavigation} from '@react-navigation/native';
+import {RootStackParamList} from '../../types/passenger-dashboard';
+type TravelHistoryScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  'TravelHistoryDetail'
+>; // Define navigation prop type
 
 const TravelHistoryScreen: React.FC = () => {
-  const [groupedHistory, setGroupedHistory] = useState<GroupedHistory[]>([]);
+  const navigation = useNavigation<TravelHistoryScreenNavigationProp>(); // Add navigation typing
+  const [travelHistory, setTravelHistory] = useState<TravelHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
@@ -36,39 +32,21 @@ const TravelHistoryScreen: React.FC = () => {
   const fetchTravelHistory = async () => {
     setLoading(true);
     try {
-      const transactionsResponse = await get(
-        API_ENDPOINTS.DISPLAY_TRANSACTIONS_PER_USER,
-      );
-      const cancelledTicketsResponse = await get(
-        API_ENDPOINTS.DISPLAY_CANCELLED_TICKETS_PER_USER,
+      const response = await get(
+        API_ENDPOINTS.DISPLAY_TRAVEL_HISTORY_PER_PASSENGER,
       );
 
-      const transactions: Transaction[] = transactionsResponse.status
-        ? transactionsResponse.transactions
-        : [];
-      const cancelledTickets: CancelledTicket[] =
-        cancelledTicketsResponse.status
-          ? cancelledTicketsResponse.cancelled_tickets
-          : [];
-
-      const combinedHistory: TravelHistoryItem[] = [
-        ...transactions,
-        ...cancelledTickets,
-      ].sort((a, b) => b.time.localeCompare(a.time));
-
-      const grouped = combinedHistory.reduce((acc: GroupedHistory[], item) => {
-        const dateGroup = acc.find(group => group.date === item.date);
-        if (dateGroup) {
-          dateGroup.items.push(item);
-        } else {
-          acc.push({date: item.date, items: [item]});
-        }
-        return acc;
-      }, []);
-
-      setGroupedHistory(grouped);
+      if (response?.status && Array.isArray(response?.travel_history)) {
+        const data = response.travel_history;
+        console.log('Data fetched successfully:', data); // Check what data we get
+        setTravelHistory(data);
+      } else {
+        console.error('No valid travel history data found.');
+        setTravelHistory([]);
+      }
     } catch (error) {
       console.error('Error fetching travel history:', error);
+      setTravelHistory([]);
     } finally {
       setLoading(false);
     }
@@ -86,40 +64,55 @@ const TravelHistoryScreen: React.FC = () => {
   const handleSearch = (text: string) => setSearch(text);
   const handleDateSelected = (date: string) => setSelectedDate(date);
 
-  const filteredHistory = groupedHistory
-    .filter(({date}) => !selectedDate || date === selectedDate)
-    .map(group => ({
-      ...group,
-      items: group.items.filter(item =>
-        item.tricycle_number.toString().includes(search),
-      ),
-    }))
-    .filter(group => group.items.length > 0);
+  // Group travel history by date
+  const groupByDate = (history: TravelHistory[]) => {
+    const today = new Date();
+    const groupedHistory: {[key: string]: TravelHistory[]} = {};
 
-  const renderItem = ({item}: {item: TravelHistoryItem}) => {
-    const containerStyle = [
-      styles.itemContainer,
-      isTransaction(item) ? styles.transactionItem : styles.cancelledItem,
-    ];
+    history.forEach(item => {
+      const itemDate = new Date(item.date);
+      const diffInTime = today.getTime() - itemDate.getTime();
+      const diffInDays = Math.floor(diffInTime / (1000 * 3600 * 24));
 
-    return (
-      <TouchableOpacity style={containerStyle}>
-        <View style={styles.leftSection}>
-          <Text style={styles.tricycleNumber}>{item.tricycle_number}</Text>
-        </View>
-        <View style={styles.middleSection}>
-          {isTransaction(item) ? (
-            <Text style={styles.amount}>₱{item.amount}</Text>
-          ) : (
-            <Text style={styles.status}>Cancelled</Text>
-          )}
-        </View>
-        <View style={styles.rightSection}>
-          <Text style={styles.time}>{item.time}</Text>
-        </View>
-      </TouchableOpacity>
-    );
+      let groupKey = '';
+      if (diffInDays === 0) {
+        groupKey = 'Today';
+      } else if (diffInDays === 1) {
+        groupKey = 'Yesterday';
+      } else {
+        groupKey = item.date; // Use exact date if older than yesterday
+      }
+
+      if (!groupedHistory[groupKey]) {
+        groupedHistory[groupKey] = [];
+      }
+      groupedHistory[groupKey].push(item);
+    });
+
+    return groupedHistory;
   };
+
+  // Filtered history data
+  const groupedHistory = groupByDate(travelHistory);
+  const filteredHistory = Object.keys(groupedHistory).reduce(
+    (acc: any[], groupKey) => {
+      const filteredItems = groupedHistory[groupKey].filter(
+        item =>
+          (!selectedDate || item.date === selectedDate) &&
+          item.tricycle_number.toString().includes(search),
+      );
+
+      if (filteredItems.length > 0) {
+        acc.push({
+          title: groupKey, // Title for each section (Today, Yesterday, etc.)
+          data: filteredItems, // The items for each section
+        });
+      }
+
+      return acc;
+    },
+    [],
+  );
 
   if (loading) {
     return (
@@ -129,43 +122,62 @@ const TravelHistoryScreen: React.FC = () => {
     );
   }
 
+  const renderItem = ({item}: {item: TravelHistory}) => (
+    <TouchableOpacity
+      onPress={() => navigation.navigate('TravelHistoryDetail', {item})} // Navigate with the selected item
+      key={item.date + item.tricycle_number}
+      style={[
+        styles.itemContainer,
+        item.status === 'cancelled'
+          ? styles.cancelledItem
+          : styles.transactionItem,
+      ]}>
+      <View style={styles.leftSection}>
+        <Text style={styles.tricycleNumber}>{item.tricycle_number}</Text>
+      </View>
+      <View style={styles.middleSection}>
+        {item.status === 'cancelled' ? (
+          <Text style={styles.status}>Cancelled</Text>
+        ) : (
+          <Text style={styles.referenceNo}>Ref: {item.reference_no}</Text>
+        )}
+      </View>
+      <View style={styles.rightSection}>
+        <Text style={styles.time}>{item.time}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const renderSectionHeader = ({section}: any) => (
+    <View style={styles.sectionHeader}>
+      <Text style={styles.headerText}>{section.title}</Text>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
       <BackButton />
       <View style={styles.headerContainer}>
         <Text style={styles.header}>Travel History</Text>
-        <View style={{width: 24}} />
       </View>
       <SearchAndFilter
         onSearchChange={handleSearch}
         onDateSelected={handleDateSelected}
       />
-      {filteredHistory.length === 0 ? (
-        <Text style={styles.noDataText}>No travel history found.</Text>
-      ) : (
-        <FlatList
-          data={filteredHistory}
-          keyExtractor={item => item.date}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-          renderItem={({item}) => (
-            <View>
-              <Text style={styles.date}>{item.date}</Text>
-              {item.items.map(historyItem => (
-                <View
-                  key={
-                    'ticket_id' in historyItem
-                      ? String((historyItem as CancelledTicket).ticket_id)
-                      : String((historyItem as Transaction).transaction_id)
-                  }>
-                  {renderItem({item: historyItem})}
-                </View>
-              ))}
-            </View>
-          )}
-        />
-      )}
+      <SectionList
+        sections={filteredHistory} // Data passed as sections
+        keyExtractor={(item, index) =>
+          `${item.date}-${item.tricycle_number}-${index}`
+        }
+        renderItem={renderItem}
+        renderSectionHeader={renderSectionHeader}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        ListEmptyComponent={
+          <Text style={styles.noDataText}>No travel history found.</Text>
+        }
+      />
     </View>
   );
 };
@@ -186,12 +198,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     flex: 1,
   },
-  date: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#469c8f',
-    marginVertical: 10,
-  },
   itemContainer: {
     backgroundColor: '#62a287',
     borderRadius: 10,
@@ -207,18 +213,26 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   cancelledItem: {backgroundColor: '#d9534f'},
-  number: {fontSize: 20, fontWeight: 'bold', color: 'white'},
-  amount: {color: 'white', fontWeight: 'bold'},
+  transactionItem: {backgroundColor: '#62a287'},
+  tricycleNumber: {fontSize: 20, fontWeight: 'bold', color: 'white'},
+  referenceNo: {color: 'white', fontWeight: 'bold'},
   status: {color: 'white', fontWeight: 'bold'},
   time: {color: 'white'},
-  card: {alignItems: 'center', justifyContent: 'center'},
-  label: {fontSize: 9, color: 'white'},
-  transactionItem: {backgroundColor: '#62a287'},
   leftSection: {flex: 1, alignItems: 'flex-start'},
   middleSection: {flex: 1, alignItems: 'center'},
   rightSection: {flex: 1, alignItems: 'flex-end'},
-  tricycleNumber: {fontSize: 20, fontWeight: 'bold', color: 'white'},
   noDataText: {fontSize: 18, color: 'gray', textAlign: 'center', marginTop: 20},
+  sectionHeader: {
+    backgroundColor: '#f1f1f1',
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  headerText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
 });
 
 export default TravelHistoryScreen;

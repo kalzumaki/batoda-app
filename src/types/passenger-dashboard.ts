@@ -1,3 +1,5 @@
+import { TravelHistory } from "./travel-history";
+
 export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
@@ -9,6 +11,8 @@ export type RootStackParamList = {
   TravelHistory: undefined;
   UserDetailsScreen: {user: UserQRCodeData}; // Ensure this is correctly defined
   ReserveRide: {dispatchId: number; tricycleNumber: string};
+  TravelHistoryDetail: { item: TravelHistory };
+  TravelHistoryScreen: undefined;
 };
 
 export interface UserQRCodeData {

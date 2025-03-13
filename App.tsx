@@ -14,11 +14,13 @@ import ReserveRideScreen from './src/screens/passenger/ReserveRideScreen';
 import ScanQRScreen from './src/screens/passenger/ScanQR';
 import UserDetailsScreen from './src/screens/passenger/UserDetailsScreen'
 import TravelHistoryScreen from './src/screens/passenger/TravelHistoryScreen'
+import TravelHistoryDetailScreen from './src/screens/passenger/TravelHistoryDetailScreen'
 // Contexts
 import {TimerProvider} from './src/contexts/TimerContext';
 import {PusherProvider} from './src/pusher/PusherProvider';
 
-const Stack = createNativeStackNavigator();
+import { RootStackParamList } from './src/types/passenger-dashboard';
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const App: React.FC = () => {
   return (
@@ -45,6 +47,7 @@ const App: React.FC = () => {
             <Stack.Screen name="ScanQR" component={ScanQRScreen} />
             <Stack.Screen name="UserDetailsScreen" component={UserDetailsScreen} />
             <Stack.Screen name="TravelHistory" component={TravelHistoryScreen} />
+            <Stack.Screen name="TravelHistoryDetail" component={TravelHistoryDetailScreen} />
           </Stack.Navigator>
           <Toast />
         </NavigationContainer>
