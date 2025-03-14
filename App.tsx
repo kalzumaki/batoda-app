@@ -18,6 +18,7 @@ import TravelHistoryDetailScreen from './src/screens/passenger/TravelHistoryDeta
 import ProfileScreen from './src/screens/ProfileScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import EditProfileScreen from './src/screens/EditProfileScreen';
+import RegisterEwalletScreen from './src/screens/RegisterEwalletScreen';
 // Contexts
 import {TimerProvider} from './src/contexts/TimerContext';
 import {PusherProvider} from './src/pusher/PusherProvider';
@@ -63,6 +64,7 @@ const App: React.FC = () => {
             <Stack.Screen name="Profile" component={ProfileScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+            <Stack.Screen name="RegisterEwallet" component={RegisterEwalletScreen} />
           </Stack.Navigator>
           <Toast />
         </NavigationContainer>

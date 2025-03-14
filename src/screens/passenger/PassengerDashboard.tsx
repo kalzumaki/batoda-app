@@ -53,68 +53,68 @@ const PassengerDashboard: React.FC = () => {
       if (response.status && response.data) {
         console.log('✅ E-Wallet exists:', response.data);
       } else {
-        console.log('❌ No E-Wallet found. Showing alert...');
-        showEwalletAlert();
+        console.log('❌ No E-Wallet found. Redirecting to Register...');
+        navigation.replace('RegisterEwallet');
       }
     } catch (error: any) {
       console.error('❌ Error checking e-wallet:', error);
 
       if (error.response?.status === 404) {
-        console.log('❌ No E-Wallet found (404). Triggering alert...');
-        showEwalletAlert();
+        console.log('❌ No E-Wallet found (404). Redirecting...');
+        navigation.replace('RegisterEwallet');
       } else {
         console.log('🚨 Unexpected error, assuming no e-wallet exists...');
-        showEwalletAlert();
+        navigation.replace('RegisterEwallet');
       }
     }
   };
 
-  const showEwalletAlert = () => {
-    console.log('🔔 Showing E-Wallet Alert...');
+  //   const showEwalletAlert = () => {
+  //     console.log('🔔 Showing E-Wallet Alert...');
 
-    Alert.alert(
-      'No E-Wallet Registered',
-      'You need to register an e-wallet before proceeding.',
-      [
-        {
-          text: 'Register',
-          onPress: async () => {
-            console.log('✅ User chose to register E-Wallet.');
-            await registerEwallet();
-          },
-        },
-      ],
-    );
-  };
+  //     Alert.alert(
+  //       'No E-Wallet Registered',
+  //       'You need to register an e-wallet before proceeding.',
+  //       [
+  //         {
+  //           text: 'Register',
+  //           onPress: async () => {
+  //             console.log('✅ User chose to register E-Wallet.');
+  //             await registerEwallet();
+  //           },
+  //         },
+  //       ],
+  //     );
+  //   };
 
-  const registerEwallet = async () => {
-    try {
-      console.log('🚀 Registering E-Wallet...');
+  //   const registerEwallet = async () => {
+  //     try {
+  //       console.log('🚀 Registering E-Wallet...');
 
-      const response = await post(
-        API_ENDPOINTS.REGISTER_EWALLET,
-        {
-          bank_name: 'GCash',
-        },
-        true,
-      );
+  //       const response = await post(
+  //         API_ENDPOINTS.REGISTER_EWALLET,
+  //         {
+  //           bank_name: 'GCash',
+  //         },
+  //         true,
+  //       );
 
-      if (response.status) {
-        Alert.alert(
-          'Success',
-          'Your e-wallet has been registered successfully!',
-        );
-      } else {
-        Alert.alert(
-          'Error',
-          response.message || 'Failed to register e-wallet.',
-        );
-      }
-    } catch (error) {
-      console.error('❌ Error registering e-wallet:', error);
-      Alert.alert('Error', 'An unexpected error occurred.');
-    }
-  };
+  //       if (response.status) {
+  //         Alert.alert(
+  //           'Success',
+  //           'Your e-wallet has been registered successfully!',
+  //         );
+  //       } else {
+  //         Alert.alert(
+  //           'Error',
+  //           response.message || 'Failed to register e-wallet.',
+  //         );
+  //       }
+  //     } catch (error) {
+  //       console.error('❌ Error registering e-wallet:', error);
+  //       Alert.alert('Error', 'An unexpected error occurred.');
+  //     }
+  //   };
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flexGrow: 1,
-    paddingBottom:80,
+    paddingBottom: 80,
   },
 
   loaderContainer: {

@@ -17,18 +17,12 @@ import ButtonComponent from '../components/Button';
 import {post} from '../utils/proxy';
 import {API_ENDPOINTS} from '../api/api-endpoints';
 import Toast from 'react-native-toast-message';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import OptimisticFeedback from '../components/Loading';
-import {Picker} from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import DropdownComponent from '../components/Dropdown';
 import DatePickerComponent from '../components/DatePicker';
-
+import { RootStackParamList } from '../types/passenger-dashboard';
 // Define the navigation types
-type RootStackParamList = {
-  Login: undefined;
-  Register: undefined;
-};
 
 // Type for navigation props
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;

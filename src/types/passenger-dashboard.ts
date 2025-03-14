@@ -9,13 +9,14 @@ export type RootStackParamList = {
   TicketScreen: undefined;
   ScanQR: undefined;
   TravelHistory: undefined;
-  UserDetailsScreen: {user: UserQRCodeData}; // Ensure this is correctly defined
+  UserDetailsScreen: {user: UserQRCodeData};
   ReserveRide: {dispatchId: number; tricycleNumber: string};
   TravelHistoryDetail: {item: TravelHistory};
   TravelHistoryScreen: undefined;
   Profile: undefined;
   Settings: undefined;
   EditProfile: {field: string; value: string};
+  RegisterEwallet: undefined;
 };
 
 export interface UserQRCodeData {
@@ -28,7 +29,7 @@ export interface UserQRCodeData {
   gender: string;
   role: string;
   tricycle: string;
-  profile?: string; // Optional profile image URL
+  profile?: string; 
 }
 
 export interface RefreshTriggerProp {
