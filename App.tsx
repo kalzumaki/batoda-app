@@ -12,14 +12,17 @@ import DriverDashboard from './src/screens/driver/DriverDashboard';
 import DispatcherDashboard from './src/screens/dispatcher/DispatcherDashboard';
 import ReserveRideScreen from './src/screens/passenger/ReserveRideScreen';
 import ScanQRScreen from './src/screens/passenger/ScanQR';
-import UserDetailsScreen from './src/screens/passenger/UserDetailsScreen'
-import TravelHistoryScreen from './src/screens/passenger/TravelHistoryScreen'
-import TravelHistoryDetailScreen from './src/screens/passenger/TravelHistoryDetailScreen'
+import UserDetailsScreen from './src/screens/passenger/UserDetailsScreen';
+import TravelHistoryScreen from './src/screens/passenger/TravelHistoryScreen';
+import TravelHistoryDetailScreen from './src/screens/passenger/TravelHistoryDetailScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
+import EditProfileScreen from './src/screens/EditProfileScreen';
 // Contexts
 import {TimerProvider} from './src/contexts/TimerContext';
 import {PusherProvider} from './src/pusher/PusherProvider';
 
-import { RootStackParamList } from './src/types/passenger-dashboard';
+import {RootStackParamList} from './src/types/passenger-dashboard';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const App: React.FC = () => {
@@ -45,9 +48,21 @@ const App: React.FC = () => {
             {/* floating nav */}
             <Stack.Screen name="ReserveRide" component={ReserveRideScreen} />
             <Stack.Screen name="ScanQR" component={ScanQRScreen} />
-            <Stack.Screen name="UserDetailsScreen" component={UserDetailsScreen} />
-            <Stack.Screen name="TravelHistory" component={TravelHistoryScreen} />
-            <Stack.Screen name="TravelHistoryDetail" component={TravelHistoryDetailScreen} />
+            <Stack.Screen
+              name="UserDetailsScreen"
+              component={UserDetailsScreen}
+            />
+            <Stack.Screen
+              name="TravelHistory"
+              component={TravelHistoryScreen}
+            />
+            <Stack.Screen
+              name="TravelHistoryDetail"
+              component={TravelHistoryDetailScreen}
+            />
+            <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="EditProfile" component={EditProfileScreen} />
           </Stack.Navigator>
           <Toast />
         </NavigationContainer>

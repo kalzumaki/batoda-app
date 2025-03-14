@@ -52,12 +52,12 @@ const CustomDropdown: React.FC = () => {
           <Text style={styles.menuTitle}>Menu</Text>
           <TouchableOpacity
             style={styles.dropdownItem}
-            onPress={() => console.log('Profile')}>
+            onPress={() => navigation.navigate('Profile')}>
             <Text style={styles.itemText}>Profile</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.dropdownItem}
-            onPress={() => console.log('Settings')}>
+            onPress={() => navigation.navigate('Settings')}>
             <Text style={styles.itemText}>Settings</Text>
           </TouchableOpacity>
           <TouchableOpacity
