@@ -15,11 +15,14 @@ import {put} from '../utils/proxy';
 import {API_ENDPOINTS} from '../api/api-endpoints';
 import GenderPicker from '../components/GenderPicker';
 import DatePickerComponent from '../components/DatePicker';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
+// Types
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'EditProfile'>;
 type EditProfileRouteProp = RouteProp<RootStackParamList, 'EditProfile'>;
 
 const EditProfileScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp>();
   const route = useRoute<EditProfileRouteProp>();
   const {field, value} = route.params;
 
@@ -43,14 +46,41 @@ const EditProfileScreen: React.FC = () => {
       return;
     }
 
+    if (field === 'mobile_number' && !/^09\d{9}$/.test(editedValue)) {
+      Alert.alert(
+        'Invalid Phone Number',
+        'Please enter a valid 11-digit phone number starting with 09.',
+      );
+      return;
+    }
+
+    if (
+      field === 'email' &&
+      !/^[\w.-]+@[\w.-]+\.(com|net|org|gov|edu|ph|io|co)$/.test(editedValue)
+    ) {
+      Alert.alert(
+        'Invalid Email',
+        'Please enter a valid email address (e.g., example@gmail.com).',
+      );
+      return;
+    }
+
+    if (field === 'email') {
+      navigation.navigate('EmailVerification', {email: editedValue});
+      return;
+    }
+
     setLoading(true);
     try {
-      const updatedData = { [field]: editedValue };
+      const updatedData = {[field]: String(editedValue)};
+      console.log('Updating with:', updatedData);
+
       const response = await put(
         API_ENDPOINTS.UPDATE_USER_DETAILS,
         updatedData,
         true,
       );
+
       if (response.status) {
         Alert.alert(
           'Saved',
@@ -62,13 +92,15 @@ const EditProfileScreen: React.FC = () => {
         Alert.alert('Error', 'Failed to update profile');
       }
     } catch (error: any) {
-      Alert.alert('Error', 'An error occurred while updating profile');
+      Alert.alert(
+        'Error',
+        error.message || 'An error occurred while updating profile',
+      );
     } finally {
       setLoading(false);
       navigation.goBack();
     }
   };
-
 
   const fieldLabels: {[key: string]: string} = {
     fname: 'First Name',
@@ -76,6 +108,7 @@ const EditProfileScreen: React.FC = () => {
     gender: 'Gender',
     age: 'Age',
     birthday: 'Birthdate',
+    mobile_number: 'Phone Number',
   };
 
   return (
@@ -120,6 +153,8 @@ const EditProfileScreen: React.FC = () => {
             style={styles.input}
             value={editedValue}
             onChangeText={setEditedValue}
+            keyboardType={field === 'mobile_number' ? 'phone-pad' : 'default'}
+            maxLength={field === 'mobile_number' ? 11 : undefined}
           />
         )}
         <Text style={styles.description}>

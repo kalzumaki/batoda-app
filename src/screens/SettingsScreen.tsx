@@ -1,30 +1,62 @@
-import React from 'react';
+import React, {useEffect, useState, useCallback} from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   TextInput,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../types/passenger-dashboard';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {RootStackParamList} from '../types/passenger-dashboard';
 import BackButton from '../components/BackButton';
+import {get} from '../utils/proxy';
+import {API_ENDPOINTS} from '../api/api-endpoints';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
+type UserProfile = {
+  email: string;
+  phoneNumber: string;
+  password: string;
+};
+
 const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProps>();
+  const [profileData, setProfileData] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const profileData = {
-    email: 'vanbeethoven123@gmail.com',
-    phoneNumber: '0923 947 1234',
-    password: '********',
+  const fetchUserData = async () => {
+    try {
+      const data = await get(API_ENDPOINTS.DISPLAY_USER_DETAILS);
+      console.log('Settings Data Found: ', data);
+
+      if (data && data.status) {
+        setProfileData({
+          email: data.user.email,
+          phoneNumber: data.user.mobile_number,
+          password: '****************',
+        });
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to fetch user data.');
+      console.error('Error fetching user details:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
+  useFocusEffect(
+    useCallback(() => {
+      fetchUserData();
+    }, [])
+  );
+
   const handleEdit = (field: string, value: string) => {
-    navigation.navigate('EditProfile', { field, value });
+    navigation.navigate('EditProfile', {field, value});
   };
 
   const renderEditableField = (label: string, value: string, field: string) => (
@@ -39,17 +71,31 @@ const SettingsScreen: React.FC = () => {
     </View>
   );
 
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#469c8f" />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-        <BackButton />
-      {/* Header */}
+      <BackButton />
       <Text style={styles.title}>Settings</Text>
-      <Text style={styles.subtitle}>Accounts Details</Text>
+      <Text style={styles.subtitle}>Account Details</Text>
 
-      {/* Editable Fields */}
-      {renderEditableField('Email', profileData.email, 'email')}
-      {renderEditableField('Phone Number', profileData.phoneNumber, 'phoneNumber')}
-      {renderEditableField('Password', profileData.password, 'password')}
+      {profileData && (
+        <>
+          {renderEditableField('Email', profileData.email, 'email')}
+          {renderEditableField(
+            'Phone Number',
+            profileData.phoneNumber,
+            'mobile_number'
+          )}
+          {renderEditableField('Password', profileData.password, 'password')}
+        </>
+      )}
     </View>
   );
 };
@@ -60,9 +106,13 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#f5f5f5',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   title: {
     fontSize: 20,
-    // fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 10,
     color: 'black',

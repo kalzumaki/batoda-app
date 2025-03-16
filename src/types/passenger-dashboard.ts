@@ -17,6 +17,8 @@ export type RootStackParamList = {
   Settings: undefined;
   EditProfile: {field: string; value: string};
   RegisterEwallet: undefined;
+  EmailVerification: {email: string};
+  OTPVerification: {email: string};
 };
 
 export interface UserQRCodeData {
@@ -29,7 +31,7 @@ export interface UserQRCodeData {
   gender: string;
   role: string;
   tricycle: string;
-  profile?: string; 
+  profile?: string;
 }
 
 export interface RefreshTriggerProp {

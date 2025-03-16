@@ -170,7 +170,7 @@ export const logout = async () => {
     throw new Error('Logout failed');
   }
 };
-
+// post with formdata (image uploading)
 export const postFormData = async (
   url: string,
   formData: FormData,
@@ -197,3 +197,31 @@ export const postFormData = async (
     throw error;
   }
 };
+
+//post for headers only
+export const postWithHeaders = async (
+    url: string,
+    payload: any,
+    needsAuth: boolean = false,
+  ) => {
+    try {
+        let token = null;
+
+    if (needsAuth) {
+      token = await AsyncStorage.getItem('userToken');
+    }
+
+      const config: RequestConfig = {
+        method: 'POST',
+        headers: {
+            Authorization: token ? `Bearer ${token}` : '',
+          },
+        body: JSON.stringify(payload),
+      };
+
+      return request(url, config);
+    } catch (error) {
+      console.error('Error making POST request with headers:', error);
+      throw error;
+    }
+  };
