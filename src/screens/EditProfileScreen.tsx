@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,16 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import {useNavigation, useRoute, RouteProp} from '@react-navigation/native';
 import {RootStackParamList} from '../types/passenger-dashboard';
 import Icon from 'react-native-vector-icons/Ionicons';
+import {put} from '../utils/proxy';
+import {API_ENDPOINTS} from '../api/api-endpoints';
+import GenderPicker from '../components/GenderPicker';
+import DatePickerComponent from '../components/DatePicker';
 
-// Proper route typing
 type EditProfileRouteProp = RouteProp<RootStackParamList, 'EditProfile'>;
 
 const EditProfileScreen: React.FC = () => {
@@ -19,45 +23,105 @@ const EditProfileScreen: React.FC = () => {
   const route = useRoute<EditProfileRouteProp>();
   const {field, value} = route.params;
 
-  // Local state to handle editing
   const [editedValue, setEditedValue] = useState(value);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (field === 'gender' || field === 'birthday') {
+      setEditedValue(value);
+    }
+  }, [field, value]);
 
   const handleCancel = () => navigation.goBack();
 
-  const handleSubmit = () => {
-    Alert.alert('Saved', `${field} updated to: ${editedValue}`);
-    navigation.goBack();
+  const handleSubmit = async () => {
+    if (editedValue === value) {
+      Alert.alert(
+        'No Changes',
+        `No changes were made to your ${fieldLabels[field] || field}.`,
+      );
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const updatedData = { [field]: editedValue };
+      const response = await put(
+        API_ENDPOINTS.UPDATE_USER_DETAILS,
+        updatedData,
+        true,
+      );
+      if (response.status) {
+        Alert.alert(
+          'Saved',
+          `${fieldLabels[field] || field} updated to: ${editedValue}`,
+        );
+      } else if (response.message) {
+        Alert.alert('Error', response.message);
+      } else {
+        Alert.alert('Error', 'Failed to update profile');
+      }
+    } catch (error: any) {
+      Alert.alert('Error', 'An error occurred while updating profile');
+    } finally {
+      setLoading(false);
+      navigation.goBack();
+    }
+  };
+
+
+  const fieldLabels: {[key: string]: string} = {
+    fname: 'First Name',
+    lname: 'Last Name',
+    gender: 'Gender',
+    age: 'Age',
+    birthday: 'Birthdate',
   };
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleCancel}>
+        <TouchableOpacity onPress={handleCancel} disabled={loading}>
           <Icon name="close" size={24} color="red" />
         </TouchableOpacity>
         <Text style={styles.title}>
-          {field
-            .replace(/([a-z])([A-Z])/g, '$1 $2')
-            .replace(/\b\w/g, c => c.toUpperCase())}
+          {fieldLabels[field] ||
+            field
+              .replace(/([a-z])([A-Z])/g, '$1 $2')
+              .replace(/\b\w/g, c => c.toUpperCase())}
         </Text>
-        <TouchableOpacity onPress={handleSubmit}>
-          <Icon name="checkmark" size={28} color="#469c8f" />
+        <TouchableOpacity onPress={handleSubmit} disabled={loading}>
+          {loading ? (
+            <ActivityIndicator size="small" color="#469c8f" />
+          ) : (
+            <Icon name="checkmark" size={28} color="#469c8f" />
+          )}
         </TouchableOpacity>
       </View>
 
       {/* Input Section */}
       <View style={styles.inputContainer}>
         <Text style={styles.label}>
-          {field
-            .replace(/([a-z])([A-Z])/g, '$1 $2')
-            .replace(/\b\w/g, c => c.toUpperCase())}
+          {fieldLabels[field] ||
+            field
+              .replace(/([a-z])([A-Z])/g, '$1 $2')
+              .replace(/\b\w/g, c => c.toUpperCase())}
         </Text>
-        <TextInput
-          style={styles.input}
-          value={editedValue}
-          onChangeText={setEditedValue}
-        />
+        {field === 'gender' ? (
+          <GenderPicker
+            selectedGender={editedValue}
+            onSelectGender={setEditedValue}
+          />
+        ) : field === 'birthday' ? (
+          <DatePickerComponent value={editedValue} onChange={setEditedValue} />
+        ) : (
+          <TextInput
+            style={styles.input}
+            value={editedValue}
+            onChangeText={setEditedValue}
+          />
+        )}
         <Text style={styles.description}>
           Use the name people recognize you by, whether it's your full name or
           your business name, to help others find your account.
@@ -81,7 +145,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    // fontWeight: 'bold',
     color: 'black',
   },
   inputContainer: {

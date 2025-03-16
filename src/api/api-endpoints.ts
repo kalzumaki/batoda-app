@@ -23,5 +23,7 @@ export const API_ENDPOINTS = {
     DISPLAY_TRANSACTIONS_PER_USER: '/transaction/user',
     DISPLAY_CANCELLED_TICKETS_PER_USER: '/tickets/cancelled',
     DISPLAY_TRAVEL_HISTORY_PER_PASSENGER: '/travel-history/user',
+    DISPLAY_USER_DETAILS: '/user/show',
+    UPDATE_USER_DETAILS: '/user/update',
 
 }

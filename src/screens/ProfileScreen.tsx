@@ -1,52 +1,105 @@
-import React from 'react';
-import {View, Text, TouchableOpacity, StyleSheet, Image} from 'react-native';
+import React, {useEffect, useState, useCallback} from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  ActivityIndicator,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../types/passenger-dashboard';
 import BackButton from '../components/BackButton';
+import {get} from '../utils/proxy';
+import {API_ENDPOINTS} from '../api/api-endpoints';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
+type UserProfile = {
+  fname: string;
+  lname: string;
+  gender: string;
+  age: string;
+  birthday: string;
+};
+
 const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProps>();
+  const [profileData, setProfileData] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const profileData = {
-    firstName: 'Van',
-    lastName: 'Beethoven',
-    gender: 'Male',
-    age: '51',
-    birthdate: 'September 29, 1973',
+  const fetchProfile = async () => {
+    setLoading(true);
+    try {
+      const response = await get(API_ENDPOINTS.DISPLAY_USER_DETAILS);
+      if (response.status) {
+        setProfileData(response.user);
+      } else {
+        console.error('Failed to fetch profile');
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchProfile();
+    }, []),
+  );
 
   const handleEdit = (field: string, value: string) => {
     navigation.navigate('EditProfile', {field, value});
   };
 
-  const renderEditableField = (label: string, value: string, field: string) => (
+  const renderEditableField = (
+    label: string,
+    value: string,
+    field: string,
+    editable: boolean = true,
+  ) => (
     <View style={styles.fieldContainer}>
       <Text style={styles.label}>{label}</Text>
       <View style={styles.inputContainer}>
         <Text style={styles.value}>{value}</Text>
-        <TouchableOpacity onPress={() => handleEdit(field, value)}>
-          <Icon name="pencil-outline" size={20} color="gray" />
-        </TouchableOpacity>
+        {editable && (
+          <TouchableOpacity onPress={() => handleEdit(field, value)}>
+            <Icon name="pencil-outline" size={20} color="gray" />
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
 
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#469c8f" />
+      </View>
+    );
+  }
+
+  if (!profileData) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.errorText}>Failed to load profile</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      {/* Header with BackButton and Title */}
       <BackButton />
       <View style={styles.header}>
         <Text style={styles.editProfileText}>Edit Profile</Text>
       </View>
 
-      {/* Space between header and profile */}
       <View style={styles.spacer} />
 
-      {/* Profile Header */}
       <View style={styles.profileHeader}>
         <View style={styles.profileImageContainer}>
           <Image
@@ -55,16 +108,20 @@ const ProfileScreen: React.FC = () => {
           />
         </View>
         <Text style={styles.profileName}>
-          {profileData.firstName} {profileData.lastName}
+          {profileData.fname} {profileData.lname}
         </Text>
       </View>
 
-      {/* Profile Fields */}
-      {renderEditableField('First Name', profileData.firstName, 'firstName')}
-      {renderEditableField('Last Name', profileData.lastName, 'lastName')}
-      {renderEditableField('Gender', profileData.gender, 'gender')}
-      {renderEditableField('Age', profileData.age, 'age')}
-      {renderEditableField('Birthdate', profileData.birthdate, 'birthdate')}
+      {renderEditableField('First Name', profileData.fname, 'fname')}
+      {renderEditableField('Last Name', profileData.lname, 'lname')}
+      {renderEditableField(
+        'Gender',
+        profileData.gender.charAt(0).toUpperCase() +
+          profileData.gender.slice(1),
+        'gender',
+      )}
+      {renderEditableField('Age', String(profileData.age), 'age', false)}
+      {renderEditableField('Birthdate', profileData.birthday, 'birthday')}
     </View>
   );
 };
@@ -83,7 +140,6 @@ const styles = StyleSheet.create({
   },
   editProfileText: {
     fontSize: 20,
-    // fontWeight: 'bold',
     marginLeft: 10,
     color: 'black',
   },
@@ -131,6 +187,15 @@ const styles = StyleSheet.create({
   value: {
     fontSize: 16,
     color: 'black',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 16,
   },
 });
 
