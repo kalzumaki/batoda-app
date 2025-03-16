@@ -52,11 +52,19 @@ const SettingsScreen: React.FC = () => {
   useFocusEffect(
     useCallback(() => {
       fetchUserData();
-    }, [])
+    }, []),
   );
 
   const handleEdit = (field: string, value: string) => {
-    navigation.navigate('EditProfile', {field, value});
+    if (field === 'password') {
+      if (profileData?.email) {
+        navigation.navigate('ChangePassEmailVer', {email: profileData.email});
+      } else {
+        Alert.alert('Error', 'Email is missing.');
+      }
+    } else {
+      navigation.navigate('EditProfile', {field, value});
+    }
   };
 
   const renderEditableField = (label: string, value: string, field: string) => (
@@ -91,7 +99,7 @@ const SettingsScreen: React.FC = () => {
           {renderEditableField(
             'Phone Number',
             profileData.phoneNumber,
-            'mobile_number'
+            'mobile_number',
           )}
           {renderEditableField('Password', profileData.password, 'password')}
         </>

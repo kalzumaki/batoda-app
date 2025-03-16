@@ -27,5 +27,9 @@ export const API_ENDPOINTS = {
     UPDATE_USER_DETAILS: '/user/update',
     UPDATE_USER_PROFILE_PIC: '/users/upload-profile',
     SENDING_EMAIL_VERIFICATION: '/authenticated/send-otp',
-    VERIFY_EMAIL_OTP: '/authenticated/verify-otp'
+    VERIFY_EMAIL_OTP: '/authenticated/verify-otp',
+    CHANGE_PASSWORD:'/user/update-password',
+    SEND_OTP_PASSWORD_RESET:'/password-reset/send-otp',
+    VERIFY_OTP_CHANGE_PASSWORD:'/password-reset/verify',
+
 }

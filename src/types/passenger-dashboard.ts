@@ -19,6 +19,8 @@ export type RootStackParamList = {
   RegisterEwallet: undefined;
   EmailVerification: {email: string};
   OTPVerification: {email: string};
+  ChangePassEmailVer: {email: string};
+  ChangePassword: {email: string};
 };
 
 export interface UserQRCodeData {

@@ -21,6 +21,8 @@ import EditProfileScreen from './src/screens/EditProfileScreen';
 import RegisterEwalletScreen from './src/screens/RegisterEwalletScreen';
 import EmailVerification from './src/screens/EmailVerification';
 import OTPVerification from './src/screens/OTPVerification';
+import ChangePassEmailVer from './src/screens/ChangePassEmailVer';
+import ChangePasswordScreen from './src/screens/ChangePasswordScreen';
 // Contexts
 import {TimerProvider} from './src/contexts/TimerContext';
 import {PusherProvider} from './src/pusher/PusherProvider';
@@ -68,6 +70,8 @@ const App: React.FC = () => {
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
             <Stack.Screen name="EmailVerification" component={EmailVerification} />
             <Stack.Screen name="OTPVerification" component={OTPVerification} />
+            <Stack.Screen name="ChangePassEmailVer" component={ChangePassEmailVer} />
+            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
             <Stack.Screen
               name="RegisterEwallet"
               component={RegisterEwalletScreen}
