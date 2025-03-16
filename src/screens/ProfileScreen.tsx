@@ -6,29 +6,36 @@ import {
   StyleSheet,
   Image,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {launchImageLibrary} from 'react-native-image-picker';
 import {RootStackParamList} from '../types/passenger-dashboard';
 import BackButton from '../components/BackButton';
-import {get} from '../utils/proxy';
+import {get, post, postFormData} from '../utils/proxy';
 import {API_ENDPOINTS} from '../api/api-endpoints';
+import ProfilePictureListener from '../pusher/ProfilePictureUploaded';
+import {BASE_URL} from '../utils/proxy';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
 type UserProfile = {
+  id: string;
   fname: string;
   lname: string;
   gender: string;
   age: string;
   birthday: string;
+  profile?: string;
 };
 
 const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProps>();
   const [profileData, setProfileData] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileImage, setProfileImage] = useState('');
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -36,6 +43,15 @@ const ProfileScreen: React.FC = () => {
       const response = await get(API_ENDPOINTS.DISPLAY_USER_DETAILS);
       if (response.status) {
         setProfileData(response.user);
+        if (response.user.profile) {
+          const fullImageUrl = `${BASE_URL}storage/${response.user.profile}`;
+          setProfileImage(fullImageUrl);
+        } else {
+          const fullName = `${response.user.fname} ${response.user.lname}`;
+          const encodedName = encodeURIComponent(fullName);
+          const imageUrl = `https://avatar.iran.liara.run/username?username=${encodedName}`;
+          setProfileImage(imageUrl);
+        }
       } else {
         console.error('Failed to fetch profile');
       }
@@ -43,6 +59,62 @@ const ProfileScreen: React.FC = () => {
       console.error('Error fetching profile:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleImageUpload = async () => {
+    const pickerResult = await launchImageLibrary({
+      mediaType: 'photo',
+      maxWidth: 1000,
+      maxHeight: 1000,
+      quality: 1,
+    });
+
+    if (pickerResult.didCancel) {
+      return;
+    }
+
+    if (pickerResult.errorCode) {
+      Alert.alert(
+        'Error',
+        pickerResult.errorMessage || 'Failed to pick image.',
+      );
+      return;
+    }
+
+    if (pickerResult.assets && pickerResult.assets.length > 0) {
+      const uri = pickerResult.assets[0].uri;
+      const formData = new FormData();
+      formData.append('profile', {
+        uri,
+        name: `profile_${Date.now()}.jpg`,
+        type: 'image/jpeg',
+      } as any);
+
+      try {
+        const response = await postFormData(
+          API_ENDPOINTS.UPDATE_USER_PROFILE_PIC,
+          formData,
+          true,
+        );
+        console.log('Upload Success:', response);
+
+        if (response.status) {
+          Alert.alert('Success', 'Profile picture updated successfully.');
+          fetchProfile();
+        } else {
+          Alert.alert(
+            'Error',
+            response.message || 'Failed to upload profile picture.',
+          );
+        }
+      } catch (error) {
+        console.error('Error uploading profile picture:', error);
+        Alert.alert(
+          'Error',
+          'An error occurred while uploading the profile picture.',
+        );
+      }
     }
   };
 
@@ -101,16 +173,18 @@ const ProfileScreen: React.FC = () => {
       <View style={styles.spacer} />
 
       <View style={styles.profileHeader}>
-        <View style={styles.profileImageContainer}>
-          <Image
-            source={require('../assets/24.png')}
-            style={styles.profileImage}
-          />
-        </View>
+        <TouchableOpacity
+          onPress={handleImageUpload}
+          style={styles.profileImageContainer}>
+          <Image source={{uri: profileImage}} style={styles.profileImage} />
+          <Icon name="pencil" size={24} color="white" style={styles.editIcon} />
+        </TouchableOpacity>
         <Text style={styles.profileName}>
           {profileData.fname} {profileData.lname}
         </Text>
       </View>
+
+      <ProfilePictureListener userId={profileData.id} />
 
       {renderEditableField('First Name', profileData.fname, 'fname')}
       {renderEditableField('Last Name', profileData.lname, 'lname')}
@@ -197,6 +271,15 @@ const styles = StyleSheet.create({
     color: 'red',
     fontSize: 16,
   },
+  editIcon: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.52)',
+    borderRadius: 12,
+    padding: 4,
+  },
+
 });
 
 export default ProfileScreen;

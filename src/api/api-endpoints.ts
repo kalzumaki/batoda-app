@@ -25,5 +25,6 @@ export const API_ENDPOINTS = {
     DISPLAY_TRAVEL_HISTORY_PER_PASSENGER: '/travel-history/user',
     DISPLAY_USER_DETAILS: '/user/show',
     UPDATE_USER_DETAILS: '/user/update',
+    UPDATE_USER_PROFILE_PIC: '/users/upload-profile',
 
 }

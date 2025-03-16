@@ -1,11 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { RequestConfig } from '../types/request-config';
-import { API_ENDPOINTS } from '../api/api-endpoints';
+import {RequestConfig} from '../types/request-config';
+import {API_ENDPOINTS} from '../api/api-endpoints';
 //zrok api gateway
 //docker
 const API_BASE_URL = 'https://zna0brw6skqo.share.zrok.io/api';
 export const BASE_URL = 'https://zna0brw6skqo.share.zrok.io/';
-
 
 // Request from API
 const request = async (url: string, config: RequestConfig) => {
@@ -24,7 +23,11 @@ const request = async (url: string, config: RequestConfig) => {
   }
 };
 // POST
-export const post = async (url: string, payload: any, needsAuth: boolean = false) => {
+export const post = async (
+  url: string,
+  payload: any,
+  needsAuth: boolean = false,
+) => {
   try {
     let token = null;
 
@@ -48,28 +51,31 @@ export const post = async (url: string, payload: any, needsAuth: boolean = false
   }
 };
 // POST w/o Payload
-export const postWithoutPayload = async (url: string, needsAuth: boolean = false) => {
-    try {
-      let token = null;
+export const postWithoutPayload = async (
+  url: string,
+  needsAuth: boolean = false,
+) => {
+  try {
+    let token = null;
 
-      if (needsAuth) {
-        token = await AsyncStorage.getItem('userToken');
-      }
-
-      const config: RequestConfig = {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: token ? `Bearer ${token}` : '',
-        },
-      };
-
-      return request(url, config);
-    } catch (error) {
-      console.error('Error making POST request (without payload):', error);
-      throw error;
+    if (needsAuth) {
+      token = await AsyncStorage.getItem('userToken');
     }
-  };
+
+    const config: RequestConfig = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: token ? `Bearer ${token}` : '',
+      },
+    };
+
+    return request(url, config);
+  } catch (error) {
+    console.error('Error making POST request (without payload):', error);
+    throw error;
+  }
+};
 
 // GET
 export const get = async (url: string) => {
@@ -91,10 +97,9 @@ export const get = async (url: string) => {
   }
 };
 
-
 export const fetchToken = async (username: string, password: string) => {
   try {
-    const payload = { username, password };
+    const payload = {username, password};
 
     const config: RequestConfig = {
       method: 'POST',
@@ -113,7 +118,11 @@ export const fetchToken = async (username: string, password: string) => {
 };
 
 // PUT
-export const put = async (url: string, payload: any, needsAuth: boolean = false) => {
+export const put = async (
+  url: string,
+  payload: any,
+  needsAuth: boolean = false,
+) => {
   try {
     let token = null;
 
@@ -139,25 +148,52 @@ export const put = async (url: string, payload: any, needsAuth: boolean = false)
 
 // LOGOUT
 export const logout = async () => {
-    const token = await AsyncStorage.getItem('userToken');
+  const token = await AsyncStorage.getItem('userToken');
 
-    if (!token) {
-      throw new Error('No token found');
+  if (!token) {
+    throw new Error('No token found');
+  }
+
+  const config: RequestConfig = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  };
+
+  try {
+    const response = await request(API_ENDPOINTS.LOGOUT, config);
+    await AsyncStorage.removeItem('userToken');
+    return response;
+  } catch (error) {
+    throw new Error('Logout failed');
+  }
+};
+
+export const postFormData = async (
+  url: string,
+  formData: FormData,
+  needsAuth: boolean = false,
+) => {
+  try {
+    let token = null;
+
+    if (needsAuth) {
+      token = await AsyncStorage.getItem('userToken');
     }
 
     const config: RequestConfig = {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        Authorization: token ? `Bearer ${token}` : '',
       },
+      body: formData,
     };
 
-    try {
-      const response = await request(API_ENDPOINTS.LOGOUT, config);
-      await AsyncStorage.removeItem('userToken');
-      return response;
-    } catch (error) {
-      throw new Error('Logout failed');
-    }
-  };
+    return request(url, config);
+  } catch (error) {
+    console.error('Error making POST request with FormData:', error);
+    throw error;
+  }
+};
