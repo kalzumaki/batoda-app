@@ -174,20 +174,43 @@ const ChangePasswordScreen: React.FC = () => {
       />
 
       <Text style={styles.label}>New Password</Text>
-      <TextInput
-        style={styles.input}
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+      <View style={styles.passwordContainer}>
+        <TextInput
+          style={styles.passwordInput}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry={!showPassword}
+        />
+        <TouchableOpacity onPress={togglePasswordVisibility}>
+          <View style={{marginRight: 8}}>
+            <Icon
+              name={showPassword ? 'eye' : 'eye-off'}
+              size={24}
+              color="#469c8f"
+            />
+          </View>
+        </TouchableOpacity>
+      </View>
 
       <Text style={styles.label}>Confirm Password</Text>
-      <TextInput
-        style={styles.input}
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
-        secureTextEntry
-      />
+      <View style={styles.passwordContainer}>
+        <TextInput
+          style={styles.passwordInput}
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry={!showConfirmPassword}
+        />
+        <TouchableOpacity onPress={toggleConfirmPasswordVisibility}>
+          <View style={{marginRight: 8}}>
+            <Icon
+              name={showConfirmPassword ? 'eye' : 'eye-off'}
+              size={24}
+              color="#469c8f"
+            />
+          </View>
+        </TouchableOpacity>
+      </View>
+
       <Text style={styles.note}>
         NOTE: You can change your password only once per day.
       </Text>
@@ -284,6 +307,25 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderColor: '#469c8f',
+    borderWidth: 1,
+    borderRadius: 8,
+    marginBottom: 20,
+    backgroundColor: 'white',
+  },
+  passwordInput: {
+    flex: 1,
+    height: 50,
+    paddingHorizontal: 10,
+    color: 'black',
+  },
+  icon: {
+    padding: 10,
+    marginRight: 5,
   },
 });
 
