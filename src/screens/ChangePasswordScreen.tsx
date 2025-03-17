@@ -38,82 +38,39 @@ const ChangePasswordScreen: React.FC = () => {
   const handleChangePassword = async () => {
     if (password !== confirmPassword) {
       Alert.alert('Error', 'Passwords do not match.');
-      console.log('Password mismatch:', password, confirmPassword); // Log for password mismatch
       return;
     }
 
-    console.log('Preparing to change password...');
-    console.log('Payload:', {
-      email,
-      otp,
-      password,
-      password_confirmation: confirmPassword,
-    });
-
     setLoading(true);
     try {
-      // Prepare the payload as per the required format
       const payload = {
         email,
         otp,
-        password, // new password
-        password_confirmation: confirmPassword, // password confirmation
+        password,
+        password_confirmation: confirmPassword,
       };
 
-      // Send the request with the prepared payload
-      console.log('Sending request to change password...');
       const response = await post(
         API_ENDPOINTS.VERIFY_OTP_CHANGE_PASSWORD,
         payload,
       );
 
-      console.log('Response received:', response); // Log the response
-
       if (response.status) {
         Alert.alert('Success', 'Password changed successfully!');
-        console.log('Password changed successfully!');
         navigation.navigate('Settings');
       } else {
-        // Check if the error is specific to changing the password twice in one day
-        if (
-          response.error === 'You can only update your password once per day.'
-        ) {
-          Alert.alert('Error', response.error);
-          console.log(
-            'Error: User attempted to change password twice in one day.',
-          );
-        } else {
-          Alert.alert(
-            'Error',
-            response.message || 'Failed to change password.',
-          );
-          console.log(
-            'Error response:',
-            response.message || 'Failed to change password',
-          );
-        }
+        // Display the exact error returned by the backend
+        Alert.alert('Error', response.error || 'Failed to change password.');
       }
     } catch (error: any) {
-      // Check if the error is a network error or a 400 error
-      if (error.response) {
-        // Server-side error response
-        const apiError = error.response.data || error.response;
-        console.log('API Error:', apiError);
-        if (apiError && apiError.error) {
-          Alert.alert('Error', apiError.error);
-          console.log('Backend Error:', apiError.error);
-        } else {
-          Alert.alert('Error', 'Failed to change password. Please try again.');
-          console.log('Error response:', apiError);
-        }
+      // If error.response.data exists, extract error from it. Otherwise, use a generic message.
+      if (error.response && error.response.data && error.response.data.error) {
+        Alert.alert('Error', error.response.data.error);
       } else {
-        // Network or other errors
-        Alert.alert('Error', 'Failed to change password. Please try again.');
-        console.error('Network error or unexpected error:', error);
+        Alert.alert('Error', 'You can only update your password once per day.');
       }
     } finally {
       setLoading(false);
-      console.log('Password change process finished.');
     }
   };
 
