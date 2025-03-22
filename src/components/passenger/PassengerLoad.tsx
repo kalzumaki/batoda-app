@@ -1,6 +1,14 @@
-import React, {useEffect, useState} from 'react';
-import {View, Text, Image, StyleSheet, Animated} from 'react-native';
-import {get} from '../../utils/proxy';
+import React, {useEffect, useRef, useState} from 'react';
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  Switch,
+  Alert,
+} from 'react-native';
+import {get, post} from '../../utils/proxy';
 import {
   initPusher,
   subscribeToChannel,
@@ -9,152 +17,267 @@ import {
 import {DispatchResponse} from '../../types/approved-dispatch';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
 import {PusherEvent} from '@pusher/pusher-websocket-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {RefreshTriggerProp} from '../../types/passenger-dashboard';
 
-const MAX_PASSENGERS = 6;
+const SEAT_POSITIONS = [
+  ['back_small_1', 'front_small_1', 'front_small_2'],
+  ['back_small_2', 'front_big_1', 'front_big_2'],
+];
 
-const ApprovedDispatches: React.FC = () => {
+const formatSeatName = (seat: string) => {
+  return seat
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const [passengerCount, setPassengerCount] = useState<number>(0);
-  const [error, setError] = useState<string | null>(null);
-  const pulseAnim = new Animated.Value(1);
+  const [multiSelectEnabled, setMultiSelectEnabled] = useState(false);
+  const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+  const [reservedSeats, setReservedSeats] = useState<string[]>([]);
+  const [dispatchId, setDispatchId] = useState<number | null>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchPassengerCount = async () => {
     try {
-      console.log('Fetching Passenger Count:');
       const data: DispatchResponse = await get(API_ENDPOINTS.PASSENGER_COUNT);
-      console.log('Fetched Data:', JSON.stringify(data));
+      setPassengerCount(data.dispatches?.[0]?.passenger_count || 0);
+    } catch {
+      console.error('Failed to fetch passenger count.');
+    }
+  };
 
-      if (data.dispatches && data.dispatches.length > 0) {
-        setPassengerCount(data.dispatches[0].passenger_count);
-        setError(null);
-      } else {
-        setPassengerCount(0);
-        console.log('No approved dispatches found.');
+  const fetchApprovedSeats = async () => {
+    try {
+      const response = await get(API_ENDPOINTS.DISPLAY_APPROVED_SEATS);
+      if (response.status) {
+        const reserved = response.dispatches.flatMap(
+          (dispatch: any) => dispatch.seat_position || [],
+        );
+        setReservedSeats(reserved);
+        await AsyncStorage.setItem('reservedSeats', JSON.stringify(reserved));
+        if (response.dispatches.length > 0) {
+          setDispatchId(response.dispatches[0].id);
+        }
       }
-    } catch (err) {
-      console.error('Error fetching passenger count:', err);
-      setError('Failed to fetch passenger count data.');
+    } catch (error) {
+      console.error('Error fetching approved seats:', error);
     }
   };
 
   useEffect(() => {
     fetchPassengerCount();
+    fetchApprovedSeats();
+  }, [refreshTrigger]);
 
-    const handleEvent = (event: PusherEvent) => {
-      console.log('Event received:', event);
-      if (
-        event.eventName === 'DispatchUpdated' ||
-        event.eventName === 'DispatchFinalized'
-      ) {
-        console.log('Refreshing data due to event...');
-        fetchPassengerCount();
+  const toggleSeatSelection = (seat: string) => {
+    if (reservedSeats.includes(seat)) return; // Prevent selecting reserved seats
+
+    setSelectedSeats(prevSeats => {
+      if (multiSelectEnabled) {
+        return prevSeats.includes(seat)
+          ? prevSeats.filter(s => s !== seat)
+          : [...prevSeats, seat];
+      } else {
+        return prevSeats.includes(seat) ? [] : [seat]; // Only allow one selection
       }
-    };
+    });
+  };
 
-    const subscribeToDispatches = async () => {
-      await initPusher();
-      await subscribeToChannel('dispatches', handleEvent);
-    };
+  const fetchReservedSeats = async () => {
+    try {
+      if (!dispatchId) return; // Ensure dispatchId exists before fetching
 
-    subscribeToDispatches();
+      const response = await get(
+        `${API_ENDPOINTS.DISPLAY_SEATS}?dispatch_id=${dispatchId}`,
+      );
 
-    return () => {
-      console.log('Cleaning up Pusher subscription...');
-      unsubscribeFromChannel('dispatches', handleEvent);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (passengerCount === MAX_PASSENGERS) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.2,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-        ]),
-      ).start();
-    } else {
-      pulseAnim.setValue(1);
+      if (response.status) {
+        const reserved = response.reserved_seats.map(
+          (seat: {seat_position: string}) => seat.seat_position,
+        );
+        setReservedSeats(reserved);
+        await AsyncStorage.setItem('reservedSeats', JSON.stringify(reserved));
+      }
+    } catch (error) {
+      console.error('Error fetching reserved seats:', error);
     }
-  }, [passengerCount]);
+  };
+  useEffect(() => {
+    if (dispatchId) {
+      fetchReservedSeats();
+    }
+  }, [dispatchId]);
 
-  const passengers = Array.from({length: MAX_PASSENGERS}, (_, index) => (
-    <Animated.View
-      key={index}
-      style={[
-        styles.iconContainer,
-        index < passengerCount ? styles.filled : styles.empty,
-        passengerCount === MAX_PASSENGERS
-          ? {transform: [{scale: pulseAnim}]}
-          : null,
-      ]}>
-      <Image source={require('../../assets/2.png')} style={styles.icon} />
-    </Animated.View>
-  ));
+  const startCountdown = () => {
+    if (countdownRef.current) clearInterval(countdownRef.current); // Prevent multiple timers
+
+    setCountdown(120);
+    countdownRef.current = setInterval(() => {
+      setCountdown(prev => {
+        if (prev !== null && prev > 0) {
+          return prev - 1;
+        } else {
+          clearInterval(countdownRef.current!);
+          return null;
+        }
+      });
+    }, 1000);
+  };
+
+  const confirmReservation = async () => {
+    if (selectedSeats.length === 0 || !dispatchId) return;
+
+    Alert.alert(
+      'Confirm Reservation',
+      'Complete the payment within 2 minutes, or your reservation will be canceled automatically.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Proceed',
+          onPress: async () => {
+            try {
+              const response = await post(
+                API_ENDPOINTS.RESERVE_SEAT,
+                {
+                  dispatch_id: dispatchId,
+                  seat_position: selectedSeats,
+                },
+                true,
+              );
+
+              if (response.status) {
+                // Merge newly reserved seats with the existing ones
+                setReservedSeats(prevSeats => [
+                  ...new Set([...prevSeats, ...response.reserved_seats]),
+                ]);
+
+                setSelectedSeats([]);
+                Alert.alert('Success', response.message);
+                startCountdown(); // Start the countdown timer
+              } else {
+                Alert.alert('Error', 'Reservation failed.');
+              }
+            } catch (error) {
+              Alert.alert('Error', 'Failed to reserve seats.');
+            }
+          },
+        },
+      ],
+    );
+  };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Number of Passengers Boarded</Text>
-      {error ? (
-        <Text style={styles.error}>{error}</Text>
-      ) : (
-        <>
-          <View style={styles.passengerIcons}>{passengers}</View>
-          <Text style={styles.passengerCount}>
-            {passengerCount}/{MAX_PASSENGERS}
-          </Text>
-        </>
-      )}
+      <Text style={styles.title}>Seat Reservation</Text>
+      <View style={styles.card}>
+        <View style={styles.toggleContainer}>
+          <Text style={styles.toggleLabel}>Multi-Select</Text>
+          <Switch
+            value={multiSelectEnabled}
+            onValueChange={value => {
+              setMultiSelectEnabled(value);
+              if (!value) setSelectedSeats([]);
+            }}
+          />
+        </View>
+        <View>
+          {countdown !== null && (
+            <Text style={{fontSize: 16, fontWeight: 'bold', color: 'red'}}>
+              Payment expires in: {Math.floor(countdown / 60)}:
+              {(countdown % 60).toString().padStart(2, '0')}
+            </Text>
+          )}
+        </View>
+        <View style={styles.seatGrid}>
+          {SEAT_POSITIONS.map((row, rowIndex) => (
+            <View key={rowIndex} style={styles.row}>
+              {row.map(seat => (
+                <TouchableOpacity
+                  key={seat}
+                  style={[
+                    styles.seat,
+                    reservedSeats.includes(seat)
+                      ? styles.reserved
+                      : selectedSeats.includes(seat)
+                      ? styles.selected
+                      : null,
+                  ]}
+                  onPress={() => toggleSeatSelection(seat)}
+                  disabled={reservedSeats.includes(seat)}>
+                  <Image
+                    source={require('../../assets/2.png')}
+                    style={styles.icon}
+                  />
+                  <Text style={styles.seatLabel}>{formatSeatName(seat)}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ))}
+        </View>
+        {selectedSeats.length > 0 && (
+          <TouchableOpacity
+            style={styles.confirmButton}
+            onPress={confirmReservation}>
+            <Text style={styles.confirmButtonText}>Confirm Reservation</Text>
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    backgroundColor: '#ffffff',
-  },
+  container: {flex: 1, padding: 20, backgroundColor: '#fff'},
   title: {
-    fontSize: 16,
-    color: 'black',
-    marginBottom: 10,
-  },
-  passengerIcons: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 10,
-  },
-  iconContainer: {
-    marginHorizontal: 5,
-    padding: 5,
-    borderRadius: 5,
-  },
-  filled: {
-    backgroundColor: '#62a287',
-  },
-  empty: {
-    backgroundColor: '#c6d9d7',
-  },
-  icon: {
-    width: 40,
-    height: 40,
-  },
-  passengerCount: {
-    fontSize: 16,
-    color: '#2d665f',
-    textAlign: 'center',
-  },
-  error: {
     fontSize: 18,
-    color: 'red',
+    fontWeight: 'bold',
     textAlign: 'center',
+    color: 'black',
+    marginBottom: 20,
   },
+  card: {
+    backgroundColor: '#f8f8f8',
+    borderRadius: 12,
+    padding: 15,
+    elevation: 4,
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 15,
+  },
+  toggleLabel: {fontSize: 14, marginRight: 10, color: 'black'},
+  seatGrid: {alignItems: 'center'},
+  row: {flexDirection: 'row', justifyContent: 'center', marginBottom: 10},
+  seat: {
+    width: 90,
+    height: 90,
+    margin: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    backgroundColor: '#e0e0e0',
+  },
+  selected: {backgroundColor: '#62a287'},
+  reserved: {backgroundColor: '#a3a3a3'},
+  icon: {width: 40, height: 40, resizeMode: 'contain'},
+  seatLabel: {marginTop: 5, fontSize: 12, textAlign: 'center'},
+  confirmButton: {
+    backgroundColor: '#4CAF50',
+    padding: 12,
+    borderRadius: 10,
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  confirmButtonText: {color: '#fff', fontSize: 16, fontWeight: 'bold'},
 });
 
 export default ApprovedDispatches;

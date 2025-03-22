@@ -12,12 +12,23 @@ import DriverDashboard from './src/screens/driver/DriverDashboard';
 import DispatcherDashboard from './src/screens/dispatcher/DispatcherDashboard';
 import ReserveRideScreen from './src/screens/passenger/ReserveRideScreen';
 import ScanQRScreen from './src/screens/passenger/ScanQR';
-
+import UserDetailsScreen from './src/screens/passenger/UserDetailsScreen';
+import TravelHistoryScreen from './src/screens/passenger/TravelHistoryScreen';
+import TravelHistoryDetailScreen from './src/screens/passenger/TravelHistoryDetailScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
+import EditProfileScreen from './src/screens/EditProfileScreen';
+import RegisterEwalletScreen from './src/screens/RegisterEwalletScreen';
+import EmailVerification from './src/screens/EmailVerification';
+import OTPVerification from './src/screens/OTPVerification';
+import ChangePassEmailVer from './src/screens/ChangePassEmailVer';
+import ChangePasswordScreen from './src/screens/ChangePasswordScreen';
 // Contexts
 import {TimerProvider} from './src/contexts/TimerContext';
 import {PusherProvider} from './src/pusher/PusherProvider';
 
-const Stack = createNativeStackNavigator();
+import {RootStackParamList} from './src/types/passenger-dashboard';
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const App: React.FC = () => {
   return (
@@ -42,6 +53,29 @@ const App: React.FC = () => {
             {/* floating nav */}
             <Stack.Screen name="ReserveRide" component={ReserveRideScreen} />
             <Stack.Screen name="ScanQR" component={ScanQRScreen} />
+            <Stack.Screen
+              name="UserDetailsScreen"
+              component={UserDetailsScreen}
+            />
+            <Stack.Screen
+              name="TravelHistory"
+              component={TravelHistoryScreen}
+            />
+            <Stack.Screen
+              name="TravelHistoryDetail"
+              component={TravelHistoryDetailScreen}
+            />
+            <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+            <Stack.Screen name="EmailVerification" component={EmailVerification} />
+            <Stack.Screen name="OTPVerification" component={OTPVerification} />
+            <Stack.Screen name="ChangePassEmailVer" component={ChangePassEmailVer} />
+            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+            <Stack.Screen
+              name="RegisterEwallet"
+              component={RegisterEwalletScreen}
+            />
           </Stack.Navigator>
           <Toast />
         </NavigationContainer>

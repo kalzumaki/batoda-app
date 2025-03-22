@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome';
 import Toast from 'react-native-toast-message';
 import {get} from '../../utils/proxy';
 import {
@@ -14,21 +13,26 @@ import {
   subscribeToChannel,
   unsubscribeFromChannel,
 } from '../../pusher/pusher';
+import {useNavigation} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {RootStackParamList} from '../../types/passenger-dashboard';
+
 import {Dispatch, DispatchResponse} from '../../types/approved-dispatch';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
 import {PusherEvent} from '@pusher/pusher-websocket-react-native';
+import {RefreshTriggerProp} from '../../types/passenger-dashboard';
 
-const DispatchQueue: React.FC = () => {
+const DispatchQueue: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const [dispatches, setDispatches] = useState<Dispatch[]>([]);
   const [noUpcomingQueue, setNoUpcomingQueue] = useState<boolean>(false);
   const [minutesLeft, setMinutesLeft] = useState<{[id: number]: number}>({});
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const fetchDispatches = async () => {
     try {
       const response: DispatchResponse = await get(API_ENDPOINTS.IN_QUEUE);
       if (response.status) {
-        console.log('Fetched dispatches:', response.dispatches);
-
         const activeDispatches = response.dispatches.filter(
           dispatch => dispatch.is_dispatched !== 1,
         );
@@ -46,6 +50,7 @@ const DispatchQueue: React.FC = () => {
         }, {} as {[id: number]: number});
 
         setMinutesLeft(initialMinutesLeft);
+
         if (activeDispatches.length > 0) {
           setDispatches(activeDispatches);
           setNoUpcomingQueue(false);
@@ -71,12 +76,10 @@ const DispatchQueue: React.FC = () => {
     fetchDispatches();
 
     const handleEvent = (event: PusherEvent) => {
-      console.log('Received event:', event);
       if (
         event.eventName === 'DispatchUpdated' ||
         event.eventName === 'DispatchFinalized'
       ) {
-        console.log('Refreshing data due to event...');
         fetchDispatches();
       }
     };
@@ -89,10 +92,9 @@ const DispatchQueue: React.FC = () => {
     subscribeToDispatches();
 
     return () => {
-      console.log('Unsubscribing from Pusher...');
       unsubscribeFromChannel('dispatches', handleEvent);
     };
-  }, []);
+  }, [refreshTrigger]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -111,6 +113,17 @@ const DispatchQueue: React.FC = () => {
     return () => clearInterval(interval);
   }, [dispatches]);
 
+  const handlePress = (dispatch: Dispatch) => {
+    console.log('Navigating to ReserveRide with:', {
+      dispatchId: dispatch.id,
+      tricycleNumber: dispatch.tricycle.tricycle_number,
+    });
+    navigation.navigate('ReserveRide', {
+      dispatchId: dispatch.id,
+      tricycleNumber: dispatch.tricycle.tricycle_number,
+    });
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Tricycle Next in Queue</Text>
@@ -123,7 +136,7 @@ const DispatchQueue: React.FC = () => {
           <Text style={styles.emptyText}>No tricycles in queue.</Text>
         ) : (
           dispatches.map(item => (
-            <TouchableOpacity key={item.id}>
+            <TouchableOpacity key={item.id} onPress={() => handlePress(item)}>
               <View style={styles.dispatchItem}>
                 <Text style={styles.tricycleNumber}>
                   {item.tricycle.tricycle_number}
@@ -149,11 +162,6 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: 'white',
     borderRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowRadius: 2,
   },
   title: {
     textAlign: 'left',
@@ -182,20 +190,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#c6d9d7',
     borderRadius: 10,
     marginBottom: 10,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 1,
   },
   tricycleNumber: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#2d665f',
-    // color: 'black',
     marginLeft: 10,
   },
   timeContainer: {
@@ -205,12 +204,7 @@ const styles = StyleSheet.create({
   timeText: {
     fontSize: 16,
     color: '#2d665f',
-    // color: 'black',
     marginRight: 10,
-  },
-  icon: {
-    fontSize: 30,
-    color: '#2d665f',
   },
   emptyText: {
     textAlign: 'center',

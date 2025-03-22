@@ -1,9 +1,9 @@
 // src/components/InputComponent.tsx
 
 import React from 'react';
-import {TextInput, StyleSheet} from 'react-native';
+import { TextInput, StyleSheet, TextInputProps } from 'react-native';
 
-interface InputComponentProps {
+interface InputComponentProps extends TextInputProps {
   placeholder: string;
   value: string;
   onChangeText: (text: string) => void;
@@ -15,6 +15,9 @@ const InputComponent: React.FC<InputComponentProps> = ({
   value,
   onChangeText,
   secureTextEntry,
+  keyboardType = 'default',
+  maxLength,
+  ...props
 }) => {
   return (
     <TextInput
@@ -24,6 +27,9 @@ const InputComponent: React.FC<InputComponentProps> = ({
       onChangeText={onChangeText}
       secureTextEntry={secureTextEntry}
       placeholderTextColor="#A9A9A9"
+      keyboardType={keyboardType}
+      maxLength={maxLength}
+      {...props}
     />
   );
 };

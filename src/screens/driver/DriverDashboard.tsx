@@ -8,11 +8,7 @@ import { User } from '../../types/user'; // Import the Driver type
 import Toast from 'react-native-toast-message';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-
-type RootStackParamList = {
-  Login: undefined;
-  DriverDashboard: undefined;
-};
+import { RootStackParamList } from '../../types/passenger-dashboard';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
