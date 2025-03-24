@@ -1,75 +1,107 @@
-// src/screens/driver/DriverDashboard.tsx
-
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Button } from 'react-native';
+import React, {useEffect, useState, useCallback} from 'react';
+import {
+  View,
+  FlatList,
+  RefreshControl,
+  ActivityIndicator,
+  StyleSheet,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { get, logout } from '../../utils/proxy';
-import { User } from '../../types/user'; // Import the Driver type
-import Toast from 'react-native-toast-message';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../types/passenger-dashboard';
+import {get} from '../../utils/proxy';
+import {useNavigation} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {RootStackParamList} from '../../types/passenger-dashboard';
+import {API_ENDPOINTS} from '../../api/api-endpoints';
+import Header from '../../components/driver/Header';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
 const DriverDashboard: React.FC = () => {
-  const [driverData, setDriverData] = useState<User | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const navigation = useNavigation<NavigationProps>();
 
-  useEffect(() => {
-    const fetchDriverData = async () => {
+  const checkAuth = async () => {
+    try {
       const token = await AsyncStorage.getItem('userToken');
       if (token) {
-        try {
-          const data = await get('/drivers');
-          setDriverData(data.data[0]);
-        } catch (error) {
-          console.error('Error fetching driver data:', error);
-        }
+        await checkEwallet();
+        setIsAuthenticated(true);
+      } else {
+        navigation.replace('Login');
       }
-    };
-
-    fetchDriverData();
-  }, []);
-
-  const handleLogout = async () => {
-    try {
-      console.log('Attempting to log out...');
-
-      await logout();
-
-      console.log('Logout successful, removing token from AsyncStorage...');
-
-      Toast.show({
-        type: 'success',
-        text1: 'Logout Successful',
-      });
-
-      console.log('Navigating back to the login screen...');
-      navigation.replace('Login');
     } catch (error) {
-      console.error('Error logging out:', error);
-
-      Toast.show({
-        type: 'error',
-        text1: 'Logout Failed',
-        text2: 'Please try again.',
-      });
+      console.error('❌ Error during authentication:', error);
+      navigation.replace('Login');
+    } finally {
+      setLoading(false);
     }
   };
 
+  const checkEwallet = async () => {
+    try {
+      console.log('Checking e-wallet...');
+      const response = await get(API_ENDPOINTS.SHOW_EWALLET);
+      console.log('E-Wallet API Response:', response);
+
+      if (!response.status || !response.data) {
+        console.log('❌ No E-Wallet found. Redirecting to Register...');
+        navigation.replace('RegisterEwallet');
+      }
+    } catch (error: any) {
+      console.error('❌ Error checking e-wallet:', error);
+      navigation.replace('RegisterEwallet');
+    }
+  };
+
+  useEffect(() => {
+    checkAuth();
+  }, [navigation]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await checkAuth();
+    setRefreshing(false);
+    setRefreshTrigger(prev => prev + 1);
+  }, []);
+
+  const renderItems = [
+    {id: 'header', component: <Header refreshTrigger={refreshTrigger} />},
+  ];
+
+  const renderItem = ({
+    item,
+  }: {
+    item: {id: string; component: React.ReactNode};
+  }) => <View key={item.id}>{item.component}</View>;
+
+  if (loading) {
+    return (
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="#007bff" />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Driver Dashboard</Text>
-      {driverData ? (
-        <Text style={styles.welcomeText}>
-          Welcome, {driverData.fname} {driverData.lname}!
-        </Text>
-      ) : (
-        <Text style={styles.loadingText}>Loading your data...</Text>
-      )}
-
-      <Button title="Logout" onPress={handleLogout} color="#FF6F61" />
+      {isAuthenticated ? (
+        <FlatList
+          data={renderItems}
+          renderItem={renderItem}
+          keyExtractor={item => item.id}
+          scrollEnabled={true}
+          contentContainerStyle={styles.contentContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+            />
+          }
+        />
+      ) : null}
     </View>
   );
 };
@@ -77,25 +109,16 @@ const DriverDashboard: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: 'white',
+  },
+  loaderContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#145A32',
   },
-  title: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: '#F1F8E9',
-    marginBottom: 20,
-  },
-  welcomeText: {
-    fontSize: 20,
-    color: '#E8F5E9',
-    textAlign: 'center',
-    paddingHorizontal: 20,
-  },
-  loadingText: {
-    fontSize: 18,
-    color: '#C8E6C9',
+  contentContainer: {
+    flexGrow: 1,
+    paddingBottom: 80,
   },
 });
 
