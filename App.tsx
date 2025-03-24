@@ -23,6 +23,7 @@ import EmailVerification from './src/screens/EmailVerification';
 import OTPVerification from './src/screens/OTPVerification';
 import ChangePassEmailVer from './src/screens/ChangePassEmailVer';
 import ChangePasswordScreen from './src/screens/ChangePasswordScreen';
+import AddTricycleNumberScreen from './src/screens/driver/AddTricycleNumberScreen';
 // Contexts
 import {TimerProvider} from './src/contexts/TimerContext';
 import {PusherProvider} from './src/pusher/PusherProvider';
@@ -72,6 +73,7 @@ const App: React.FC = () => {
             <Stack.Screen name="OTPVerification" component={OTPVerification} />
             <Stack.Screen name="ChangePassEmailVer" component={ChangePassEmailVer} />
             <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+            <Stack.Screen name="AddTricycleNumber" component={AddTricycleNumberScreen} />
             <Stack.Screen
               name="RegisterEwallet"
               component={RegisterEwalletScreen}

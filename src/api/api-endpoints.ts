@@ -31,5 +31,8 @@ export const API_ENDPOINTS = {
     CHANGE_PASSWORD:'/user/update-password',
     SEND_OTP_PASSWORD_RESET:'/password-reset/send-otp',
     VERIFY_OTP_CHANGE_PASSWORD:'/password-reset/verify',
+    FETCH_TRICYCLE_NUMBER:'/driver/tricycle-number',
+    ADD_TRICYCLE_NUMBER:'/drivers/tricycle-number',
+    UPDATE_TRICYCLE_NUMBER:'/driver/tricycle-number/update',
 
 }
