@@ -40,7 +40,8 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const [dispatchId, setDispatchId] = useState<number | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
-
+  const prevDispatchIdRef = useRef(dispatchId);
+  const [expiryReservations, setExpiryReservations] = useState<any[]>([]);
   const fetchPassengerCount = async () => {
     try {
       const data: DispatchResponse = await get(API_ENDPOINTS.PASSENGER_COUNT);
@@ -53,6 +54,7 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const fetchApprovedSeats = async () => {
     try {
       const response = await get(API_ENDPOINTS.DISPLAY_APPROVED_SEATS);
+      console.log('Getting Approved Seats: ', response);
       if (response.status) {
         const reserved = response.dispatches.flatMap(
           (dispatch: any) => dispatch.seat_position || [],
@@ -67,11 +69,47 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
       console.error('Error fetching approved seats:', error);
     }
   };
-
   useEffect(() => {
-    fetchPassengerCount();
     fetchApprovedSeats();
   }, [refreshTrigger]);
+
+  useEffect(() => {
+    console.log('Subscribing to Pusher channels...');
+
+    const onEvent = (event: PusherEvent) => {
+      console.log('Event received:', event);
+      if (
+        event.eventName === 'ApprovedReservedSeatsFetched' ||
+        event.eventName === 'DispatchUpdated' ||
+        event.eventName === 'DispatchFinalized'
+      ) {
+        console.log('Refreshing reserved seats due to event...');
+        fetchApprovedSeats();
+      }
+    };
+
+    const subscribeToChannels = async () => {
+      try {
+        await initPusher();
+        await subscribeToChannel('approved.reserved.seats', onEvent);
+        await subscribeToChannel('dispatches', onEvent);
+        console.log(
+          'Subscribed to approved.reserved.seats and dispatches channels.',
+        );
+      } catch (error) {
+        console.error('Error subscribing to channels:', error);
+      }
+    };
+
+    subscribeToChannels();
+
+    return () => {
+      console.log('Cleaning up Pusher subscriptions...');
+      unsubscribeFromChannel('approved.reserved.seats', onEvent);
+      unsubscribeFromChannel('dispatches', onEvent);
+      console.log('Unsubscribed from channels.');
+    };
+  }, [dispatchId]); // Depend on dispatchId
 
   const toggleSeatSelection = (seat: string) => {
     if (reservedSeats.includes(seat)) return; // Prevent selecting reserved seats
@@ -129,7 +167,15 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   };
 
   const confirmReservation = async () => {
-    if (selectedSeats.length === 0 || !dispatchId) return;
+    if (selectedSeats.length === 0) return;
+
+    if (!dispatchId) {
+      Alert.alert(
+        'No Approved Dispatch',
+        'No approved drivers waiting for dispatch.',
+      );
+      return;
+    }
 
     Alert.alert(
       'Confirm Reservation',
@@ -195,6 +241,7 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
             </Text>
           )}
         </View>
+
         <View style={styles.seatGrid}>
           {SEAT_POSITIONS.map((row, rowIndex) => (
             <View key={rowIndex} style={styles.row}>

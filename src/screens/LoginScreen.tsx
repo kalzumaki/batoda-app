@@ -56,7 +56,7 @@ const Login: React.FC = () => {
 
       const token = data.access_token;
       const userType = data.user.user_type_id;
-
+      await AsyncStorage.setItem('userId', data.user.id.toString());
       if (token) {
         await AsyncStorage.setItem('userToken', token);
 
