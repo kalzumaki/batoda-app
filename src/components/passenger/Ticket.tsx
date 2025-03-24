@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,13 @@ import {
   RefreshTriggerProp,
   RootStackParamList,
 } from '../../types/passenger-dashboard';
+import {PusherEvent} from '@pusher/pusher-websocket-react-native';
+import {
+  initPusher,
+  subscribeToChannel,
+  unsubscribeFromChannel,
+} from '../../pusher/pusher';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
@@ -23,28 +30,81 @@ const Ticket: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  const fetchTicket = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await get(API_ENDPOINTS.DISPLAY_TICKET);
+
+      if (response.status && response.ticket) {
+        setTicketNumber(response.ticket.ticket_number);
+      } else {
+        setTicketNumber(null);
+      }
+    } catch (err) {
+      console.error('Error fetching ticket:', err);
+      setError('Failed to fetch ticket');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchTicket = async () => {
-      setLoading(true);
-      setError(null);
+    fetchTicket();
+  }, [refreshTrigger]);
 
-      try {
-        const response = await get(API_ENDPOINTS.DISPLAY_TICKET);
+  useEffect(() => {
+    console.log('Subscribing to user-specific channel...');
 
-        if (response.status && response.ticket) {
-          setTicketNumber(response.ticket.ticket_number);
-        } else {
-          setTicketNumber(null);
-        }
-      } catch (err) {
-        console.error('Error fetching ticket:', err);
-        setError('Failed to fetch ticket');
-      } finally {
-        setLoading(false);
+    const onEvent = (event: PusherEvent) => {
+      console.log('Event received:', event);
+
+      if (
+        event.eventName === 'UnpaidTicketFetched' ||
+        event.eventName === 'DispatchUpdated' ||
+        event.eventName === 'DispatchFinalized'
+      ) {
+        console.log('Broadcast received, fetching new ticket data...');
+        fetchTicket();
       }
     };
 
-    fetchTicket();
+    const subscribeToDisplayTicket = async () => {
+      try {
+        await initPusher();
+        const userId = await AsyncStorage.getItem('userId');
+        if (userId) {
+          await subscribeToChannel(`user.${userId}`, onEvent);
+          console.log(`Subscribed to user.${userId} channel.`);
+        } else {
+          console.warn('No user ID found for subscription.');
+        }
+      } catch (error) {
+        console.error('Error subscribing to user-specific channel:', error);
+      }
+    };
+
+    subscribeToDisplayTicket();
+
+    return () => {
+      const unsubscribeFromDisplayTicket = async () => {
+        try {
+          const userId = await AsyncStorage.getItem('userId');
+          if (userId) {
+            await unsubscribeFromChannel(`user.${userId}`, onEvent);
+            console.log(`Unsubscribed from user.${userId} channel.`);
+          }
+        } catch (error) {
+          console.error(
+            'Error unsubscribing from user-specific channel:',
+            error,
+          );
+        }
+      };
+
+      unsubscribeFromDisplayTicket();
+    };
   }, [refreshTrigger]);
 
   const handlePress = () => {

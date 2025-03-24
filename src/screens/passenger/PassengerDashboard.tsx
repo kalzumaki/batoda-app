@@ -18,7 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import FloatingNavigation from '../../components/passenger/FloatingNav';
 import {fetchToken, get, post, postWithoutPayload} from '../../utils/proxy';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
-
+import {useFocusEffect} from '@react-navigation/native';
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
 const PassengerDashboard: React.FC = () => {
@@ -44,6 +44,12 @@ const PassengerDashboard: React.FC = () => {
   useEffect(() => {
     checkAuth();
   }, [navigation]);
+
+  //   useFocusEffect(
+  //     useCallback(() => {
+  //       checkAuth();
+  //     }, [navigation])
+  //   );
   const checkEwallet = async () => {
     try {
       console.log('Checking e-wallet...');
