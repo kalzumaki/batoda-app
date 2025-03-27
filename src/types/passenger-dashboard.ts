@@ -22,6 +22,7 @@ export type RootStackParamList = {
   ChangePassEmailVer: {email: string};
   ChangePassword: {email: string};
   AddTricycleNumber: undefined;
+  EditTricycleNumber: undefined;
 };
 
 export interface UserQRCodeData {

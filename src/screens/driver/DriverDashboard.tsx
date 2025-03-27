@@ -13,6 +13,7 @@ import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../../types/passenger-dashboard';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
 import Header from '../../components/driver/Header';
+import ShowDispatches from '../../components/driver/ShowDispatches';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
@@ -102,6 +103,7 @@ const DriverDashboard: React.FC = () => {
 
   const renderItems = [
     {id: 'header', component: <Header refreshTrigger={refreshTrigger} />},
+    // {id: 'dispatches', component: <ShowDispatches refreshTrigger={refreshTrigger} />},
   ];
 
   const renderItem = ({

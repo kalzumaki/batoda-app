@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
@@ -13,6 +13,18 @@ const CustomDropdown: React.FC = () => {
   const navigation = useNavigation<NavigationProps>();
   const [visible, setVisible] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false); // Track loading state for logout
+  const [userRole, setUserRole] = useState(0);
+  const [tricycleNumber, setTricycleNumber] = useState('');
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      const role = await AsyncStorage.getItem('userType');
+      const number = await AsyncStorage.getItem('tricycleNumber');
+      setUserRole(role ? parseInt(role) : 0);
+      setTricycleNumber(number || '');
+    };
+    fetchUserRole();
+  }, []);
 
   const toggleDropdown = () => setVisible(!visible);
 
@@ -52,14 +64,24 @@ const CustomDropdown: React.FC = () => {
           <Text style={styles.menuTitle}>Menu</Text>
           <TouchableOpacity
             style={styles.dropdownItem}
-            onPress={() => navigation.navigate('Profile')}>
+            onPress={() => navigation.navigate('Profile')}
+          >
             <Text style={styles.itemText}>Profile</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.dropdownItem}
-            onPress={() => navigation.navigate('Settings')}>
+            onPress={() => navigation.navigate('Settings')}
+          >
             <Text style={styles.itemText}>Settings</Text>
           </TouchableOpacity>
+          {userRole === 6 && (
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={() => navigation.navigate('EditTricycleNumber')}
+            >
+              <Text style={styles.itemText}>Edit Tricycle No.</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={styles.dropdownItem}
             onPress={handleLogout} // Trigger logout on press

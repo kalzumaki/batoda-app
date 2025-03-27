@@ -13,6 +13,7 @@ import {
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useNavigation} from '@react-navigation/native';
 import {User} from '../../types/user';
+import ShowDispatches from './ShowDispatches';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
@@ -25,6 +26,7 @@ const Header: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [authenticatedUser, setAuthenticatedUser] = useState<any>(null);
   const [profileImage, setProfileImage] = useState<string | null>(null);
+
   useEffect(() => {
     const checkUser = async () => {
       const token = await AsyncStorage.getItem('userToken');
@@ -54,25 +56,19 @@ const Header: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
         console.log('No token fetched from headercomponent');
       }
     };
-    checkUser();
-  }, []);
-
-  useEffect(() => {
     const fetchDriverData = async () => {
       try {
         const response = await get(API_ENDPOINTS.APPROVED_DISPATCH);
         const data = response.data;
         setDriverData(data);
         console.log('Driver data Approved Dispatch:', data);
-        } catch (error) {
-            console.error('Error fetching driver data:', error);
-            }
-        }
-        fetchDriverData();
-    }, [refreshTrigger]);
-
-
-
+      } catch (error) {
+        console.error('Error fetching driver data:', error);
+      }
+    };
+    checkUser();
+    fetchDriverData();
+  }, [refreshTrigger]);
 
   return (
     <View style={styles.container}>
@@ -104,6 +100,7 @@ const Header: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
           <CustomDropdown />
         </View>
       </View>
+      <ShowDispatches refreshTrigger={refreshTrigger} />
     </View>
   );
 };
@@ -113,7 +110,8 @@ const styles = StyleSheet.create({
     width: '100%',
     padding: 10,
     backgroundColor: '#2d665f',
-    // borderRadius: 10,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
   },
   topBar: {
     flexDirection: 'row',

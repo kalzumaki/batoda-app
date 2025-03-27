@@ -19,6 +19,7 @@ export interface Driver {
   is_approved: number;
   created_at: string;
   updated_at: string;
+  profile:string;
 }
 
 export interface Dispatcher {
@@ -59,4 +60,3 @@ export interface DispatchResponse {
   message: string;
   dispatches: Dispatch[];
 }
-
