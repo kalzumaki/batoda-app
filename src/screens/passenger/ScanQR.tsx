@@ -25,6 +25,10 @@ interface DispatchQRCodeData {
   wallet_id: number;
 }
 
+interface PayDispatcher {
+  dispatch_id: number;
+}
+
 interface QRCodeEvent {
   data: string;
 }
@@ -45,6 +49,8 @@ const ScanQRScreen: React.FC = () => {
 
       if (isDispatchQRCode(parsedData)) {
         await handleTransactionQRCode(parsedData);
+      } else if (isDispatcherQRCode(parsedData)) {
+        await handleDispatcherQRCode(parsedData);
       } else if (isUserQRCode(parsedData)) {
         handleUserQRCodeRead(parsedData);
       } else {
@@ -57,7 +63,26 @@ const ScanQRScreen: React.FC = () => {
       setLoading(false); // Hide loading indicator
     }
   };
+  const isDispatcherQRCode = (data: any): data is PayDispatcher => {
+    return data && typeof data.dispatch_id === 'number';
+  };
+  const handleDispatcherQRCode = async (data: PayDispatcher) => {
+    try {
+      const response = await post(API_ENDPOINTS.PAY_DISPATCHER, data, true);
+      console.log('API Response:', response);
 
+      if (response.status) {
+        Alert.alert('Success', 'Dispatcher payment completed!', [
+          {text: 'OK', onPress: () => navigation.goBack()},
+        ]);
+      } else {
+        Alert.alert('Error', response.message || 'Dispatcher payment failed');
+      }
+    } catch (error) {
+      console.error('Dispatcher Transaction Error:', error);
+      Alert.alert('Error', 'Transaction failed. Please try again.');
+    }
+  };
   // Type guards for QR code validation
   const isDispatchQRCode = (data: any): data is DispatchQRCodeData => {
     return (

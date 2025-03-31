@@ -181,11 +181,15 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 16,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 4},
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 6,
+    minHeight: 250, // Adjust based on your UI preference
+    justifyContent: 'center',
+    alignItems: 'center',
   },
+
   dispatchingNow: {
     fontSize: 22,
     fontWeight: 'bold',

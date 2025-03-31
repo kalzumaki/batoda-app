@@ -15,6 +15,7 @@ import {API_ENDPOINTS} from '../../api/api-endpoints';
 import Header from '../../components/driver/Header';
 import ShowDispatches from '../../components/driver/ShowDispatches';
 import ShowInQueue from '../../components/driver/ShowInQueue';
+import BottomNav from '../../components/driver/BottomNav';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
@@ -94,7 +95,6 @@ const DriverDashboard: React.FC = () => {
     checkAuth();
   }, [navigation]);
 
-
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     await checkAuth();
@@ -106,6 +106,7 @@ const DriverDashboard: React.FC = () => {
     {id: 'header', component: <Header refreshTrigger={refreshTrigger} />},
     // {id: 'dispatches', component: <ShowDispatches refreshTrigger={refreshTrigger} />},
     {id: 'queue', component: <ShowInQueue refreshTrigger={refreshTrigger} />},
+    // add here the bottom nav
   ];
 
   const renderItem = ({
@@ -125,16 +126,23 @@ const DriverDashboard: React.FC = () => {
   return (
     <View style={styles.container}>
       {isAuthenticated ? (
-        <FlatList
-          data={renderItems}
-          renderItem={renderItem}
-          keyExtractor={item => item.id}
-          scrollEnabled={true}
-          contentContainerStyle={styles.contentContainer}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
-        />
+        <>
+          <FlatList
+            data={renderItems}
+            renderItem={renderItem}
+            keyExtractor={item => item.id}
+            scrollEnabled={true}
+            contentContainerStyle={styles.contentContainer}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+              />
+            }
+          />
+          {/* Fixed Bottom Navigation */}
+          <BottomNav />
+        </>
       ) : null}
     </View>
   );
