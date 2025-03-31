@@ -1,18 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import React, {useState, useEffect} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator,
+  TouchableWithoutFeedback,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../types/passenger-dashboard';
-import { logout } from '../utils/proxy';
+import {useNavigation} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {RootStackParamList} from '../types/passenger-dashboard';
+import {logout} from '../utils/proxy';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
 const CustomDropdown: React.FC = () => {
   const navigation = useNavigation<NavigationProps>();
   const [visible, setVisible] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false); // Track loading state for logout
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [userRole, setUserRole] = useState(0);
   const [tricycleNumber, setTricycleNumber] = useState('');
 
@@ -27,18 +35,14 @@ const CustomDropdown: React.FC = () => {
   }, []);
 
   const toggleDropdown = () => setVisible(!visible);
+  const closeDropdown = () => setVisible(false);
 
   const handleLogout = async () => {
-    setIsLoggingOut(true); // Start loading
-
+    setIsLoggingOut(true);
     try {
       await logout();
       await AsyncStorage.removeItem('userToken');
-      console.log('Logging out...');
-      Toast.show({
-        type: 'success',
-        text1: 'Logout Successful',
-      });
+      Toast.show({type: 'success', text1: 'Logout Successful'});
       navigation.replace('Login');
     } catch (error) {
       Toast.show({
@@ -47,55 +51,56 @@ const CustomDropdown: React.FC = () => {
         text2: 'Please try again.',
       });
     } finally {
-      setIsLoggingOut(false); // Stop loading
+      setIsLoggingOut(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      {/* Icon that triggers dropdown */}
-      <TouchableOpacity onPress={toggleDropdown} style={styles.iconContainer}>
-        <Image source={require('../assets/4.png')} style={styles.drawerIcon} />
-      </TouchableOpacity>
+    <TouchableWithoutFeedback onPress={closeDropdown}>
+      <View style={styles.container}>
+        {/* Icon that triggers dropdown */}
+        <TouchableOpacity onPress={toggleDropdown} style={styles.iconContainer}>
+          <Image
+            source={require('../assets/4.png')}
+            style={styles.drawerIcon}
+          />
+        </TouchableOpacity>
 
-      {/* Dropdown Modal */}
-      {visible && (
-        <View style={styles.dropdown}>
-          <Text style={styles.menuTitle}>Menu</Text>
-          <TouchableOpacity
-            style={styles.dropdownItem}
-            onPress={() => navigation.navigate('Profile')}
-          >
-            <Text style={styles.itemText}>Profile</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.dropdownItem}
-            onPress={() => navigation.navigate('Settings')}
-          >
-            <Text style={styles.itemText}>Settings</Text>
-          </TouchableOpacity>
-          {userRole === 6 && (
+        {/* Dropdown Modal */}
+        {visible && (
+          <View style={styles.dropdown}>
+            <Text style={styles.menuTitle}>Menu</Text>
             <TouchableOpacity
               style={styles.dropdownItem}
-              onPress={() => navigation.navigate('EditTricycleNumber')}
-            >
-              <Text style={styles.itemText}>Edit Tricycle No.</Text>
+              onPress={() => navigation.navigate('Profile')}>
+              <Text style={styles.itemText}>Profile</Text>
             </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            style={styles.dropdownItem}
-            onPress={handleLogout} // Trigger logout on press
-            disabled={isLoggingOut} // Disable logout button while loading
-          >
-            {isLoggingOut ? (
-              <ActivityIndicator size="small" color="#FF6F61" /> // Show loading indicator
-            ) : (
-              <Text style={[styles.itemText, styles.logoutText]}>Logout</Text>
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={() => navigation.navigate('Settings')}>
+              <Text style={styles.itemText}>Settings</Text>
+            </TouchableOpacity>
+            {userRole === 6 && (
+              <TouchableOpacity
+                style={styles.dropdownItem}
+                onPress={() => navigation.navigate('EditTricycleNumber')}>
+                <Text style={styles.itemText}>Edit Tricycle No.</Text>
+              </TouchableOpacity>
             )}
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={handleLogout}
+              disabled={isLoggingOut}>
+              {isLoggingOut ? (
+                <ActivityIndicator size="small" color="#FF6F61" />
+              ) : (
+                <Text style={[styles.itemText, styles.logoutText]}>Logout</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    </TouchableWithoutFeedback>
   );
 };
 
@@ -124,7 +129,7 @@ const styles = StyleSheet.create({
     width: 180,
     shadowColor: '#000',
     shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
   },
   menuTitle: {
     fontWeight: 'bold',

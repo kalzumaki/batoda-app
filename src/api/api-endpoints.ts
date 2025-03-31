@@ -6,7 +6,7 @@ export const API_ENDPOINTS = {
     PASSENGER_COUNT: '/passenger-count',
     IN_QUEUE: '/in-queue',
     USERS_TOKEN : '/users/token',
-    USER_PROFILE : '/users/profile',
+    USER_PROFILE : '/users/profile/{id}',
     CHECK_USER_STATUS :'/check-user-status',
     RESERVE_SEAT: '/dispatches/ride',
     DISPLAY_SEATS: '/dispatch/reserved-seats',
