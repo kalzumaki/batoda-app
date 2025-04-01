@@ -10,15 +10,32 @@ export const BASE_URL = 'https://zna0brw6skqo.share.zrok.io/';
 const request = async (url: string, config: RequestConfig) => {
   try {
     const response = await fetch(`${API_BASE_URL}${url}`, config);
+    const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(`Error: ${response.status}`);
+      const error = new Error(
+        data.message || `Request failed with status ${response.status}`,
+      );
+      (error as any).response = {
+        status: response.status,
+        data: data,
+      };
+      throw error;
     }
 
-    const data = await response.json();
     return data;
   } catch (error) {
     console.error('API request error:', error);
+
+    if (error instanceof Error) {
+      if (error.message.includes('Network request failed')) {
+        (error as any).response = {
+          status: 0,
+          data: {message: 'Network error - Please check your connection'},
+        };
+      }
+    }
+
     throw error;
   }
 };
@@ -200,28 +217,28 @@ export const postFormData = async (
 
 //post for headers only
 export const postWithHeaders = async (
-    url: string,
-    payload: any,
-    needsAuth: boolean = false,
-  ) => {
-    try {
-        let token = null;
+  url: string,
+  payload: any,
+  needsAuth: boolean = false,
+) => {
+  try {
+    let token = null;
 
     if (needsAuth) {
       token = await AsyncStorage.getItem('userToken');
     }
 
-      const config: RequestConfig = {
-        method: 'POST',
-        headers: {
-            Authorization: token ? `Bearer ${token}` : '',
-          },
-        body: JSON.stringify(payload),
-      };
+    const config: RequestConfig = {
+      method: 'POST',
+      headers: {
+        Authorization: token ? `Bearer ${token}` : '',
+      },
+      body: JSON.stringify(payload),
+    };
 
-      return request(url, config);
-    } catch (error) {
-      console.error('Error making POST request with headers:', error);
-      throw error;
-    }
-  };
+    return request(url, config);
+  } catch (error) {
+    console.error('Error making POST request with headers:', error);
+    throw error;
+  }
+};

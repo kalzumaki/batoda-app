@@ -1,38 +1,88 @@
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
-import React from 'react';
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {useNavigation} from '@react-navigation/native';
+import React, {useState} from 'react';
+import {
+  View,
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { RootStackParamList } from '../../types/passenger-dashboard';
-
+import {RootStackParamList} from '../../types/passenger-dashboard';
+import {API_ENDPOINTS} from '../../api/api-endpoints';
+import {post, postWithoutPayload} from '../../utils/proxy';
+import {Alert} from 'react-native';
+import {DispatchRequestResponse} from '../../types/approved-dispatch';
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
 const BottomNav: React.FC = () => {
   const navigation = useNavigation<NavigationProps>();
+  const [message, setMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const handleRequestDispatch = async () => {
+    setLoading(true); // Set loading state before making the request
+    try {
+      const response: DispatchRequestResponse = await postWithoutPayload(
+        API_ENDPOINTS.REQUEST_DISPATCH,
+        true,
+      );
+
+      console.log('Dispatch request response:', response);
+      if (response?.status) {
+        Alert.alert('Success', 'Dispatch request sent successfully!');
+      } else {
+        Alert.alert(
+          'Error',
+          response?.message ||
+            'Failed to send dispatch request. Please try again.',
+        );
+      }
+    } catch (error: any) {
+      Alert.alert(
+        'Error',
+        error?.response?.data?.message ||
+          'Failed to send dispatch request. Please try again.',
+      );
+    } finally {
+      setLoading(false); // End loading state after request is completed
+    }
+  };
 
   return (
     <View style={styles.container}>
       <TouchableOpacity
         style={styles.navItem}
         onPress={() => navigation.navigate('ScanQRForPassengers')}>
-        <Icon name="home-outline" size={24} color="#000" />
-        <Text style={styles.label}>Home</Text>
+        <Icon name="people-outline" size={24} color="#000" />
+        <Text style={styles.label}>Scan</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
         style={styles.navItem}
         onPress={() => navigation.navigate('TravelHistoryForDrivers')}>
-        <Icon name="card-outline" size={24} color="#000" />
-        <Text style={styles.label}>Cards</Text>
+        <Icon name="calendar-outline" size={24} color="#000" />
+        <Text style={styles.label}>History</Text>
       </TouchableOpacity>
 
-      <View style={styles.qrContainer}>
+      <View style={styles.requestContainer}>
         <TouchableOpacity
-          style={styles.qrButton}
-          onPress={() => navigation.navigate('ScanQR')}>
-          <Icon name="qr-code-outline" size={32} color="#000" />
+          style={styles.requestButton}
+          onPress={handleRequestDispatch}>
+          {loading ? (
+            <ActivityIndicator size="large" color="#000" />
+          ) : (
+            <Icon name="add-outline" size={32} color="#000" />
+          )}
         </TouchableOpacity>
       </View>
+      <TouchableOpacity
+        style={styles.navItem}
+        onPress={() => navigation.navigate('ScanQR')}>
+        <Icon name="qr-code-outline" size={24} color="#000" />
+        <Text style={styles.label}>QR</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -47,10 +97,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     alignItems: 'center',
     height: 70,
-    backgroundColor: '#fff',
+    backgroundColor: '#DDD8D8',
     elevation: 5,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    // borderTopLeftRadius: 20,
+    // borderTopRightRadius: 20,
   },
   navItem: {
     alignItems: 'center',
@@ -59,21 +109,22 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#000',
   },
-  qrContainer: {
+  requestContainer: {
     position: 'absolute',
-    bottom: 30,
+    bottom: 60,
+    left: '40.5%',
     alignSelf: 'center',
   },
-  qrButton: {
+  requestButton: {
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: '#fff',
+    backgroundColor: '#e8e8e8',
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.3,
     shadowRadius: 4,
   },

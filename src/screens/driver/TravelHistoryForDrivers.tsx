@@ -1,11 +1,11 @@
-import React from 'react'
-
+import React from 'react';
+import { View , Text} from 'react-native'
 const TravelHistoryForDrivers = () => {
   return (
-    <div>
-      
-    </div>
-  )
-}
+    <View>
+      <Text>Travel History</Text>
+    </View>
+  );
+};
 
-export default TravelHistoryForDrivers
+export default TravelHistoryForDrivers;

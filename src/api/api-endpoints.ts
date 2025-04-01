@@ -35,5 +35,5 @@ export const API_ENDPOINTS = {
     ADD_TRICYCLE_NUMBER:'/drivers/tricycle-number',
     UPDATE_TRICYCLE_NUMBER:'/driver/tricycle-number/update',
     PAY_DISPATCHER:'/transaction/dispatch',
-
+    REQUEST_DISPATCH:'/dispatches',
 }
