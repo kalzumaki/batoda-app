@@ -1,7 +1,7 @@
 import React, {useState, useEffect} from 'react';
 import {RefreshTriggerProp} from '../../types/passenger-dashboard';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
-import {BASE_URL, get} from '../../utils/proxy';
+import {get} from '../../utils/proxy';
 import {Dispatch, DispatchResponse} from '../../types/approved-dispatch';
 import {
   View,
@@ -14,6 +14,7 @@ import {
   FlatList,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import {API_URL} from '@env';
 
 const ShowInQueue: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const [dispatches, setDispatches] = useState<Dispatch[]>([]);
@@ -61,7 +62,7 @@ const ShowInQueue: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
     try {
       const response = await get(API_ENDPOINTS.USERS_TOKEN);
       if (response.data?.profile) {
-        setProfileImage(`${BASE_URL}storage/${response.data.profile}`);
+        setProfileImage(`${API_URL}storage/${response.data.profile}`);
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
@@ -145,7 +146,7 @@ const ShowInQueue: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
                       source={
                         selectedDispatch?.driver.profile
                           ? {
-                              uri: `${BASE_URL}storage/${selectedDispatch.driver.profile}`,
+                              uri: `${API_URL}storage/${selectedDispatch.driver.profile}`,
                             }
                           : require('../../assets/25.png')
                       }

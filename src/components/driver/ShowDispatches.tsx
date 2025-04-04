@@ -1,5 +1,5 @@
 import React, {useEffect, useState, useRef} from 'react';
-import {BASE_URL, get} from '../../utils/proxy';
+import {get} from '../../utils/proxy';
 import {DispatchResponse, Dispatch} from '../../types/approved-dispatch';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
 import {
@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {RefreshTriggerProp} from '../../types/passenger-dashboard';
+import {API_URL} from '@env';
 
 const ShowDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const [dispatch, setDispatch] = useState<Dispatch | null>(null);
@@ -36,7 +37,7 @@ const ShowDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
         authenticatedUser.current = response.data;
 
         if (response.data?.profile) {
-          setProfileImage(`${BASE_URL}storage/${response.data.profile}`);
+          setProfileImage(`${API_URL}storage/${response.data.profile}`);
         }
       } catch (error) {
         console.error('Error fetching authenticated user:', error);
@@ -127,7 +128,7 @@ const DispatchItem: React.FC<{item: Dispatch}> = ({item}) => {
         <Image
           source={
             item.driver.profile
-              ? {uri: `${BASE_URL}storage/${item.driver.profile}`}
+              ? {uri: `${API_URL}storage/${item.driver.profile}`}
               : require('../../assets/25.png')
           }
           style={styles.profilePic}
@@ -181,7 +182,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 6,

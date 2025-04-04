@@ -1,6 +1,6 @@
 import React, {useState, useEffect} from 'react';
 import {View, Text, TouchableOpacity, Image, StyleSheet} from 'react-native';
-import {BASE_URL, get} from '../../utils/proxy';
+import {get} from '../../utils/proxy';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
 import {PusherEvent} from '@pusher/pusher-websocket-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -14,6 +14,7 @@ import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useNavigation} from '@react-navigation/native';
 import {User} from '../../types/user';
 import ShowDispatches from './ShowDispatches';
+import { API_URL } from '@env';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
@@ -40,7 +41,7 @@ const Header: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
           console.log('data found in header component: ', data);
 
           if (data && data.profile) {
-            const fullImageUrl = `${BASE_URL}storage/${data.profile}`;
+            const fullImageUrl = `${API_URL}storage/${data.profile}`;
             console.log('Full profile image URL:', fullImageUrl);
             setProfileImage(fullImageUrl);
           } else {

@@ -1,6 +1,6 @@
 import React, {useState, useEffect} from 'react';
 import {View, Text, TouchableOpacity, Image, StyleSheet} from 'react-native';
-import {BASE_URL, get} from '../../utils/proxy';
+import { get} from '../../utils/proxy';
 import {useTimer} from '../../contexts/TimerContext';
 import {Dispatch, DispatchResponse} from '../../types/approved-dispatch';
 import {
@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import ProfilePictureListener from '../../pusher/ProfilePictureUploaded';
 import CustomDropdown from '../MenuDropdown';
 import {RefreshTriggerProp} from '../../types/passenger-dashboard';
+import { API_URL } from '@env';
 
 const HeaderMain: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const {timeLeft, setScheduledTime} = useTimer();
@@ -35,7 +36,7 @@ const HeaderMain: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
           console.log('data found in header component: ', data);
 
           if (data && data.profile) {
-            const fullImageUrl = `${BASE_URL}storage/${data.profile}`;
+            const fullImageUrl = `${API_URL}storage/${data.profile}`;
             console.log('Full profile image URL:', fullImageUrl);
             setProfileImage(fullImageUrl);
           } else {
