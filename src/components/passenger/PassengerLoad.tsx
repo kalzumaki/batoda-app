@@ -42,6 +42,7 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
   const prevDispatchIdRef = useRef(dispatchId);
   const [expiryReservations, setExpiryReservations] = useState<any[]>([]);
+  const [isFetching, setIsFetching] = useState(false);
   const fetchPassengerCount = async () => {
     try {
       const data: DispatchResponse = await get(API_ENDPOINTS.PASSENGER_COUNT);
@@ -77,14 +78,11 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
     console.log('Subscribing to Pusher channels...');
 
     const onEvent = (event: PusherEvent) => {
-      console.log('Event received:', event);
-      if (
-        event.eventName === 'ApprovedReservedSeatsFetched' ||
-        event.eventName === 'DispatchUpdated' ||
-        event.eventName === 'DispatchFinalized'
-      ) {
+      console.log('Event received approved seats:', event);
+      if (event.eventName === 'ApprovedReservedSeatsFetched') {
         console.log('Refreshing reserved seats due to event...');
         fetchApprovedSeats();
+        fetchReservedSeats();
       }
     };
 
@@ -92,7 +90,6 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
       try {
         await initPusher();
         await subscribeToChannel('approved.reserved.seats', onEvent);
-        await subscribeToChannel('dispatches', onEvent);
         console.log(
           'Subscribed to approved.reserved.seats and dispatches channels.',
         );
@@ -109,8 +106,7 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
       unsubscribeFromChannel('dispatches', onEvent);
       console.log('Unsubscribed from channels.');
     };
-  }, [dispatchId]); // Depend on dispatchId
-
+  }, []);
   const toggleSeatSelection = (seat: string) => {
     if (reservedSeats.includes(seat)) return; // Prevent selecting reserved seats
 
@@ -127,7 +123,7 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
 
   const fetchReservedSeats = async () => {
     try {
-      if (!dispatchId) return; // Ensure dispatchId exists before fetching
+      if (!dispatchId) return;
 
       const response = await get(
         `${API_ENDPOINTS.DISPLAY_SEATS}?dispatch_id=${dispatchId}`,
@@ -151,7 +147,7 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   }, [dispatchId]);
 
   const startCountdown = () => {
-    if (countdownRef.current) clearInterval(countdownRef.current); // Prevent multiple timers
+    if (countdownRef.current) clearInterval(countdownRef.current);
 
     setCountdown(120);
     countdownRef.current = setInterval(() => {
