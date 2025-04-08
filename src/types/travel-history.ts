@@ -1,6 +1,8 @@
+import { Receipt } from "./transaction";
+
 export interface Transaction {
   id: number;
-  type: string;
+  type: 'transaction';
   from_user: string;
   to_user: string;
   dispatch_id: number;
@@ -8,13 +10,7 @@ export interface Transaction {
   amount: string;
   reference_no: string;
   tricycle_number: string;
-  receipt: {
-    date: string;
-    driver: string;
-    passenger: string;
-    total_cost: number;
-    seats_reserved: string[];
-  };
+  receipt: Receipt
   date: string;
   time: string;
   created_at: string;

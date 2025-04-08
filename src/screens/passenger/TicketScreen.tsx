@@ -226,12 +226,16 @@ const TicketScreen: React.FC = () => {
             {/* Ticket Details */}
             <View style={styles.detailsContainer}>
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Dispatch ID:</Text>
-                <Text style={styles.detailValue}>{ticket.dispatch_id}</Text>
+                <Text style={styles.detailLabel}>Driver:</Text>
+                <Text style={styles.detailValue}>{ticket.driver}</Text>
               </View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Tricycle No.</Text>
                 <Text style={styles.detailValue}>{ticket.tricycle_number}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Dispatcher:</Text>
+                <Text style={styles.detailValue}>{ticket.dispatcher}</Text>
               </View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Number of seats avail</Text>

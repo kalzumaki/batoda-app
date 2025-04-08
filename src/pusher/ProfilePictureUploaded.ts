@@ -1,11 +1,10 @@
 import React, {useEffect} from 'react';
-import {usePusher} from './PusherProvider';
+
 import {PusherEvent} from '@pusher/pusher-websocket-react-native';
 import { API_URL } from '@env';
 
 
 const ProfilePictureListener: React.FC<{userId: string}> = ({userId}) => {
-  const {subscribeToChannel, unsubscribeFromChannel} = usePusher();
 
   useEffect(() => {
     const handleProfileUpdated = (event: PusherEvent) => {
@@ -33,7 +32,7 @@ const ProfilePictureListener: React.FC<{userId: string}> = ({userId}) => {
         console.log(
           'Subscribing to profile-updates channel for ProfileUpdated events',
         );
-        await subscribeToChannel('profile-updates.', handleProfileUpdated);
+
         console.log('Successfully subscribed to profile-updates channel');
       } catch (error) {
         console.error('Error subscribing to profile-updates channel:', error);
@@ -44,9 +43,9 @@ const ProfilePictureListener: React.FC<{userId: string}> = ({userId}) => {
 
     return () => {
       console.log('Cleaning up subscription from dispatches channel');
-      unsubscribeFromChannel('profile-updates.', handleProfileUpdated);
+
     };
-  }, [subscribeToChannel, unsubscribeFromChannel, userId]);
+  }, [userId]);
 
   return null; // This component does not render anything
 };

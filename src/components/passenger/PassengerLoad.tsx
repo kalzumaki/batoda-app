@@ -10,9 +10,7 @@ import {
 } from 'react-native';
 import {get, post} from '../../utils/proxy';
 import {
-  initPusher,
   subscribeToChannel,
-  unsubscribeFromChannel,
 } from '../../pusher/pusher';
 import {DispatchResponse} from '../../types/approved-dispatch';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
@@ -74,39 +72,7 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
     fetchApprovedSeats();
   }, [refreshTrigger]);
 
-  useEffect(() => {
-    console.log('Subscribing to Pusher channels...');
-
-    const onEvent = (event: PusherEvent) => {
-      console.log('Event received approved seats:', event);
-      if (event.eventName === 'ApprovedReservedSeatsFetched') {
-        console.log('Refreshing reserved seats due to event...');
-        fetchApprovedSeats();
-        fetchReservedSeats();
-      }
-    };
-
-    const subscribeToChannels = async () => {
-      try {
-        await initPusher();
-        await subscribeToChannel('approved.reserved.seats', onEvent);
-        console.log(
-          'Subscribed to approved.reserved.seats and dispatches channels.',
-        );
-      } catch (error) {
-        console.error('Error subscribing to channels:', error);
-      }
-    };
-
-    subscribeToChannels();
-
-    return () => {
-      console.log('Cleaning up Pusher subscriptions...');
-      unsubscribeFromChannel('approved.reserved.seats', onEvent);
-      unsubscribeFromChannel('dispatches', onEvent);
-      console.log('Unsubscribed from channels.');
-    };
-  }, []);
+ 
   const toggleSeatSelection = (seat: string) => {
     if (reservedSeats.includes(seat)) return; // Prevent selecting reserved seats
 

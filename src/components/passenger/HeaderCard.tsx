@@ -14,7 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import ProfilePictureListener from '../../pusher/ProfilePictureUploaded';
 import CustomDropdown from '../MenuDropdown';
 import {RefreshTriggerProp} from '../../types/passenger-dashboard';
-import { API_URL } from '@env';
+import { API_URL, STORAGE_API_URL } from '@env';
 
 const HeaderMain: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const {timeLeft, setScheduledTime} = useTimer();
@@ -36,7 +36,7 @@ const HeaderMain: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
           console.log('data found in header component: ', data);
 
           if (data && data.profile) {
-            const fullImageUrl = `${API_URL}storage/${data.profile}`;
+            const fullImageUrl = `${STORAGE_API_URL}/storage/${data.profile}`;
             console.log('Full profile image URL:', fullImageUrl);
             setProfileImage(fullImageUrl);
           } else {
@@ -148,9 +148,9 @@ const HeaderMain: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   return (
     <View style={styles.headerContainer}>
       {/* Profile Picture Listener */}
-      {authenticatedUser && authenticatedUser.id && (
+      {/* {authenticatedUser && authenticatedUser.id && (
         <ProfilePictureListener userId={authenticatedUser.id} />
-      )}
+      )} */}
       {/* Top Bar */}
       <View style={styles.topBar}>
         <Image

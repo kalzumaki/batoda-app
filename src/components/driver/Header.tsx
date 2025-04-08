@@ -14,7 +14,7 @@ import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useNavigation} from '@react-navigation/native';
 import {User} from '../../types/user';
 import ShowDispatches from './ShowDispatches';
-import { API_URL } from '@env';
+import { API_URL, STORAGE_API_URL } from '@env';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
@@ -41,7 +41,7 @@ const Header: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
           console.log('data found in header component: ', data);
 
           if (data && data.profile) {
-            const fullImageUrl = `${API_URL}storage/${data.profile}`;
+            const fullImageUrl = `${STORAGE_API_URL}/storage/${data.profile}`;
             console.log('Full profile image URL:', fullImageUrl);
             setProfileImage(fullImageUrl);
           } else {
@@ -74,9 +74,16 @@ const Header: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   return (
     <View style={styles.container}>
       {/* Profile Picture Listener */}
-      {authenticatedUser && authenticatedUser.id && (
+
+    {/* {profileImage && (
+        <Image
+            source={{ uri: profileImage }}
+            style={styles.profileIcon}
+        />
+    )} */}
+      {/* {authenticatedUser && authenticatedUser.id && (
         <ProfilePictureListener userId={authenticatedUser.id} />
-      )}
+      )} */}
 
       {/* Top Bar */}
       <View style={styles.topBar}>
