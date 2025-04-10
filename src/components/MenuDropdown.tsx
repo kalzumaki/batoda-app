@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,13 +7,15 @@ import {
   Image,
   ActivityIndicator,
   TouchableWithoutFeedback,
+  Animated,
+  Modal,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
-import {useNavigation} from '@react-navigation/native';
-import {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import {RootStackParamList} from '../types/passenger-dashboard';
-import {logout} from '../utils/proxy';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../types/passenger-dashboard';
+import { logout } from '../utils/proxy';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
@@ -23,6 +25,8 @@ const CustomDropdown: React.FC = () => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [userRole, setUserRole] = useState(0);
   const [tricycleNumber, setTricycleNumber] = useState('');
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(-10)).current;
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -34,15 +38,45 @@ const CustomDropdown: React.FC = () => {
     fetchUserRole();
   }, []);
 
-  const toggleDropdown = () => setVisible(!visible);
-  const closeDropdown = () => setVisible(false);
+  const toggleDropdown = () => {
+    setVisible(true);
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const closeDropdown = () => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: -10,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setVisible(false);
+    });
+  };
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
       await logout();
       await AsyncStorage.removeItem('userToken');
-      Toast.show({type: 'success', text1: 'Logout Successful'});
+      Toast.show({ type: 'success', text1: 'Logout Successful' });
       navigation.replace('Login');
     } catch (error) {
       Toast.show({
@@ -56,51 +90,74 @@ const CustomDropdown: React.FC = () => {
   };
 
   return (
-    <TouchableWithoutFeedback onPress={closeDropdown}>
-      <View style={styles.container}>
-        {/* Icon that triggers dropdown */}
-        <TouchableOpacity onPress={toggleDropdown} style={styles.iconContainer}>
-          <Image
-            source={require('../assets/4.png')}
-            style={styles.drawerIcon}
-          />
-        </TouchableOpacity>
+    <View style={styles.container}>
+      {/* Trigger Icon */}
+      <TouchableOpacity onPress={toggleDropdown} style={styles.iconContainer}>
+        <Image source={require('../assets/4.png')} style={styles.drawerIcon} />
+      </TouchableOpacity>
 
-        {/* Dropdown Modal */}
-        {visible && (
-          <View style={styles.dropdown}>
-            <Text style={styles.menuTitle}>Menu</Text>
-            <TouchableOpacity
-              style={styles.dropdownItem}
-              onPress={() => navigation.navigate('Profile')}>
-              <Text style={styles.itemText}>Profile</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.dropdownItem}
-              onPress={() => navigation.navigate('Settings')}>
-              <Text style={styles.itemText}>Settings</Text>
-            </TouchableOpacity>
-            {userRole === 6 && (
-              <TouchableOpacity
-                style={styles.dropdownItem}
-                onPress={() => navigation.navigate('EditTricycleNumber')}>
-                <Text style={styles.itemText}>Edit Tricycle No.</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              style={styles.dropdownItem}
-              onPress={handleLogout}
-              disabled={isLoggingOut}>
-              {isLoggingOut ? (
-                <ActivityIndicator size="small" color="#FF6F61" />
-              ) : (
-                <Text style={[styles.itemText, styles.logoutText]}>Logout</Text>
-              )}
-            </TouchableOpacity>
+      {/* Modal Dropdown */}
+      <Modal
+        transparent
+        visible={visible}
+        animationType="none"
+        onRequestClose={closeDropdown}>
+        <TouchableWithoutFeedback onPress={closeDropdown}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <Animated.View
+                style={[
+                  styles.dropdown,
+                  {
+                    opacity: fadeAnim,
+                    transform: [{ translateY }],
+                  },
+                ]}>
+                <Text style={styles.menuTitle}>Menu</Text>
+                <TouchableOpacity
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    closeDropdown();
+                    navigation.navigate('Profile');
+                  }}>
+                  <Text style={styles.itemText}>Profile</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    closeDropdown();
+                    navigation.navigate('Settings');
+                  }}>
+                  <Text style={styles.itemText}>Settings</Text>
+                </TouchableOpacity>
+                {userRole === 6 && (
+                  <TouchableOpacity
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      closeDropdown();
+                      navigation.navigate('EditTricycleNumber');
+                    }}>
+                    <Text style={styles.itemText}>Edit Tricycle No.</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  style={styles.dropdownItem}
+                  onPress={handleLogout}
+                  disabled={isLoggingOut}>
+                  {isLoggingOut ? (
+                    <ActivityIndicator size="small" color="#FF6F61" />
+                  ) : (
+                    <Text style={[styles.itemText, styles.logoutText]}>
+                      Logout
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </Animated.View>
+            </TouchableWithoutFeedback>
           </View>
-        )}
-      </View>
-    </TouchableWithoutFeedback>
+        </TouchableWithoutFeedback>
+      </Modal>
+    </View>
   );
 };
 
@@ -117,10 +174,15 @@ const styles = StyleSheet.create({
     height: 20,
     tintColor: 'white',
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+    paddingTop: 50,
+    paddingRight: 20,
+  },
   dropdown: {
-    position: 'absolute',
-    top: 40,
-    right: 20,
     backgroundColor: 'white',
     borderRadius: 8,
     paddingVertical: 10,
@@ -129,7 +191,7 @@ const styles = StyleSheet.create({
     width: 180,
     shadowColor: '#000',
     shadowOpacity: 0.3,
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
   },
   menuTitle: {
     fontWeight: 'bold',
