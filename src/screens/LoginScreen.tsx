@@ -12,7 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {userTypeMap} from '../types/userType';
 import OptimisticFeedback from '../components/Loading';
 import {API_ENDPOINTS} from '../api/api-endpoints';
-import {RootStackParamList} from '../types/login';
+import {RootStackParamList} from '../types/passenger-dashboard';
 import LoginButtonComponent from '../components/LoginButton';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;

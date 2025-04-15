@@ -25,6 +25,7 @@ export type RootStackParamList = {
   EditTricycleNumber: undefined;
   ScanQRForPassengers: undefined;
   TravelHistoryForDrivers: undefined;
+  UploadValidId: undefined;
 };
 
 export interface UserQRCodeData {

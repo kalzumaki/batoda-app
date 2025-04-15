@@ -27,6 +27,7 @@ import AddTricycleNumberScreen from './src/screens/driver/AddTricycleNumberScree
 import EditTricycleNumberScreen from './src/screens/driver/EditTricycleNumberScreen';
 import ScanQRForPassengers from './src/screens/driver/ScanQRForPassengers';
 import TravelHistoryForDrivers from './src/screens/driver/TravelHistoryForDrivers';
+import UploadValidIdScreen from './src/screens/UploadValidId';
 // Contexts
 import {TimerProvider} from './src/contexts/TimerContext';
 
@@ -99,6 +100,10 @@ const App: React.FC = () => {
           <Stack.Screen
             name="RegisterEwallet"
             component={RegisterEwalletScreen}
+          />
+          <Stack.Screen
+            name="UploadValidId"
+            component={UploadValidIdScreen}
           />
         </Stack.Navigator>
         <Toast />

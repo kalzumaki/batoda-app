@@ -10,7 +10,6 @@ import {
 import QRCodeScanner from 'react-native-qrcode-scanner';
 import {RNCamera} from 'react-native-camera';
 import {useNavigation, NavigationProp} from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/Ionicons';
 import {post} from '../../utils/proxy';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
 import {
@@ -37,11 +36,10 @@ const ScanQRScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [loading, setLoading] = useState(false);
 
-  // Handles QR Code scanning
   const handleQRCodeRead = async (event: QRCodeEvent) => {
-    if (loading) return; // Prevent multiple scans while processing
+    if (loading) return;
 
-    setLoading(true); // Show loading indicator
+    setLoading(true); 
     console.log('QR Code Data:', event.data);
 
     try {

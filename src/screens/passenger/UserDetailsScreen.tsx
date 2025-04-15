@@ -3,8 +3,7 @@ import {View, Text, StyleSheet, Image, TouchableOpacity} from 'react-native';
 import {useRoute, useNavigation, RouteProp} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {RootStackParamList} from '../../types/passenger-dashboard';
-import { API_URL } from '@env';
-
+import {API_URL, STORAGE_API_URL} from '@env';
 
 type UserDetailsScreenRouteProp = RouteProp<
   RootStackParamList,
@@ -15,7 +14,9 @@ const UserDetailsScreen: React.FC = () => {
   const route = useRoute<UserDetailsScreenRouteProp>();
   const navigation = useNavigation();
   const {user} = route.params;
-  const [profileImage, setProfileImage] = useState(API_URL +'storage/'+ user.profile);
+  const [profileImage, setProfileImage] = useState(
+    STORAGE_API_URL + '/storage/' + user.profile,
+  );
   useEffect(() => {
     console.log('Profile Image URL: ', profileImage);
   }, [profileImage]);

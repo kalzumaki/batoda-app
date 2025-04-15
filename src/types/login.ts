@@ -3,9 +3,10 @@ export interface LoginPayload {
     password: string;
 }
 
-export type RootStackParamList = {
-    PassengerDashboard: undefined;
-    DriverDashboard: undefined;
-    DispatcherDashboard: undefined;
-    Register: undefined;
-  };
+// export type RootStackParamList = {
+//     PassengerDash
+//     board: undefined;
+//     DriverDashboard: undefined;
+//     DispatcherDashboard: undefined;
+//     Register: undefined;
+//   };

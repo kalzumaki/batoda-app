@@ -1,7 +1,7 @@
 import React, {useEffect} from 'react';
 
 import {PusherEvent} from '@pusher/pusher-websocket-react-native';
-import { API_URL } from '@env';
+import { API_URL, STORAGE_API_URL } from '@env';
 
 
 const ProfilePictureListener: React.FC<{userId: string}> = ({userId}) => {
@@ -14,7 +14,7 @@ const ProfilePictureListener: React.FC<{userId: string}> = ({userId}) => {
         console.log('Handling ProfileUpdated event');
         console.log('Event data:', event.data);
         if (event.data && event.data.profileImage) {
-          const fullImageUrl = `${API_URL}storage/${event.data.profileImage}`;
+          const fullImageUrl = `${STORAGE_API_URL}/storage/${event.data.profileImage}`;
           console.log('Updating profile image URL:', fullImageUrl);
 
         } else {

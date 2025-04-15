@@ -82,7 +82,7 @@ const RegisterEwalletScreen: React.FC = () => {
         );
       }
     } catch (error) {
-      console.error('❌ Error registering e-wallet:', error);
+    //   console.error('❌ Error registering e-wallet:', error);
       Alert.alert('Error', 'An unexpected error occurred.');
     }
     setIsLoading(false);

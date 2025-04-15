@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {RefreshTriggerProp} from '../../types/passenger-dashboard';
-import {API_URL} from '@env';
+import {API_URL, STORAGE_API_URL} from '@env';
 
 const ShowDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const [dispatch, setDispatch] = useState<Dispatch | null>(null);
@@ -37,7 +37,7 @@ const ShowDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
         authenticatedUser.current = response.data;
 
         if (response.data?.profile) {
-          setProfileImage(`${API_URL}storage/${response.data.profile}`);
+          setProfileImage(`${STORAGE_API_URL}/storage/${response.data.profile}`);
         }
       } catch (error) {
         console.error('Error fetching authenticated user:', error);

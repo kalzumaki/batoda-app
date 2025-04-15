@@ -83,6 +83,12 @@ const BottomNav: React.FC = () => {
         <Icon name="qr-code-outline" size={24} color="#000" />
         <Text style={styles.label}>QR</Text>
       </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.navItem}
+        onPress={() => navigation.navigate('UploadValidId')}>
+        <Icon name="card-outline" size={24} color="#000" />
+        <Text style={styles.label}>ID</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -111,8 +117,8 @@ const styles = StyleSheet.create({
   },
   requestContainer: {
     position: 'absolute',
-    bottom: 60,
-    left: '40.5%',
+    bottom: 40,
+    left: '41%',
     alignSelf: 'center',
   },
   requestButton: {

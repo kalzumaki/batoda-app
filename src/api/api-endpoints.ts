@@ -36,4 +36,8 @@ export const API_ENDPOINTS = {
     UPDATE_TRICYCLE_NUMBER:'/driver/tricycle-number/update',
     PAY_DISPATCHER:'/transaction/dispatch',
     REQUEST_DISPATCH:'/dispatches',
+    ADD_VALID_ID: '/user-valid-ids',
+    GET_VALID_ID: '/user-valid-ids',
+    UPDATE_VALID_ID: '/user-valid-ids/update',
+    GET_VALID_ID_TYPES: '/user-valid-ids/types',
 }

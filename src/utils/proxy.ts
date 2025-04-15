@@ -5,7 +5,6 @@ import {API_URL} from '@env';
 //zrok api gateway
 //docker
 
-
 // Request from API
 const request = async (url: string, config: RequestConfig) => {
   try {
@@ -26,16 +25,6 @@ const request = async (url: string, config: RequestConfig) => {
     return data;
   } catch (error) {
     console.error('API request error:', error);
-
-    if (error instanceof Error) {
-      if (error.message.includes('Network request failed')) {
-        (error as any).response = {
-          status: 0,
-          data: {message: 'Network error - Please check your connection'},
-        };
-      }
-    }
-
     throw error;
   }
 };

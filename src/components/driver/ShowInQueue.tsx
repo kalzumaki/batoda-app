@@ -14,7 +14,7 @@ import {
   FlatList,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import {API_URL} from '@env';
+import {API_URL, STORAGE_API_URL} from '@env';
 
 const ShowInQueue: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const [dispatches, setDispatches] = useState<Dispatch[]>([]);
@@ -62,7 +62,7 @@ const ShowInQueue: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
     try {
       const response = await get(API_ENDPOINTS.USERS_TOKEN);
       if (response.data?.profile) {
-        setProfileImage(`${API_URL}storage/${response.data.profile}`);
+        setProfileImage(`${STORAGE_API_URL}/storage/${response.data.profile}`);
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
