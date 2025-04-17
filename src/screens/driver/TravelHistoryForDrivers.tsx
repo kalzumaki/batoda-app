@@ -103,10 +103,16 @@ const TravelHistoryForDrivers = () => {
     (acc: any[], groupKey) => {
       const filteredItems = groupedHistory[groupKey].filter(item => {
         const itemDateStr = item.created_at.raw.split('T')[0];
-        return (
-          (!selectedDate || itemDateStr === selectedDate) &&
-          item.dispatch_id.toString().includes(search)
+
+        const isPassengerMatch = item.reservations.some(reservation =>
+          reservation.passenger.toLowerCase().includes(search.toLowerCase()),
         );
+
+        const isDateMatch = !selectedDate || itemDateStr === selectedDate;
+
+        const isDispatchIdMatch = item.dispatch_id.toString().includes(search);
+
+        return isDateMatch && (isDispatchIdMatch || isPassengerMatch);
       });
 
       if (filteredItems.length > 0) {
@@ -352,7 +358,6 @@ const styles = StyleSheet.create({
   modalText: {
     fontSize: 16,
     color: '#444', // Slightly lighter text for better readability
-
   },
   boldText: {
     fontWeight: 'bold',
