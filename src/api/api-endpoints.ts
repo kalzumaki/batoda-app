@@ -40,4 +40,5 @@ export const API_ENDPOINTS = {
     GET_VALID_ID: '/user-valid-ids',
     UPDATE_VALID_ID: '/user-valid-ids/update',
     GET_VALID_ID_TYPES: '/user-valid-ids/types',
+    GET_DRIVERS_TRAVEL_HISTORY: '/drivers/travel-history',
 }
