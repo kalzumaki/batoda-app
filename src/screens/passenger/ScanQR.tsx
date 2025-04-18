@@ -39,7 +39,7 @@ const ScanQRScreen: React.FC = () => {
   const handleQRCodeRead = async (event: QRCodeEvent) => {
     if (loading) return;
 
-    setLoading(true); 
+    setLoading(true);
     console.log('QR Code Data:', event.data);
 
     try {
@@ -58,7 +58,7 @@ const ScanQRScreen: React.FC = () => {
       console.error('QR Processing Error:', error);
       Alert.alert('Error', 'Invalid QR Code data. Please try again.');
     } finally {
-      setLoading(false); // Hide loading indicator
+      setLoading(false);
     }
   };
   const isDispatcherQRCode = (data: any): data is PayDispatcher => {
@@ -127,7 +127,7 @@ const ScanQRScreen: React.FC = () => {
       <QRCodeScanner
         onRead={handleQRCodeRead}
         flashMode={RNCamera.Constants.FlashMode.auto}
-        reactivate={!loading} // Disable reactivation while loading
+        reactivate={!loading}
         reactivateTimeout={2000}
         showMarker={true}
         markerStyle={styles.marker}

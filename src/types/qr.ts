@@ -9,6 +9,7 @@ export interface PassengerQRResponse {
     passengers: Array<{
       user_id: number;
       full_name: string;
+      profile_picture: string | null
       qr_code: string;
       expire_at: string;
       seat_positions: string[];

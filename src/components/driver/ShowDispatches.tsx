@@ -128,7 +128,7 @@ const DispatchItem: React.FC<{item: Dispatch}> = ({item}) => {
         <Image
           source={
             item.driver.profile
-              ? {uri: `${API_URL}storage/${item.driver.profile}`}
+              ? {uri: `${STORAGE_API_URL}/storage/${item.driver.profile}`}
               : require('../../assets/25.png')
           }
           style={styles.profilePic}
