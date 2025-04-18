@@ -41,6 +41,7 @@
     "react-native-toast-message": "^2.2.1",
     "react-native-vector-icons": "^10.2.0",
     "react-native-view-shot": "^4.0.3",
+    "react-native-webview": "^13.13.5",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "tailwind-rn": "^4.2.0"
