@@ -21,6 +21,7 @@ const TravelHistoryDetailScreen: React.FC = () => {
   ): item is Transaction => {
     return (item as Transaction).receipt !== undefined;
   };
+
   const formatSeatName = (seat: string) => {
     return seat
       .split('_')
@@ -64,19 +65,37 @@ const TravelHistoryDetailScreen: React.FC = () => {
 
               <Text style={styles.cardTitle}>Seats Reserved:</Text>
               <View style={styles.seatList}>
-                {item.receipt.seats_reserved.map(
-                  (seat: string, index: number) => (
-                    <Text key={index} style={styles.seatItem}>
-                      {formatSeatName(seat)}
-                    </Text>
-                  ),
+                {item?.receipt?.seats_reserved ? (
+                  // Check if seats_reserved is a string and split it into an array
+                  Array.isArray(item.receipt.seats_reserved) ? (
+                    item.receipt.seats_reserved.map(
+                      (seat: string, index: number) => (
+                        <Text key={index} style={styles.seatItem}>
+                          {formatSeatName(seat)}
+                        </Text>
+                      ),
+                    )
+                  ) : (
+                    // If it's a string, split by commas
+                    item.receipt.seats_reserved
+                      .split(',')
+                      .map((seat: string, index: number) => (
+                        <Text key={index} style={styles.seatItem}>
+                          {formatSeatName(seat)}
+                        </Text>
+                      ))
+                  )
+                ) : (
+                  // If seats_reserved is undefined or null
+                  <Text>No seats reserved</Text>
                 )}
               </View>
             </>
           ) : (
             <>
               <Text style={styles.cardTitle}>Status:</Text>
-              <Text style={[styles.cardText, {color: 'red', fontWeight: 'bold',}]}>
+              <Text
+                style={[styles.cardText, {color: 'red', fontWeight: 'bold'}]}>
                 {item.status.toLocaleUpperCase()}
               </Text>
 

@@ -37,13 +37,20 @@ const ReceiptDownloader: React.FC<ReceiptProps> = ({dispatchId}) => {
         }
 
         console.log('✅ Receipt data:', receipt);
+
+        // Split seats_reserved string into an array
+        const seatsReserved = receipt.seats_reserved
+          ? receipt.seats_reserved.split(',')
+          : [];
+
         setReceiptData({
           ...receipt,
-          date: transaction.date, // Separate date field
-          time: transaction.time, // Separate time field
+          date: transaction.date,
+          time: transaction.time,
           reference_no: transaction.reference_no,
+          seats_reserved: seatsReserved, // Update with the array of seats
         });
-        setIsModalVisible(true); // ✅ Show modal after fetching receipt
+        setIsModalVisible(true);
       } else {
         setError('Receipt not found.');
       }
@@ -65,7 +72,8 @@ const ReceiptDownloader: React.FC<ReceiptProps> = ({dispatchId}) => {
     <View style={styles.container}>
       <TouchableOpacity
         style={styles.downloadButton}
-        onPress={handleFetchReceipt}>
+        onPress={handleFetchReceipt}
+        disabled={loading}>
         <Icon name="receipt" size={24} color="green" />
       </TouchableOpacity>
 
@@ -97,13 +105,11 @@ const ReceiptDownloader: React.FC<ReceiptProps> = ({dispatchId}) => {
               </Text>
               <Text style={styles.receiptText}>
                 <Text style={styles.text}>Date: </Text>
-                <Text>
-                  {new Intl.DateTimeFormat('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  }).format(new Date(receiptData.date))}
-                </Text>
+                {new Intl.DateTimeFormat('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                }).format(new Date(receiptData.date))}
               </Text>
               <Text style={styles.receiptText}>
                 <Text style={styles.text}>Time:</Text> {receiptData.time}
@@ -116,7 +122,7 @@ const ReceiptDownloader: React.FC<ReceiptProps> = ({dispatchId}) => {
                 {receiptData.passenger}
               </Text>
               <Text style={styles.receiptText}>
-                <Text style={styles.text}>Total Cost: ₱</Text>
+                <Text style={styles.text}>Total Cost: ₱</Text>{' '}
                 {receiptData.total_cost}
               </Text>
               {receiptData.seats_reserved.length > 0 ? (
@@ -126,7 +132,7 @@ const ReceiptDownloader: React.FC<ReceiptProps> = ({dispatchId}) => {
                     {receiptData.seats_reserved
                       .map(formatSeatName)
                       .sort()
-                      .map((seat: any, index: any) => (
+                      .map((seat: string, index: number) => (
                         <Text key={index} style={styles.receiptText}>
                           • {formatSeatName(seat)}
                         </Text>
@@ -139,7 +145,7 @@ const ReceiptDownloader: React.FC<ReceiptProps> = ({dispatchId}) => {
             </View>
           ) : (
             <Text style={[styles.receiptText, {textAlign: 'center'}]}>
-              No receipt data available.
+              {loading ? 'Loading receipt data...' : 'No receipt available'}
             </Text>
           )}
         </View>

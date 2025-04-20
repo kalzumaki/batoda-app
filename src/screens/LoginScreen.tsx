@@ -12,7 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {userTypeMap} from '../types/userType';
 import OptimisticFeedback from '../components/Loading';
 import {API_ENDPOINTS} from '../api/api-endpoints';
-import {RootStackParamList} from '../types/login';
+import {RootStackParamList} from '../types/passenger-dashboard';
 import LoginButtonComponent from '../components/LoginButton';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
@@ -57,6 +57,7 @@ const Login: React.FC = () => {
       const token = data.access_token;
       const userType = data.user.user_type_id;
       await AsyncStorage.setItem('userId', data.user.id.toString());
+      await AsyncStorage.setItem('userType', userType.toString());
       if (token) {
         await AsyncStorage.setItem('userToken', token);
 

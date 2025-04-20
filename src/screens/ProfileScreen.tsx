@@ -17,7 +17,8 @@ import BackButton from '../components/BackButton';
 import {get, post, postFormData} from '../utils/proxy';
 import {API_ENDPOINTS} from '../api/api-endpoints';
 import ProfilePictureListener from '../pusher/ProfilePictureUploaded';
-import {BASE_URL} from '../utils/proxy';
+import { API_URL, STORAGE_API_URL } from '@env';
+
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
@@ -44,7 +45,7 @@ const ProfileScreen: React.FC = () => {
       if (response.status) {
         setProfileData(response.user);
         if (response.user.profile) {
-          const fullImageUrl = `${BASE_URL}storage/${response.user.profile}`;
+          const fullImageUrl = `${STORAGE_API_URL}/storage/${response.user.profile}`;
           setProfileImage(fullImageUrl);
         } else {
           const fullName = `${response.user.fname} ${response.user.lname}`;

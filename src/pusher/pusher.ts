@@ -1,3 +1,4 @@
+import { PUSHER_API_KEY, PUSHER_CLUSTER } from '@env';
 import {Pusher, PusherEvent} from '@pusher/pusher-websocket-react-native';
 export const pusher = Pusher.getInstance();
 
@@ -7,8 +8,8 @@ export async function initPusher(): Promise<void> {
   try {
     console.log('Initializing Pusher...');
     await pusher.init({
-      apiKey: 'e387ee412efd2031b93c',
-      cluster: 'ap1',
+      apiKey: PUSHER_API_KEY,
+      cluster: PUSHER_CLUSTER,
       onEvent: (event: PusherEvent) => {
         console.log(`Event received: ${JSON.stringify(event)}`);
         const listeners = eventListeners[event.channelName] || [];

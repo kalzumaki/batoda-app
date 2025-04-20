@@ -10,9 +10,7 @@ import {
 } from 'react-native';
 import {get, post} from '../../utils/proxy';
 import {
-  initPusher,
   subscribeToChannel,
-  unsubscribeFromChannel,
 } from '../../pusher/pusher';
 import {DispatchResponse} from '../../types/approved-dispatch';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
@@ -42,6 +40,7 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
   const prevDispatchIdRef = useRef(dispatchId);
   const [expiryReservations, setExpiryReservations] = useState<any[]>([]);
+  const [isFetching, setIsFetching] = useState(false);
   const fetchPassengerCount = async () => {
     try {
       const data: DispatchResponse = await get(API_ENDPOINTS.PASSENGER_COUNT);
@@ -73,44 +72,7 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
     fetchApprovedSeats();
   }, [refreshTrigger]);
 
-  useEffect(() => {
-    console.log('Subscribing to Pusher channels...');
-
-    const onEvent = (event: PusherEvent) => {
-      console.log('Event received:', event);
-      if (
-        event.eventName === 'ApprovedReservedSeatsFetched' ||
-        event.eventName === 'DispatchUpdated' ||
-        event.eventName === 'DispatchFinalized'
-      ) {
-        console.log('Refreshing reserved seats due to event...');
-        fetchApprovedSeats();
-      }
-    };
-
-    const subscribeToChannels = async () => {
-      try {
-        await initPusher();
-        await subscribeToChannel('approved.reserved.seats', onEvent);
-        await subscribeToChannel('dispatches', onEvent);
-        console.log(
-          'Subscribed to approved.reserved.seats and dispatches channels.',
-        );
-      } catch (error) {
-        console.error('Error subscribing to channels:', error);
-      }
-    };
-
-    subscribeToChannels();
-
-    return () => {
-      console.log('Cleaning up Pusher subscriptions...');
-      unsubscribeFromChannel('approved.reserved.seats', onEvent);
-      unsubscribeFromChannel('dispatches', onEvent);
-      console.log('Unsubscribed from channels.');
-    };
-  }, [dispatchId]); // Depend on dispatchId
-
+ 
   const toggleSeatSelection = (seat: string) => {
     if (reservedSeats.includes(seat)) return; // Prevent selecting reserved seats
 
@@ -127,7 +89,7 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
 
   const fetchReservedSeats = async () => {
     try {
-      if (!dispatchId) return; // Ensure dispatchId exists before fetching
+      if (!dispatchId) return;
 
       const response = await get(
         `${API_ENDPOINTS.DISPLAY_SEATS}?dispatch_id=${dispatchId}`,
@@ -151,7 +113,7 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   }, [dispatchId]);
 
   const startCountdown = () => {
-    if (countdownRef.current) clearInterval(countdownRef.current); // Prevent multiple timers
+    if (countdownRef.current) clearInterval(countdownRef.current);
 
     setCountdown(120);
     countdownRef.current = setInterval(() => {

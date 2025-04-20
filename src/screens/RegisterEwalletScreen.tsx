@@ -15,6 +15,7 @@ import {API_ENDPOINTS} from '../api/api-endpoints';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../types/passenger-dashboard';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
@@ -45,13 +46,32 @@ const RegisterEwalletScreen: React.FC = () => {
       );
 
       if (response.status) {
+        // Fetch the userType from AsyncStorage
+        const userTypeString = await AsyncStorage.getItem('userType');
+        const userType = userTypeString ? parseInt(userTypeString, 10) : null;
+
+        // Success alert and navigation
         Alert.alert(
           'Success',
           `${selectedEwallet} has been registered successfully!`,
           [
             {
               text: 'OK',
-              onPress: () => navigation.replace('PassengerDashboard'),
+              onPress: () => {
+                switch (userType) {
+                  case 6:
+                    navigation.replace('DriverDashboard');
+                    break;
+                  case 7:
+                    navigation.replace('DispatcherDashboard');
+                    break;
+                  case 8:
+                    navigation.replace('PassengerDashboard');
+                    break;
+                  default:
+                    Alert.alert('Error', 'Invalid user type.');
+                }
+              },
             },
           ],
         );
@@ -62,7 +82,7 @@ const RegisterEwalletScreen: React.FC = () => {
         );
       }
     } catch (error) {
-      console.error('❌ Error registering e-wallet:', error);
+    //   console.error('❌ Error registering e-wallet:', error);
       Alert.alert('Error', 'An unexpected error occurred.');
     }
     setIsLoading(false);

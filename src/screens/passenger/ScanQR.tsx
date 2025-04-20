@@ -10,7 +10,6 @@ import {
 import QRCodeScanner from 'react-native-qrcode-scanner';
 import {RNCamera} from 'react-native-camera';
 import {useNavigation, NavigationProp} from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/Ionicons';
 import {post} from '../../utils/proxy';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
 import {
@@ -25,6 +24,10 @@ interface DispatchQRCodeData {
   wallet_id: number;
 }
 
+interface PayDispatcher {
+  dispatch_id: number;
+}
+
 interface QRCodeEvent {
   data: string;
 }
@@ -33,11 +36,10 @@ const ScanQRScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [loading, setLoading] = useState(false);
 
-  // Handles QR Code scanning
   const handleQRCodeRead = async (event: QRCodeEvent) => {
-    if (loading) return; // Prevent multiple scans while processing
+    if (loading) return;
 
-    setLoading(true); // Show loading indicator
+    setLoading(true);
     console.log('QR Code Data:', event.data);
 
     try {
@@ -45,6 +47,8 @@ const ScanQRScreen: React.FC = () => {
 
       if (isDispatchQRCode(parsedData)) {
         await handleTransactionQRCode(parsedData);
+      } else if (isDispatcherQRCode(parsedData)) {
+        await handleDispatcherQRCode(parsedData);
       } else if (isUserQRCode(parsedData)) {
         handleUserQRCodeRead(parsedData);
       } else {
@@ -54,10 +58,29 @@ const ScanQRScreen: React.FC = () => {
       console.error('QR Processing Error:', error);
       Alert.alert('Error', 'Invalid QR Code data. Please try again.');
     } finally {
-      setLoading(false); // Hide loading indicator
+      setLoading(false);
     }
   };
+  const isDispatcherQRCode = (data: any): data is PayDispatcher => {
+    return data && typeof data.dispatch_id === 'number';
+  };
+  const handleDispatcherQRCode = async (data: PayDispatcher) => {
+    try {
+      const response = await post(API_ENDPOINTS.PAY_DISPATCHER, data, true);
+      console.log('API Response:', response);
 
+      if (response.status) {
+        Alert.alert('Success', 'Dispatcher payment completed!', [
+          {text: 'OK', onPress: () => navigation.goBack()},
+        ]);
+      } else {
+        Alert.alert('Error', response.message || 'Dispatcher payment failed');
+      }
+    } catch (error) {
+      console.error('Dispatcher Transaction Error:', error);
+      Alert.alert('Error', 'Transaction failed. Please try again.');
+    }
+  };
   // Type guards for QR code validation
   const isDispatchQRCode = (data: any): data is DispatchQRCodeData => {
     return (
@@ -104,7 +127,7 @@ const ScanQRScreen: React.FC = () => {
       <QRCodeScanner
         onRead={handleQRCodeRead}
         flashMode={RNCamera.Constants.FlashMode.auto}
-        reactivate={!loading} // Disable reactivation while loading
+        reactivate={!loading}
         reactivateTimeout={2000}
         showMarker={true}
         markerStyle={styles.marker}

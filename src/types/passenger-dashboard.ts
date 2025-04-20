@@ -21,6 +21,11 @@ export type RootStackParamList = {
   OTPVerification: {email: string};
   ChangePassEmailVer: {email: string};
   ChangePassword: {email: string};
+  AddTricycleNumber: undefined;
+  EditTricycleNumber: undefined;
+  ScanQRForPassengers: undefined;
+  TravelHistoryForDrivers: undefined;
+  UploadValidId: undefined;
 };
 
 export interface UserQRCodeData {
