@@ -14,7 +14,10 @@ import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
 import {get} from '../../utils/proxy';
 import {PendingDispatch} from '../../types/pending-dispatch';
-import { STORAGE_API_URL } from '@env';
+import {STORAGE_API_URL} from '@env';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+dayjs.extend(relativeTime);
 
 const DispatchCard: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const [multiSelectEnabled, setMultiSelectEnabled] = useState(false);
@@ -48,12 +51,12 @@ const DispatchCard: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
     const profileImage = `https://avatar.iran.liara.run/username?username=${encodeURIComponent(
       fullName,
     )}`;
+    const createdAt = dayjs(item.created_at).fromNow(); // <-- Here
+    const isSelected = selectedIds.includes(item.id);
 
     const driverProfileImage = item.driver.profile
-      ? {uri: `${STORAGE_API_URL}/storage/${item.driver.profile}`} 
+      ? {uri: `${STORAGE_API_URL}/storage/${item.driver.profile}`}
       : {uri: profileImage};
-
-    const isSelected = selectedIds.includes(item.id);
 
     return (
       <View style={styles.card}>
@@ -78,6 +81,9 @@ const DispatchCard: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
               TRICYCLE NO.: {item.tricycle.tricycle_number}
             </Text>
             <Text style={styles.infoText}>NAME: {fullName}</Text>
+            <Text style={styles.timeText}>Requested {createdAt}</Text>
+
+            {/* <-- Here */}
           </View>
         </View>
         {!multiSelectEnabled && (
@@ -218,6 +224,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: 10,
+  },
+  timeText: {
+    color: '#d0f0ec',
+    fontSize: 12,
+    marginTop: 2,
   },
 });
 
