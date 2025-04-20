@@ -73,3 +73,70 @@ export interface DispatchRequestResponse {
       updated_at: string;
     };
   }
+  export interface DispatchResponseByDispatcher {
+    status: boolean;
+    message: string;
+    dispatches: {
+      id: number;
+      driver_id: number;
+      dispatcher_id: number;
+      status: string;
+      dispatch_request_time: string;
+      dispatcher_response_time: string;
+      scheduled_dispatch_time: string;
+      is_dispatched: boolean | number;
+      created_at: string;
+      updated_at: string;
+      dispatch_option_id: number | null;
+      passenger_count: number;
+      actual_dispatch_time: string | null;
+      qr_code: string | null;
+      driver: {
+        id: number;
+        fname: string;
+        lname: string;
+        email: string;
+        email_verified_at: string;
+        mobile_number: string;
+        address: string;
+        birthday: string;
+        age: number;
+        gender: string;
+        user_type_id: number;
+        is_approved: boolean | number;
+        password_updated_at: string | null;
+        created_at: string;
+        updated_at: string;
+        qr_code: string | null;
+        profile: string | null;
+        deleted_at: string | null;
+      };
+      dispatcher: {
+        id: number;
+        fname: string;
+        lname: string;
+        email: string;
+        email_verified_at: string;
+        mobile_number: string;
+        address: string;
+        birthday: string;
+        age: number;
+        gender: string;
+        user_type_id: number;
+        is_approved: boolean | number;
+        password_updated_at: string | null;
+        created_at: string;
+        updated_at: string;
+        qr_code: string | null;
+        profile: string | null;
+        deleted_at: string | null;
+      };
+      tricycle: {
+        id: number;
+        driver_id: number;
+        tricycle_number: string;
+        created_at: string;
+        updated_at: string;
+      };
+    }[];
+  }

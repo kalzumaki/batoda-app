@@ -17,6 +17,7 @@ import {RootStackParamList} from '../../types/passenger-dashboard';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
 import Header from '../../components/dispatcher/Header';
 import DispatchCard from '../../components/dispatcher/Dispatch';
+import ShowApprovedDispatches from '../../components/dispatcher/ShowApprovedDispatches';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
@@ -82,6 +83,7 @@ const DispatcherDashboard: React.FC = () => {
   const renderItems = [
     {id: 'header', component: <Header refreshTrigger={refreshTrigger} />},
     {id: 'dispatches', component: <DispatchCard refreshTrigger={refreshTrigger} />},
+    {id: 'approved-dispatches', component: <ShowApprovedDispatches refreshTrigger={refreshTrigger} />},
   ];
   const renderItem = ({
     item,

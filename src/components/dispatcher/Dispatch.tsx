@@ -7,22 +7,26 @@ import {
   StyleSheet,
   TouchableOpacity,
   Switch,
+  ActivityIndicator,
 } from 'react-native';
 import CheckBox from '@react-native-community/checkbox';
 import {RefreshTriggerProp} from '../../types/passenger-dashboard';
 import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
-import {get} from '../../utils/proxy';
+import {get, post} from '../../utils/proxy';
 import {PendingDispatch} from '../../types/pending-dispatch';
 import {STORAGE_API_URL} from '@env';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import {Alert} from 'react-native';
 dayjs.extend(relativeTime);
 
 const DispatchCard: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const [multiSelectEnabled, setMultiSelectEnabled] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [dispatches, setDispatches] = useState<PendingDispatch[]>([]);
+  const [isBatchLoading, setIsBatchLoading] = useState(false); // for multi
+  const [loadingId, setLoadingId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchDispatches();
@@ -36,6 +40,38 @@ const DispatchCard: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
       }
     } catch (error) {
       console.error('Failed to fetch dispatches:', error);
+    }
+  };
+  const updateDispatches = async (
+    updates: {id: number; status: 'approved' | 'rejected'}[],
+    isBatch = false,
+  ) => {
+    if (!isBatch) {
+      setLoadingId(updates[0].id); 
+    } else {
+      setIsBatchLoading(true);
+    }
+
+    try {
+      const res = await post(
+        API_ENDPOINTS.APPROVED_DISPATCH_BY_BATCH,
+        {dispatches: updates},
+        true,
+      );
+
+      if (res.status) {
+        Alert.alert('Success', res.message || 'Dispatch updated successfully.');
+        fetchDispatches();
+        setSelectedIds([]);
+      } else {
+        Alert.alert('Failed', res.message || 'Failed to update dispatch.');
+      }
+    } catch (error) {
+      console.error('Error updating dispatches:', error);
+      Alert.alert('Error', 'Something went wrong while updating dispatch.');
+    } finally {
+      setLoadingId(null);
+      setIsBatchLoading(false);
     }
   };
 
@@ -82,19 +118,32 @@ const DispatchCard: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
             </Text>
             <Text style={styles.infoText}>NAME: {fullName}</Text>
             <Text style={styles.timeText}>Requested {createdAt}</Text>
-
-            {/* <-- Here */}
           </View>
         </View>
         {!multiSelectEnabled && (
           <View style={styles.actionButtons}>
             <TouchableOpacity
-              style={[styles.actionBtn, {backgroundColor: 'green'}]}>
-              <FontAwesomeIcon name="check" size={18} color="#fff" />
+              style={[styles.actionBtn, {backgroundColor: 'green'}]}
+              onPress={() =>
+                updateDispatches([{id: item.id, status: 'approved'}])
+              }>
+              {loadingId === item.id ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <FontAwesomeIcon name="check" size={18} color="#fff" />
+              )}
             </TouchableOpacity>
+
             <TouchableOpacity
-              style={[styles.actionBtn, {backgroundColor: 'red'}]}>
-              <FontAwesomeIcon name="times" size={18} color="#fff" />
+              style={[styles.actionBtn, {backgroundColor: 'red'}]}
+              onPress={() =>
+                updateDispatches([{id: item.id, status: 'rejected'}])
+              }>
+              {loadingId === item.id ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <FontAwesomeIcon name="times" size={18} color="#fff" />
+              )}
             </TouchableOpacity>
           </View>
         )}
@@ -103,48 +152,65 @@ const DispatchCard: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   };
 
   const handleApproveAll = () => {
-    console.log('Approved IDs:', selectedIds);
-    // Add logic here
+    const updates = selectedIds.map(id => ({id, status: 'approved' as const}));
+    updateDispatches(updates, true);
   };
 
   const handleRejectAll = () => {
-    console.log('Rejected IDs:', selectedIds);
-    // Add logic here
+    const updates = selectedIds.map(id => ({id, status: 'rejected' as const}));
+    updateDispatches(updates, true);
   };
 
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.heading}>PENDING REQUEST</Text>
-      <View style={styles.multiRow}>
-        <Text style={styles.multiLabel}>MULTI SELECT:</Text>
-        <Switch
-          value={multiSelectEnabled}
-          onValueChange={setMultiSelectEnabled}
-          trackColor={{false: '#ccc', true: '#2d8c7f'}}
-          thumbColor={multiSelectEnabled ? '#fff' : '#f4f3f4'}
-        />
-      </View>
-
-      <FlatList
-        data={dispatches}
-        renderItem={({item}) => <RenderItem item={item} />}
-        keyExtractor={item => item.id.toString()}
-        contentContainerStyle={{paddingBottom: 20}}
-      />
-
-      {multiSelectEnabled && (
-        <View style={styles.multiActions}>
-          <TouchableOpacity
-            onPress={handleApproveAll}
-            style={[styles.multiBtn, {backgroundColor: 'green'}]}>
-            <FontAwesomeIcon name="check" size={22} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleRejectAll}
-            style={[styles.multiBtn, {backgroundColor: 'red'}]}>
-            <FontAwesomeIcon name="times" size={22} color="#fff" />
-          </TouchableOpacity>
+      {dispatches.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyText}>No pending dispatches.</Text>
         </View>
+      ) : (
+        <>
+          <Text style={styles.heading}>PENDING REQUEST</Text>
+          <View style={styles.multiRow}>
+            <Text style={styles.multiLabel}>MULTI SELECT:</Text>
+            <Switch
+              value={multiSelectEnabled}
+              onValueChange={setMultiSelectEnabled}
+              trackColor={{false: '#ccc', true: '#2d8c7f'}}
+              thumbColor={multiSelectEnabled ? '#fff' : '#f4f3f4'}
+            />
+          </View>
+
+          <FlatList
+            data={dispatches}
+            renderItem={({item}) => <RenderItem item={item} />}
+            keyExtractor={item => item.id.toString()}
+            contentContainerStyle={{paddingBottom: 20}}
+          />
+
+          {multiSelectEnabled && (
+            <View style={styles.multiActions}>
+              <TouchableOpacity
+                onPress={handleApproveAll}
+                style={[styles.multiBtn, {backgroundColor: 'green'}]}>
+                {isBatchLoading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <FontAwesomeIcon name="check" size={22} color="#fff" />
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleRejectAll}
+                style={[styles.multiBtn, {backgroundColor: 'red'}]}>
+                {isBatchLoading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <FontAwesomeIcon name="times" size={22} color="#fff" />
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+        </>
       )}
     </View>
   );
@@ -229,6 +295,16 @@ const styles = StyleSheet.create({
     color: '#d0f0ec',
     fontSize: 12,
     marginTop: 2,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    fontStyle: 'italic',
   },
 });
 
