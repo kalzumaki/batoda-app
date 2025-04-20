@@ -42,4 +42,5 @@ export const API_ENDPOINTS = {
     GET_VALID_ID_TYPES: '/user-valid-ids/types',
     GET_DRIVERS_TRAVEL_HISTORY: '/drivers/travel-history',
     GET_PASSENGER_QR: '/drivers/passenger-qr',
+    GET_PENDING_DISPATCHES: '/pending-dispatches',
 }

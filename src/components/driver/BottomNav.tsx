@@ -28,7 +28,6 @@ const BottomNav: React.FC = () => {
         API_ENDPOINTS.REQUEST_DISPATCH,
         true,
       );
-
       console.log('Dispatch request response:', response);
       if (response?.status) {
         Alert.alert('Success', 'Dispatch request sent successfully!');
@@ -46,7 +45,7 @@ const BottomNav: React.FC = () => {
           'Failed to send dispatch request. Please try again.',
       );
     } finally {
-      setLoading(false); // End loading state after request is completed
+      setLoading(false);
     }
   };
 

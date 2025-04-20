@@ -1,6 +1,6 @@
 import React, {useState, useEffect} from 'react';
 import {View, Text, TouchableOpacity, Image, StyleSheet} from 'react-native';
-import { get} from '../../utils/proxy';
+import {get} from '../../utils/proxy';
 import {useTimer} from '../../contexts/TimerContext';
 import {Dispatch, DispatchResponse} from '../../types/approved-dispatch';
 import {
@@ -14,7 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import ProfilePictureListener from '../../pusher/ProfilePictureUploaded';
 import CustomDropdown from '../MenuDropdown';
 import {RefreshTriggerProp} from '../../types/passenger-dashboard';
-import { API_URL, STORAGE_API_URL } from '@env';
+import {API_URL, STORAGE_API_URL} from '@env';
 
 const HeaderMain: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const {timeLeft, setScheduledTime} = useTimer();
@@ -88,10 +88,11 @@ const HeaderMain: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
       setScheduledTime('', '');
     }
   };
-
   useEffect(() => {
     fetchInitialData();
+  }, [refreshTrigger]);
 
+  useEffect(() => {
     const onEvent = (event: PusherEvent) => {
       console.log('Event received:', event);
       if (
@@ -114,7 +115,7 @@ const HeaderMain: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
       console.log('Cleaning up Pusher subscription...');
       unsubscribeFromChannel('dispatches', onEvent);
     };
-  }, [refreshTrigger]);
+  }, []);
 
   useEffect(() => {
     console.log('Current dispatchData:', JSON.stringify(dispatchData));

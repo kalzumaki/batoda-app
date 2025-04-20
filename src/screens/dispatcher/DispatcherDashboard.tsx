@@ -1,75 +1,121 @@
-// src/screens/dispatcher/DispatcherDashboard.tsx
-
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Button } from 'react-native';
+import React, {useEffect, useState, useCallback} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Button,
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { get, logout } from '../../utils/proxy';
-import { User } from '../../types/user'; // Import the Dispatcher type
+import {get} from '../../utils/proxy';
 import Toast from 'react-native-toast-message';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../types/passenger-dashboard';
+import {useNavigation} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {RootStackParamList} from '../../types/passenger-dashboard';
+import {API_ENDPOINTS} from '../../api/api-endpoints';
+import Header from '../../components/dispatcher/Header';
+import DispatchCard from '../../components/dispatcher/Dispatch';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
 const DispatcherDashboard: React.FC = () => {
-  const [dispatcherData, setDispatcherData] = useState<User | null>(null);
   const navigation = useNavigation<NavigationProps>();
-
-  useEffect(() => {
-    const fetchDispatcherData = async () => {
-      const token = await AsyncStorage.getItem('userToken');
-      if (token) {
-        try {
-          const data = await get('/dispatchers');
-          setDispatcherData(data.data[0]);
-        } catch (error) {
-          console.error('Error fetching dispatcher data:', error);
-        }
-      }
-    };
-
-    fetchDispatcherData();
-  }, []);
-
-  const handleLogout = async () => {
+  const [loading, setLoading] = useState<boolean>(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const checkAuth = async () => {
     try {
-      console.log('Attempting to log out...');
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) {
+        navigation.replace('Login');
+        return;
+      }
 
-      await logout();
+      const ewalletResponse = await Promise.all([checkEwallet()]);
 
-      console.log('Logout successful, removing token from AsyncStorage...');
-
-      Toast.show({
-        type: 'success',
-        text1: 'Logout Successful',
-      });
-
-      console.log('Navigating back to the login screen...');
-      navigation.replace('Login');
+      if (!ewalletResponse) {
+        navigation.replace('RegisterEwallet');
+      } else {
+        setIsAuthenticated(true);
+      }
     } catch (error) {
-      console.error('Error logging out:', error);
-
-      Toast.show({
-        type: 'error',
-        text1: 'Logout Failed',
-        text2: 'Please try again.',
-      });
+      console.error('❌ Error during authentication:', error);
+      navigation.replace('Login');
+    } finally {
+      setLoading(false);
     }
   };
 
+  const checkEwallet = async () => {
+    try {
+      console.log('Checking e-wallet...');
+      const response = await get(API_ENDPOINTS.SHOW_EWALLET);
+      console.log('E-Wallet API Response:', response);
+
+      if (!response.status || !response.data) {
+        console.log('❌ No E-Wallet found.');
+        return false;
+      }
+      return true;
+    } catch (error: any) {
+      console.error('❌ Error checking e-wallet:', error);
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    checkAuth();
+  }, [navigation]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setLoading(true);
+    await checkAuth();
+    setRefreshTrigger(prev => prev + 1);
+    setLoading(false);
+    setRefreshing(false);
+  }, []);
+
+  const renderItems = [
+    {id: 'header', component: <Header refreshTrigger={refreshTrigger} />},
+    {id: 'dispatches', component: <DispatchCard refreshTrigger={refreshTrigger} />},
+  ];
+  const renderItem = ({
+    item,
+  }: {
+    item: {id: string; component: React.ReactNode};
+  }) => <View key={item.id}>{item.component}</View>;
+
+  if (loading) {
+    return (
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="#007bff" />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Dispatcher Dashboard</Text>
-      {dispatcherData ? (
-        <Text style={styles.welcomeText}>
-          Welcome, {dispatcherData.fname} {dispatcherData.lname}!
-        </Text>
-      ) : (
-        <Text style={styles.loadingText}>Loading your data...</Text>
-      )}
-
-      <Button title="Logout" onPress={handleLogout} color="#FF6F61" />
+      {isAuthenticated ? (
+        <>
+          <FlatList
+            data={renderItems}
+            renderItem={renderItem}
+            keyExtractor={item => item.id}
+            scrollEnabled={true}
+            contentContainerStyle={styles.contentContainer}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+              />
+            }
+          />
+        </>
+      ) : null}
     </View>
   );
 };
@@ -78,24 +124,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
+
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#145A32',
   },
-  title: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: '#F1F8E9',
-    marginBottom: 20,
-  },
-  welcomeText: {
-    fontSize: 20,
-    color: '#E8F5E9',
-    textAlign: 'center',
-    paddingHorizontal: 20,
-  },
-  loadingText: {
-    fontSize: 18,
-    color: '#C8E6C9',
+  contentContainer: {
+    flexGrow: 1,
+    paddingBottom: 80,
   },
 });
 
