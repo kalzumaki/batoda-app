@@ -47,4 +47,6 @@ export const API_ENDPOINTS = {
     GET_APPROVED_DISPATCHES_BY_DISPATCHER: '/approved-dispatches/dispatcher',
     GET_DISPATCH_OPTIONS: '/dispatch-options',
     DISPATCH_NOW: '/dispatches/dispatch-now',
+    GET_DISPATCHERS_TRAVEL_HISTORY: '/dispatchers/travel-history',
+    GET_DRIVER_QR: '/dispatchers/driver-qr',
 }

@@ -16,3 +16,21 @@ export interface PassengerQRResponse {
     }>;
   }>;
 }
+export interface DispatchData {
+    dispatch_id: number;
+    qr_code: string;
+    driver: {
+      full_name: string;
+      profile: string;
+      tricycle_number: string;
+    };
+    dispatcher: {
+      full_name: string;
+    };
+  }
+
+  export interface DispatcherQrResponse {
+    status: boolean;
+    message: string;
+    data: DispatchData[];
+  }
