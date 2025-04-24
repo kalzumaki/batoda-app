@@ -39,6 +39,8 @@
     "react-native-screens": "^3.34.0",
     "react-native-skeleton-content": "^1.0.28",
     "react-native-splash-screen": "^3.3.0",
+    "react-native-stepper-ui": "^0.0.9",
+    "react-native-stepper-view": "^0.2.6",
     "react-native-svg": "^15.11.2",
     "react-native-swipe-modal-up-down": "^1.1.0",
     "react-native-toast-message": "^2.2.1",

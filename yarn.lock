@@ -7094,6 +7094,16 @@ react-native-splash-screen@^3.3.0:
   resolved "https://registry.npmjs.org/react-native-splash-screen/-/react-native-splash-screen-3.3.0.tgz"
   integrity sha512-rGjt6HkoSXxMqH4SQUJ1gnPQlPJV8+J47+4yhgTIan4bVvAwJhEeJH7wWt9hXSdH4+VfwTS0GTaflj1Tw83IhA==
 
+react-native-stepper-ui@^0.0.9:
+  version "0.0.9"
+  resolved "https://registry.npmjs.org/react-native-stepper-ui/-/react-native-stepper-ui-0.0.9.tgz"
+  integrity sha512-SnG1r73Ka0v3588MafTRbIJ1I6IF+d/GswQSPW4LsFOjgecwkNsTMjPgcAU14gV4ymts/38JmqXBsmztwR113Q==
+
+react-native-stepper-view@^0.2.6:
+  version "0.2.6"
+  resolved "https://registry.npmjs.org/react-native-stepper-view/-/react-native-stepper-view-0.2.6.tgz"
+  integrity sha512-dENbl9+HrFq4EU+rfss3EnOJ94EE5dtT7nnWwzVYkisRgmsO0+JXRjqmmTFfEHiugqPQN1VrfetDeLJddFMJIQ==
+
 react-native-svg-transformer@^1.5.0:
   version "1.5.0"
   resolved "https://registry.npmjs.org/react-native-svg-transformer/-/react-native-svg-transformer-1.5.0.tgz"
