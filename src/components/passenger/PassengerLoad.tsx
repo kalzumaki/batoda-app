@@ -135,10 +135,8 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
     if (selectedSeats.length === 0) return;
 
     if (!dispatchId) {
-      Alert.alert(
-        'No Approved Dispatch',
-        'No approved drivers waiting for dispatch.',
-      );
+      setResponseErrorMessage('No approved drivers waiting for dispatch.');
+      setShowErrorModal(true);
       return;
     }
 

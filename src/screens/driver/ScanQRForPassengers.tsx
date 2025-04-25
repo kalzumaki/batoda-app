@@ -55,8 +55,8 @@ const ScanQRForPassengers: React.FC = () => {
 
   // Format the data for SectionList
   const sections = dispatches.map(dispatch => ({
-    title: `Dispatch ID: ${dispatch.dispatch_id}\n\nDispatcher: ${dispatch.dispatcher.full_name}\n`,
-    data: dispatch.passengers,
+    title: `Dispatch ID: ${dispatch.dispatch_id}\n\nDispatcher: ${dispatch.dispatcher_full_name}\n`,
+    data: [dispatch], // Wrap the dispatch object in an array to match the expected structure
   }));
 
   return (
@@ -95,11 +95,11 @@ const ScanQRForPassengers: React.FC = () => {
                 <View style={styles.cardText}>
                   <Text style={styles.passengerName}>{item.full_name}</Text>
                   <Text style={styles.seatText}>Seats:</Text>
-                  {item.seat_positions.map((seat, idx) => {
-                    const formattedSeat = seat
+                  {item.seat_positions.map((seat: any, idx) => {
+                    const formattedSeat: string = seat
                       .replace(/_/g, ' ')
                       .split(' ')
-                      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                      .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
                       .join(' ');
                     return (
                       <Text key={idx} style={styles.seatText}>
@@ -214,7 +214,6 @@ const styles = StyleSheet.create({
   profileImage: {
     width: 100,
     height: 100,
-    // borderRadius: 50,
     marginRight: 12,
     backgroundColor: '#ddd',
     borderWidth: 2,
