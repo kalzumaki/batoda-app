@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useCallback} from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,12 +9,14 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native';
-import {useNavigation, useFocusEffect} from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import {get, post} from '../../utils/proxy';
-import {API_ENDPOINTS} from '../../api/api-endpoints';
-import {Ticket} from '../../types/ticket';
+import { get, post } from '../../utils/proxy';
+import { API_ENDPOINTS } from '../../api/api-endpoints';
+import { Ticket } from '../../types/ticket';
 import ReceiptDownloader from '../../components/passenger/ReceiptDownloader';
+import ConfirmPaymentModal from '../../components/ConfirmPaymentModal';
+import SuccessAlertModal from '../../components/SuccessAlertModal'; // Import the SuccessAlertModal
 
 const TicketScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -23,6 +25,10 @@ const TicketScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [buttonLoading, setButtonLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  // Modal states
+  const [isSuccessModalVisible, setSuccessModalVisible] = useState(false);
+  const [isConfirmPaymentModalVisible, setConfirmPaymentModalVisible] = useState(false);
 
   const fetchTicket = async () => {
     try {
@@ -44,7 +50,7 @@ const TicketScreen: React.FC = () => {
         if (priceResponse.status) {
           setTicket((prevTicket: any) =>
             prevTicket
-              ? {...prevTicket, total_price: priceResponse.total_price}
+              ? { ...prevTicket, total_price: priceResponse.total_price }
               : prevTicket,
           );
         } else {
@@ -69,6 +75,7 @@ const TicketScreen: React.FC = () => {
     setRefreshing(true);
     fetchTicket();
   }, []);
+
   const handlePayNow = async () => {
     try {
       setButtonLoading(true);
@@ -77,6 +84,7 @@ const TicketScreen: React.FC = () => {
       setButtonLoading(false); // Hide button loading after process
     }
   };
+
   const processPayment = async () => {
     if (!ticket || !ticket.dispatch_id) {
       Alert.alert('Error', 'No dispatch ID found.');
@@ -103,49 +111,44 @@ const TicketScreen: React.FC = () => {
       }
 
       // Proceed with payment confirmation
-      Alert.alert(
-        'Confirm Payment',
-        'Are you sure you want to proceed with this payment?',
-        [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-          {
-            text: 'Confirm',
-            onPress: async () => {
-              setLoading(true);
-              try {
-                const response = await post(
-                  API_ENDPOINTS.PAY_SEATS,
-                  {dispatch_id: ticket.dispatch_id},
-                  true,
-                );
+      setConfirmPaymentModalVisible(true); // Open the Confirm Payment Modal
 
-                if (response.status) {
-                  Alert.alert('Success', 'Seat paid successfully!', [
-                    {text: 'OK', onPress: () => setRefreshing(prev => !prev)},
-                  ]);
-                } else {
-                  Alert.alert('Error', 'Failed to pay the seat.');
-                }
-              } catch (error) {
-                console.error('Failed to reserve seat:', error);
-                Alert.alert(
-                  'Error',
-                  'An error occurred while reserving the seat.',
-                );
-              } finally {
-                setLoading(false);
-              }
-            },
-          },
-        ],
-      );
     } catch (error) {
       console.error('Error fetching wallet details:', error);
       Alert.alert('Error', 'Failed to fetch wallet details.');
     }
+  };
+
+  const handleConfirmPayment = async () => {
+    try {
+        setIsLoading(true);
+      const response = await post(
+        API_ENDPOINTS.PAY_SEATS,
+        { dispatch_id: ticket.dispatch_id },
+        true,
+      );
+
+      if (response.status) {
+        // Payment successful, show the success modal
+        setSuccessModalVisible(true);
+      } else {
+        Alert.alert('Error', 'Failed to pay the seat.');
+      }
+    } catch (error) {
+      console.error('Failed to reserve seat:', error);
+      Alert.alert(
+        'Error',
+        'An error occurred while reserving the seat.',
+      );
+    } finally {
+      setConfirmPaymentModalVisible(false); // Close the Confirm Payment Modal
+      setIsLoading(false);
+    }
+  };
+
+  const handleSuccessModalDismiss = () => {
+    setSuccessModalVisible(false);
+    setRefreshing(true); // Trigger a refresh to update ticket details
   };
 
   useFocusEffect(
@@ -249,17 +252,6 @@ const TicketScreen: React.FC = () => {
                   ₱{ticket.total_price ? ticket.total_price.toFixed(2) : '0.00'}
                 </Text>
               </View>
-              {ticket?.status === 'reserved' && (
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Total Payment Sent</Text>
-                  <Text style={styles.detailValue}>
-                    ₱
-                    {ticket.total_price
-                      ? ticket.total_price.toFixed(2)
-                      : '0.00'}
-                  </Text>
-                </View>
-              )}
             </View>
 
             {/* Reference Number and Date */}
@@ -273,18 +265,15 @@ const TicketScreen: React.FC = () => {
             </View>
           </View>
         )}
-        {/* Buttons Container - Positioned Outside */}
       </ScrollView>
       <View style={styles.buttonContainer}>
-        {/* Download Button - Bottom Left */}
-        {ticket?.status === 'reserved' && <ReceiptDownloader dispatchId={ticket.dispatch_id} />}
-
+      {ticket?.status === 'reserved' && <ReceiptDownloader dispatchId={ticket.dispatch_id} />}
         {/* Pay Here Button - Bottom Center */}
         {ticket?.status === 'unpaid' && (
           <TouchableOpacity
             style={styles.payButton}
             onPress={handlePayNow}
-            disabled={buttonLoading} // Only this button is disabled when loading
+            disabled={buttonLoading}
           >
             <Text style={styles.payButtonText}>
               {buttonLoading ? 'Processing...' : 'Pay Here'}
@@ -292,10 +281,28 @@ const TicketScreen: React.FC = () => {
           </TouchableOpacity>
         )}
       </View>
+
+      {/* Show Success Modal after successful payment */}
+      <SuccessAlertModal
+        visible={isSuccessModalVisible}
+        title="Payment Successful"
+        message="Your payment has been successfully processed!"
+        onDismiss={handleSuccessModalDismiss}
+      />
+
+      {/* Confirm Payment Modal */}
+      <ConfirmPaymentModal
+        visible={isConfirmPaymentModalVisible}
+        title="Confirm Payment"
+        message={`You're about to pay ₱${ticket.total_price}. Proceed with the payment?`}
+        boldParts={[`₱${ticket.total_price}`]}
+        isLoading={isLoading}
+        onConfirm={handleConfirmPayment}
+        onCancel={() => setConfirmPaymentModalVisible(false)}
+      />
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

@@ -6,28 +6,28 @@ import {API_URL} from '@env';
 //docker
 
 // Request from API
+
 const request = async (url: string, config: RequestConfig) => {
   try {
     const response = await fetch(`${API_URL}${url}`, config);
     const data = await response.json();
 
     if (!response.ok) {
-      const error = new Error(
-        data.message || `Request failed with status ${response.status}`,
-      );
-      (error as any).response = {
-        status: response.status,
-        data: data,
+      console.log('API response error:', data.message || response.status);
+      return {
+        status: false,
+        data: null,
+        message: data.message || 'Request failed.',
       };
-      throw error;
     }
 
     return data;
   } catch (error) {
-    console.error('API request error:', error);
-    throw error;
+    console.log('API request error:', error);
+    return {status: false, data: null, message: 'Network error occurred.'};
   }
 };
+
 // POST
 export const post = async (
   url: string,

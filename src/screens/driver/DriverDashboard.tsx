@@ -56,36 +56,36 @@ const DriverDashboard: React.FC = () => {
     }
   };
 
-  const checkTricycleNumber = async () => {
+  const checkTricycleNumber = async (): Promise<boolean> => {
     try {
-      console.log('Checking tricycle number...');
+      console.log('🔍 Checking tricycle number...');
       const response = await get(API_ENDPOINTS.FETCH_TRICYCLE_NUMBER);
-      console.log('Tricycle Number API Response:', response);
+      console.log('🚐 Tricycle Number API Response:', response);
 
-      if (!response.status || !response.tricycle_number) {
+      if (!response?.status || !response?.tricycle_number) {
         console.log('❌ No Tricycle Number found.');
         return false;
       }
       return true;
-    } catch (error: any) {
+    } catch (error) {
       console.log('❌ Error checking tricycle number:', error);
       return false;
     }
   };
 
-  const checkEwallet = async () => {
+  const checkEwallet = async (): Promise<boolean> => {
     try {
-      console.log('Checking e-wallet...');
+      console.log('🔍 Checking e-wallet...');
       const response = await get(API_ENDPOINTS.SHOW_EWALLET);
-      console.log('E-Wallet API Response:', response);
+      console.log('💳 E-Wallet API Response:', response);
 
-      if (!response.status || !response.data) {
+      if (!response?.status || !response?.data) {
         console.log('❌ No E-Wallet found.');
         return false;
       }
       return true;
-    } catch (error: any) {
-      console.error('❌ Error checking e-wallet:', error);
+    } catch (error) {
+      console.log('❌ Error checking e-wallet:', error);
       return false;
     }
   };

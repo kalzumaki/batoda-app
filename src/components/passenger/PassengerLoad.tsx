@@ -7,16 +7,16 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+  ActivityIndicator,
+  Modal,
 } from 'react-native';
 import {get, post} from '../../utils/proxy';
-import {
-  subscribeToChannel,
-} from '../../pusher/pusher';
 import {DispatchResponse} from '../../types/approved-dispatch';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
-import {PusherEvent} from '@pusher/pusher-websocket-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {RefreshTriggerProp} from '../../types/passenger-dashboard';
+import CustomAlertModal from '../../components/CustomAlertModal';
+import SuccessAlertModal from '../SuccessAlertModal';
 
 const SEAT_POSITIONS = [
   ['back_small_1', 'front_small_1', 'front_small_2'],
@@ -38,9 +38,10 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const [dispatchId, setDispatchId] = useState<number | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
-  const prevDispatchIdRef = useRef(dispatchId);
-  const [expiryReservations, setExpiryReservations] = useState<any[]>([]);
-  const [isFetching, setIsFetching] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isReserving, setIsReserving] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
   const fetchPassengerCount = async () => {
     try {
       const data: DispatchResponse = await get(API_ENDPOINTS.PASSENGER_COUNT);
@@ -72,9 +73,8 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
     fetchApprovedSeats();
   }, [refreshTrigger]);
 
- 
   const toggleSeatSelection = (seat: string) => {
-    if (reservedSeats.includes(seat)) return; // Prevent selecting reserved seats
+    if (reservedSeats.includes(seat)) return;
 
     setSelectedSeats(prevSeats => {
       if (multiSelectEnabled) {
@@ -82,7 +82,7 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
           ? prevSeats.filter(s => s !== seat)
           : [...prevSeats, seat];
       } else {
-        return prevSeats.includes(seat) ? [] : [seat]; // Only allow one selection
+        return prevSeats.includes(seat) ? [] : [seat];
       }
     });
   };
@@ -128,7 +128,7 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
     }, 1000);
   };
 
-  const confirmReservation = async () => {
+  const confirmReservation = () => {
     if (selectedSeats.length === 0) return;
 
     if (!dispatchId) {
@@ -139,46 +139,7 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
       return;
     }
 
-    Alert.alert(
-      'Confirm Reservation',
-      'Complete the payment within 2 minutes, or your reservation will be canceled automatically.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Proceed',
-          onPress: async () => {
-            try {
-              const response = await post(
-                API_ENDPOINTS.RESERVE_SEAT,
-                {
-                  dispatch_id: dispatchId,
-                  seat_position: selectedSeats,
-                },
-                true,
-              );
-
-              if (response.status) {
-                // Merge newly reserved seats with the existing ones
-                setReservedSeats(prevSeats => [
-                  ...new Set([...prevSeats, ...response.reserved_seats]),
-                ]);
-
-                setSelectedSeats([]);
-                Alert.alert('Success', response.message);
-                startCountdown(); // Start the countdown timer
-              } else {
-                Alert.alert('Error', 'Reservation failed.');
-              }
-            } catch (error) {
-              Alert.alert('Error', 'Failed to reserve seats.');
-            }
-          },
-        },
-      ],
-    );
+    setShowConfirmModal(true);
   };
 
   return (
@@ -238,6 +199,52 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
           </TouchableOpacity>
         )}
       </View>
+      <CustomAlertModal
+        visible={showConfirmModal}
+        title="Confirm Reservation"
+        message="Complete the payment within 2 minutes, or your reservation will be canceled automatically."
+        boldParts={['2 minutes']}
+        isLoading={isReserving}
+        onCancel={() => setShowConfirmModal(false)}
+        onConfirm={async () => {
+          setIsReserving(true);
+          try {
+            const response = await post(
+              API_ENDPOINTS.RESERVE_SEAT,
+              {
+                dispatch_id: dispatchId,
+                seat_position: selectedSeats,
+              },
+              true,
+            );
+
+            if (response.status) {
+              setReservedSeats(prevSeats => [
+                ...new Set([...prevSeats, ...response.reserved_seats]),
+              ]);
+              setSelectedSeats([]);
+              startCountdown();
+
+              setShowSuccessModal(true);
+
+              setShowConfirmModal(false);
+            } else {
+              Alert.alert('Reservation Error', response.message);
+              await fetchReservedSeats();
+            }
+          } catch (error) {
+            Alert.alert('Error', 'Failed to reserve seats.');
+          } finally {
+            setIsReserving(false);
+          }
+        }}
+      />
+      <SuccessAlertModal
+        visible={showSuccessModal}
+        title="Success!"
+        message="Your reservation has been completed."
+        onDismiss={() => setShowSuccessModal(false)}
+      />
     </View>
   );
 };
