@@ -232,9 +232,10 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
 
               setShowConfirmModal(false);
             } else {
-            //   Alert.alert('Reservation Error', response.message);
-            setResponseErrorMessage(response.message);
-                setShowErrorModal(true);
+              //   Alert.alert('Reservation Error', response.message);
+              setResponseErrorMessage(response.message);
+              setShowConfirmModal(false);
+              setShowErrorModal(true);
               await fetchReservedSeats();
             }
           } catch (error) {
@@ -252,11 +253,10 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
       />
       <ErrorAlertModal
         visible={showErrorModal}
-        title="Error"
+        title="Failed to Reserve Seats"
         message={responseErrorMessage}
         onDismiss={() => setShowErrorModal(false)}
       />
-
     </View>
   );
 };

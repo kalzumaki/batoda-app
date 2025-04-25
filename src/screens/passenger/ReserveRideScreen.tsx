@@ -243,17 +243,18 @@ const ReserveRideScreen: React.FC = () => {
               } else {
                 // Alert.alert('Reservation Error', response.message);
                 setResponseErrorMessage(response.message);
+                setShowConfirmModal(false);
                 setShowErrorModal(true);
                 await fetchReservedSeats();
               }
             } catch (error) {
               Alert.alert('Error', 'Failed to reserve seats.');
               <ErrorAlertModal
-              visible={showErrorModal}
-              title="Error"
-              message="Failed to reserve seats."
-              onDismiss={() => setShowErrorModal(false)}
-            />
+                visible={showErrorModal}
+                title="Error"
+                message="Failed to reserve seats."
+                onDismiss={() => setShowErrorModal(false)}
+              />;
             } finally {
               setIsReserving(false);
             }
@@ -267,7 +268,7 @@ const ReserveRideScreen: React.FC = () => {
         />
         <ErrorAlertModal
           visible={showErrorModal}
-          title="Error"
+          title="Failed to Reserve Seats"
           message={responseErrorMessage}
           onDismiss={() => setShowErrorModal(false)}
         />
