@@ -17,6 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {RefreshTriggerProp} from '../../types/passenger-dashboard';
 import CustomAlertModal from '../../components/CustomAlertModal';
 import SuccessAlertModal from '../SuccessAlertModal';
+import ErrorAlertModal from '../ErrorAlertModal';
 
 const SEAT_POSITIONS = [
   ['back_small_1', 'front_small_1', 'front_small_2'],
@@ -41,7 +42,9 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isReserving, setIsReserving] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [responseErrorMessage, setResponseErrorMessage] = useState('');
+  const [responseSuccessMessage, setResponseSuccessMessage] = useState('');
   const fetchPassengerCount = async () => {
     try {
       const data: DispatchResponse = await get(API_ENDPOINTS.PASSENGER_COUNT);
@@ -224,12 +227,14 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
               ]);
               setSelectedSeats([]);
               startCountdown();
-
+              setResponseSuccessMessage(response.message);
               setShowSuccessModal(true);
 
               setShowConfirmModal(false);
             } else {
-              Alert.alert('Reservation Error', response.message);
+            //   Alert.alert('Reservation Error', response.message);
+            setResponseErrorMessage(response.message);
+                setShowErrorModal(true);
               await fetchReservedSeats();
             }
           } catch (error) {
@@ -242,9 +247,16 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
       <SuccessAlertModal
         visible={showSuccessModal}
         title="Success!"
-        message="Your reservation has been completed."
+        message={responseSuccessMessage}
         onDismiss={() => setShowSuccessModal(false)}
       />
+      <ErrorAlertModal
+        visible={showErrorModal}
+        title="Error"
+        message={responseErrorMessage}
+        onDismiss={() => setShowErrorModal(false)}
+      />
+
     </View>
   );
 };

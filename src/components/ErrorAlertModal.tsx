@@ -10,14 +10,14 @@ import {
 } from 'react-native';
 import LottieView from 'lottie-react-native';
 
-interface SuccessAlertModalProps {
+interface ErrorAlertModalProps {
   visible: boolean;
   title: string;
   message: string;
   onDismiss?: () => void;
 }
 
-const SuccessAlertModal: React.FC<SuccessAlertModalProps> = ({
+const ErrorAlertModal: React.FC<ErrorAlertModalProps> = ({
   visible,
   title,
   message,
@@ -34,7 +34,7 @@ const SuccessAlertModal: React.FC<SuccessAlertModalProps> = ({
           <Pressable style={styles.backdrop} onPress={onDismiss} />
           <View style={styles.modal}>
             <LottieView
-              source={require('../assets/success-animation.json')}
+              source={require('../assets/error-animation.json')}
               autoPlay
               loop={false}
               style={styles.icon}
@@ -42,6 +42,7 @@ const SuccessAlertModal: React.FC<SuccessAlertModalProps> = ({
             <Text style={styles.title}>{title}</Text>
             <Text style={styles.message}>{String(message)}</Text>
 
+            {/* Ensure message is inside <Text> */}
           </View>
         </View>
       </TouchableWithoutFeedback>
@@ -87,4 +88,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SuccessAlertModal;
+export default ErrorAlertModal;
