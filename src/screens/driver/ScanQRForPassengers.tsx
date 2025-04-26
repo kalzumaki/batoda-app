@@ -55,8 +55,9 @@ const ScanQRForPassengers: React.FC = () => {
 
   // Format the data for SectionList
   const sections = dispatches.map(dispatch => ({
-    title: `Dispatch ID: ${dispatch.dispatch_id}\n\nDispatcher: ${dispatch.dispatcher_full_name}\n`,
-    data: [dispatch], // Wrap the dispatch object in an array to match the expected structure
+    title: `Reservation ID: ${dispatch.reservation_id}\n\nDispatcher: ${dispatch.dispatcher_full_name}\n`,
+
+    data: [dispatch],
   }));
 
   return (
@@ -99,7 +100,10 @@ const ScanQRForPassengers: React.FC = () => {
                     const formattedSeat: string = seat
                       .replace(/_/g, ' ')
                       .split(' ')
-                      .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+                      .map(
+                        (word: string) =>
+                          word.charAt(0).toUpperCase() + word.slice(1),
+                      )
                       .join(' ');
                     return (
                       <Text key={idx} style={styles.seatText}>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, {useEffect, useState, useCallback} from 'react';
 import {
   View,
   Text,
@@ -9,14 +9,15 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { get, post } from '../../utils/proxy';
-import { API_ENDPOINTS } from '../../api/api-endpoints';
-import { Ticket } from '../../types/ticket';
+import {get, post} from '../../utils/proxy';
+import {API_ENDPOINTS} from '../../api/api-endpoints';
+import {Ticket} from '../../types/ticket';
 import ReceiptDownloader from '../../components/passenger/ReceiptDownloader';
 import ConfirmPaymentModal from '../../components/ConfirmPaymentModal';
 import SuccessAlertModal from '../../components/SuccessAlertModal'; // Import the SuccessAlertModal
+import ErrorAlertModal from '../../components/ErrorAlertModal';
 
 const TicketScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -26,9 +27,12 @@ const TicketScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [buttonLoading, setButtonLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isModalVisible, setModalVisible] = useState(false);
+  const [showResponseMessage, setShowResponseMessage] = useState('');
   // Modal states
   const [isSuccessModalVisible, setSuccessModalVisible] = useState(false);
-  const [isConfirmPaymentModalVisible, setConfirmPaymentModalVisible] = useState(false);
+  const [isConfirmPaymentModalVisible, setConfirmPaymentModalVisible] =
+    useState(false);
 
   const fetchTicket = async () => {
     try {
@@ -50,14 +54,17 @@ const TicketScreen: React.FC = () => {
         if (priceResponse.status) {
           setTicket((prevTicket: any) =>
             prevTicket
-              ? { ...prevTicket, total_price: priceResponse.total_price }
+              ? {...prevTicket, total_price: priceResponse.total_price}
               : prevTicket,
           );
         } else {
           setError('Failed to fetch ticket price');
         }
       } else {
-        setError('Failed to fetch ticket details');
+        setTicket(null);
+        setError(
+          `${ticketResponse.message} Or the driver is being dispatched.`,
+        );
       }
     } catch (err) {
       setError('An error occurred while fetching the ticket');
@@ -103,16 +110,15 @@ const TicketScreen: React.FC = () => {
       const balance = parseFloat(walletResponse.data.balance); // Convert balance to number
 
       if (balance < ticket.total_price) {
-        Alert.alert(
-          'Insufficient Balance',
+        setShowResponseMessage(
           `Your balance is ₱${balance}, but the ticket costs ₱${ticket.total_price}. Please top up.`,
         );
+        setModalVisible(true); // Show the error modal
         return; // Stop the transaction if balance is insufficient
       }
 
       // Proceed with payment confirmation
       setConfirmPaymentModalVisible(true); // Open the Confirm Payment Modal
-
     } catch (error) {
       console.error('Error fetching wallet details:', error);
       Alert.alert('Error', 'Failed to fetch wallet details.');
@@ -121,25 +127,29 @@ const TicketScreen: React.FC = () => {
 
   const handleConfirmPayment = async () => {
     try {
-        setIsLoading(true);
+      setIsLoading(true);
       const response = await post(
         API_ENDPOINTS.PAY_SEATS,
-        { dispatch_id: ticket.dispatch_id },
+        {
+          dispatch_id: ticket.dispatch_id,
+          dispatch_reservation_id: ticket.dispatch_reservation_id,
+        },
         true,
       );
 
       if (response.status) {
         // Payment successful, show the success modal
         setSuccessModalVisible(true);
+        setShowResponseMessage(response.message || 'Payment successful');
       } else {
-        Alert.alert('Error', 'Failed to pay the seat.');
+        setShowResponseMessage(response.message || 'Payment failed');
+        setModalVisible(true);
       }
     } catch (error) {
       console.error('Failed to reserve seat:', error);
-      Alert.alert(
-        'Error',
-        'An error occurred while reserving the seat.',
-      );
+      Alert.alert('Error', 'An error occurred while reserving the seat.');
+      setShowResponseMessage('An error occurred while reserving the seat.');
+      setModalVisible(true);
     } finally {
       setConfirmPaymentModalVisible(false); // Close the Confirm Payment Modal
       setIsLoading(false);
@@ -267,14 +277,15 @@ const TicketScreen: React.FC = () => {
         )}
       </ScrollView>
       <View style={styles.buttonContainer}>
-      {ticket?.status === 'reserved' && <ReceiptDownloader dispatchId={ticket.dispatch_id} />}
+        {ticket?.status === 'reserved' && (
+          <ReceiptDownloader dispatchId={ticket.dispatch_id} />
+        )}
         {/* Pay Here Button - Bottom Center */}
         {ticket?.status === 'unpaid' && (
           <TouchableOpacity
             style={styles.payButton}
             onPress={handlePayNow}
-            disabled={buttonLoading}
-          >
+            disabled={buttonLoading}>
             <Text style={styles.payButtonText}>
               {buttonLoading ? 'Processing...' : 'Pay Here'}
             </Text>
@@ -286,19 +297,29 @@ const TicketScreen: React.FC = () => {
       <SuccessAlertModal
         visible={isSuccessModalVisible}
         title="Payment Successful"
-        message="Your payment has been successfully processed!"
+        message={showResponseMessage}
         onDismiss={handleSuccessModalDismiss}
       />
 
       {/* Confirm Payment Modal */}
-      <ConfirmPaymentModal
-        visible={isConfirmPaymentModalVisible}
-        title="Confirm Payment"
-        message={`You're about to pay ₱${ticket.total_price}. Proceed with the payment?`}
-        boldParts={[`₱${ticket.total_price}`]}
-        isLoading={isLoading}
-        onConfirm={handleConfirmPayment}
-        onCancel={() => setConfirmPaymentModalVisible(false)}
+      {ticket && (
+        <ConfirmPaymentModal
+          visible={isConfirmPaymentModalVisible}
+          title="Confirm Payment"
+          message={`You're about to pay ₱${ticket.total_price}. Proceed with the payment?`}
+          boldParts={[`₱${ticket.total_price}`]}
+          isLoading={isLoading}
+          onConfirm={handleConfirmPayment}
+          onCancel={() => setConfirmPaymentModalVisible(false)}
+        />
+      )}
+
+      {/* Error Alert Modal */}
+      <ErrorAlertModal
+        visible={isModalVisible}
+        title="Transaction Error"
+        message={showResponseMessage || 'Something went wrong'}
+        onDismiss={() => setModalVisible(false)}
       />
     </View>
   );

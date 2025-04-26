@@ -24,6 +24,7 @@ import SuccessAlertModal from '../../components/SuccessAlertModal';
 interface DispatchQRCodeData {
   dispatch_id: number;
   wallet_id: number;
+  dispatch_reservation_id: number;
 }
 
 interface PayDispatcher {
