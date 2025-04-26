@@ -19,6 +19,8 @@ import {STORAGE_API_URL} from '@env';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import {Alert} from 'react-native';
+import SuccessAlertModal from '../SuccessAlertModal';
+import ErrorAlertModal from '../ErrorAlertModal';
 dayjs.extend(relativeTime);
 
 const DispatchCard: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
@@ -27,7 +29,10 @@ const DispatchCard: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const [dispatches, setDispatches] = useState<PendingDispatch[]>([]);
   const [isBatchLoading, setIsBatchLoading] = useState(false); // for multi
   const [loadingId, setLoadingId] = useState<number | null>(null);
-
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showResponseMessage, setShowResponseMessage] = useState<string>('');
+  const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
+  const [title, setTitle] = useState<string>('');
   useEffect(() => {
     fetchDispatches();
   }, [refreshTrigger]);
@@ -47,7 +52,7 @@ const DispatchCard: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
     isBatch = false,
   ) => {
     if (!isBatch) {
-      setLoadingId(updates[0].id); 
+      setLoadingId(updates[0].id);
     } else {
       setIsBatchLoading(true);
     }
@@ -60,15 +65,29 @@ const DispatchCard: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
       );
 
       if (res.status) {
-        Alert.alert('Success', res.message || 'Dispatch updated successfully.');
-        fetchDispatches();
+        setShowResponseMessage(res.message);
+        const allRejected = updates.every(item => item.status === 'rejected');
+        const allApproved = updates.every(item => item.status === 'approved');
+
+        if (allRejected) {
+          setTitle('Dispatch Rejected Successfully');
+        } else if (allApproved) {
+          setTitle('Dispatch Approved Successfully');
+        } else {
+          setTitle('Dispatches Updated Successfully');
+        }
+        setIsSuccessModalVisible(true);
         setSelectedIds([]);
       } else {
-        Alert.alert('Failed', res.message || 'Failed to update dispatch.');
+        setShowResponseMessage(res.message);
+        setTitle('Failed to Update Dispatch');
+        setShowErrorModal(true);
       }
     } catch (error) {
       console.error('Error updating dispatches:', error);
-      Alert.alert('Error', 'Something went wrong while updating dispatch.');
+      setShowResponseMessage('Something went wrong while updating dispatch.');
+      setTitle('Error');
+      setShowErrorModal(true);
     } finally {
       setLoadingId(null);
       setIsBatchLoading(false);
@@ -147,6 +166,22 @@ const DispatchCard: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
             </TouchableOpacity>
           </View>
         )}
+        <SuccessAlertModal
+          visible={isSuccessModalVisible}
+          title={title}
+          message={showResponseMessage}
+          onDismiss={() => {
+            setIsSuccessModalVisible(false);
+            fetchDispatches();
+          }}
+        />
+
+        <ErrorAlertModal
+          visible={showErrorModal}
+          title={title}
+          message={showResponseMessage}
+          onDismiss={() => setShowErrorModal(false)}
+        />
       </View>
     );
   };

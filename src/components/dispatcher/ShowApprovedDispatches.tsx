@@ -18,6 +18,8 @@ import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome';
 import dayjs from 'dayjs';
 import {RefreshTriggerProp} from '../../types/passenger-dashboard';
 import Toast from 'react-native-toast-message';
+import SuccessAlertModal from '../SuccessAlertModal';
+import ErrorAlertModal from '../ErrorAlertModal';
 
 const ShowApprovedDispatches: React.FC<RefreshTriggerProp> = ({
   refreshTrigger,
@@ -29,7 +31,10 @@ const ShowApprovedDispatches: React.FC<RefreshTriggerProp> = ({
   const [dispatchOptions, setDispatchOptions] = useState<any[]>([]);
   const [showOptionsModal, setShowOptionsModal] = useState<boolean>(false);
   const [currentDispatch, setCurrentDispatch] = useState<any>(null);
-
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showResponseMessage, setShowResponseMessage] = useState<string>('');
+  const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
+  const [title, setTitle] = useState<string>('');
   const fetchDispatches = async () => {
     try {
       setLoading(true);
@@ -82,11 +87,9 @@ const ShowApprovedDispatches: React.FC<RefreshTriggerProp> = ({
       const response = await post(API_ENDPOINTS.DISPATCH_NOW, payload, true);
 
       if (response.status) {
-        Toast.show({
-          type: 'success',
-          text1: 'Success',
-          text2: 'Driver dispatched successfully!',
-        });
+        setShowResponseMessage(response.message);
+        setTitle('Dispatch Successful');
+        setIsSuccessModalVisible(true);
 
         setDispatches(prev =>
           prev.filter(item => item.id !== currentDispatch.id),
@@ -94,11 +97,9 @@ const ShowApprovedDispatches: React.FC<RefreshTriggerProp> = ({
 
         fetchDispatches();
       } else {
-        Toast.show({
-          type: 'error',
-          text1: 'Dispatch Failed',
-          text2: response.message || 'Something went wrong.',
-        });
+        setShowResponseMessage(response.message);
+        setTitle('Dispatch Failed');
+        setShowErrorModal(true);
       }
     } catch (error: any) {
       console.error('Dispatch error:', error);
@@ -107,12 +108,9 @@ const ShowApprovedDispatches: React.FC<RefreshTriggerProp> = ({
         error?.response?.data?.message ||
         error?.message ||
         'Something went wrong while dispatching.';
-
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: message,
-      });
+      setShowResponseMessage(message);
+      setTitle('Error');
+      setShowErrorModal(true);
     }
   };
 
@@ -190,6 +188,21 @@ const ShowApprovedDispatches: React.FC<RefreshTriggerProp> = ({
           )}
         </>
       )}
+      <SuccessAlertModal
+        visible={isSuccessModalVisible}
+        title={title}
+        message={showResponseMessage}
+        onDismiss={() => {
+          setIsSuccessModalVisible(false);
+        }}
+      />
+
+      <ErrorAlertModal
+        visible={showErrorModal}
+        title={title}
+        message={showResponseMessage}
+        onDismiss={() => setShowErrorModal(false)}
+      />
     </ScrollView>
   );
 };

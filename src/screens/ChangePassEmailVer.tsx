@@ -46,7 +46,6 @@ const ChangePassEmailVer: React.FC = () => {
         setTitle('OTP sent successfully.');
         setIsSuccessModalVisible(true);
         console.log('Navigating to ChangePassword with email:', email);
-        navigation.navigate('ChangePassword', {email});
       } else {
         setShowResponseMessage(response.message);
         setTitle('Error');
@@ -91,7 +90,7 @@ const ChangePassEmailVer: React.FC = () => {
         message={showResponseMessage}
         onDismiss={() => {
           setIsSuccessModalVisible(false);
-          // navigation.goBack();
+          navigation.navigate('ChangePassword', {email});
         }}
       />
 
