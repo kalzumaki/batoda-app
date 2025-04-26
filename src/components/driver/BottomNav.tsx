@@ -14,13 +14,18 @@ import {API_ENDPOINTS} from '../../api/api-endpoints';
 import {post, postWithoutPayload} from '../../utils/proxy';
 import {Alert} from 'react-native';
 import {DispatchRequestResponse} from '../../types/approved-dispatch';
+import SuccessAlertModal from '../SuccessAlertModal';
+import ErrorAlertModal from '../ErrorAlertModal';
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
 const BottomNav: React.FC = () => {
   const navigation = useNavigation<NavigationProps>();
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
-
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isErrorModalVisible, setIsErrorModalVisible] = useState(false);
+  const [showResponseMessage, setShowResponseMessage] = useState<string>('');
+  const [title, setTitle] = useState<string>('');
   const handleRequestDispatch = async () => {
     setLoading(true); // Set loading state before making the request
     try {
@@ -30,20 +35,18 @@ const BottomNav: React.FC = () => {
       );
       console.log('Dispatch request response:', response);
       if (response?.status) {
-        Alert.alert('Success', 'Dispatch request sent successfully!');
+        setShowResponseMessage(response.message);
+        setTitle('Dispatch Request Successfully');
+        setIsModalVisible(true);
       } else {
-        Alert.alert(
-          'Error',
-          response?.message ||
-            'Failed to send dispatch request. Please try again.',
-        );
+        setShowResponseMessage(response.message);
+        setTitle('Dispatch Request Failed');
+        setIsErrorModalVisible(true);
       }
     } catch (error: any) {
-      Alert.alert(
-        'Error',
-        error?.response?.data?.message ||
-          'Failed to send dispatch request. Please try again.',
-      );
+      setShowResponseMessage(error?.response?.data?.message);
+      setTitle('Error');
+      setIsErrorModalVisible(true);
     } finally {
       setLoading(false);
     }
@@ -88,6 +91,20 @@ const BottomNav: React.FC = () => {
         <Icon name="card-outline" size={24} color="#000" />
         <Text style={styles.label}>ID</Text>
       </TouchableOpacity>
+      <SuccessAlertModal
+        visible={isModalVisible}
+        title={title}
+        message={showResponseMessage}
+        onDismiss={() => {
+          setIsModalVisible(false);
+        }}
+      />
+      <ErrorAlertModal
+        visible={isErrorModalVisible}
+        title={title}
+        message={showResponseMessage || 'Something went wrong'}
+        onDismiss={() => setIsErrorModalVisible(false)}
+      />
     </View>
   );
 };

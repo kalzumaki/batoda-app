@@ -5,7 +5,6 @@ import {
   TextInput,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import {useRoute, RouteProp, useNavigation} from '@react-navigation/native';
@@ -13,6 +12,8 @@ import {RootStackParamList} from '../types/passenger-dashboard';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {postWithHeaders, post} from '../utils/proxy';
 import {API_ENDPOINTS} from '../api/api-endpoints';
+import ErrorAlertModal from '../components/ErrorAlertModal';
+import SuccessAlertModal from '../components/SuccessAlertModal';
 
 type OTPVerificationRouteProp = RouteProp<
   RootStackParamList,
@@ -29,7 +30,12 @@ const OTPVerification: React.FC = () => {
   const inputs = useRef<Array<TextInput | null>>([]);
   const [resendDisabled, setResendDisabled] = useState(false);
   const [countdown, setCountdown] = useState(120);
-
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showResponseMessage, setShowResponseMessage] = useState<string>('');
+  const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
+  const [isSuccessModalNavigation, setIsSuccessModalNavigation] =
+    useState(false);
+  const [title, setTitle] = useState<string>('');
   const handleChange = (text: string, index: number) => {
     if (/^[0-9]$/.test(text) || text === '') {
       const newOtp = [...otp];
@@ -44,7 +50,9 @@ const OTPVerification: React.FC = () => {
   const handleVerifyOtp = async () => {
     const fullOtp = otp.join('');
     if (fullOtp.length !== 6) {
-      Alert.alert('Invalid OTP', 'Please enter a 6-digit OTP.');
+      setShowResponseMessage('Please enter a 6-digit OTP. OTP');
+      setTitle('Invalid OTP');
+      setShowErrorModal(true);
       return;
     }
 
@@ -57,10 +65,14 @@ const OTPVerification: React.FC = () => {
       );
 
       if (response.status) {
-        Alert.alert('Success', 'Email verified successfully!');
-        navigation.navigate('Settings');
+        setShowResponseMessage('Email verified successfully!');
+        setTitle('Success');
+        setIsSuccessModalNavigation(true);
+
       } else {
-        Alert.alert('Error', response.message || 'Invalid OTP.');
+        setShowResponseMessage(response.message || 'Invalid OTP.');
+        setTitle('Error Verifying OTP');
+        setShowErrorModal(true);
       }
     } catch (error: any) {
       console.error('Error verifying OTP:', error);
@@ -70,9 +82,14 @@ const OTPVerification: React.FC = () => {
         error.response.data &&
         error.response.data.message
       ) {
-        Alert.alert('Error', error.response.data.message);
+        setShowResponseMessage(error.response.data.message);
+        setTitle('Error Verifying OTP');
+        setShowErrorModal(true);
       } else {
-        Alert.alert('Error', 'Something went wrong. Please try again.');
+
+        setShowResponseMessage('Something went wrong. Please try again.');
+        setTitle('Error');
+        setShowErrorModal(true);
       }
     } finally {
       setLoading(false);
@@ -94,13 +111,20 @@ const OTPVerification: React.FC = () => {
       );
 
       if (response.status) {
-        Alert.alert('Success', 'OTP resent successfully!');
+        setShowResponseMessage(`A 6-digit OTP has been sent to ${email}`);
+        setTitle('OTP Resent');
+        setIsSuccessModalVisible(true);
       } else {
-        Alert.alert('Error', response.message || 'Failed to resend OTP.');
+        setShowResponseMessage(response.message || 'Failed to resend OTP.');
+        setTitle('Error Resending OTP');
+        setShowErrorModal(true);
       }
     } catch (error) {
       console.error('Error resending OTP:', error);
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+
+      setShowResponseMessage('Something went wrong. Please try again.');
+      setTitle('Error');
+      setShowErrorModal(true);
     } finally {
       setLoading(false);
 
@@ -161,6 +185,31 @@ const OTPVerification: React.FC = () => {
           {resendDisabled ? `Resend OTP (${countdown}s)` : 'Resend OTP'}
         </Text>
       </TouchableOpacity>
+      <SuccessAlertModal
+        visible={isSuccessModalVisible}
+        title={title}
+        message={showResponseMessage}
+        onDismiss={() => {
+          setIsSuccessModalVisible(false);
+
+        }}
+      />
+      <SuccessAlertModal
+        visible={isSuccessModalNavigation}
+        title={title}
+        message={showResponseMessage}
+        onDismiss={() => {
+            setIsSuccessModalNavigation(false);
+            navigation.navigate('Settings');
+        }}
+      />
+
+      <ErrorAlertModal
+        visible={showErrorModal}
+        title={title}
+        message={showResponseMessage}
+        onDismiss={() => setShowErrorModal(false)}
+      />
     </View>
   );
 };

@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Alert,
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
@@ -15,6 +14,8 @@ import BackButton from '../components/BackButton';
 import {post} from '../utils/proxy';
 import {API_ENDPOINTS} from '../api/api-endpoints';
 import Icon from 'react-native-vector-icons/Ionicons';
+import SuccessAlertModal from '../components/SuccessAlertModal';
+import ErrorAlertModal from '../components/ErrorAlertModal';
 
 const ChangePasswordScreen: React.FC = () => {
   const navigation =
@@ -31,13 +32,20 @@ const ChangePasswordScreen: React.FC = () => {
   const [countdown, setCountdown] = useState(120);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showResponseMessage, setShowResponseMessage] = useState<string>('');
+  const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
+  const [title, setTitle] = useState<string>('');
   const togglePasswordVisibility = () => setShowPassword(prev => !prev);
   const toggleConfirmPasswordVisibility = () =>
     setShowConfirmPassword(prev => !prev);
 
   const handleChangePassword = async () => {
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match.');
+
+      setShowResponseMessage('Passwords do not match.');
+      setTitle('Password Mismatch');
+      setShowErrorModal(true);
       return;
     }
 
@@ -56,18 +64,29 @@ const ChangePasswordScreen: React.FC = () => {
       );
 
       if (response.status) {
-        Alert.alert('Success', 'Password changed successfully!');
+        setShowResponseMessage('Password changed successfully!');
+        setTitle('Success');
+        setIsSuccessModalVisible(true);
         navigation.navigate('Settings');
       } else {
-        // Display the exact error returned by the backend
-        Alert.alert('Error', response.error || 'Failed to change password.');
+        setShowResponseMessage(response.error || 'Failed to change password. Or you have already changed your password today.');
+        setTitle('Error Changing Password');
+        setShowErrorModal(true);
       }
     } catch (error: any) {
-      // If error.response.data exists, extract error from it. Otherwise, use a generic message.
       if (error.response && error.response.data && error.response.data.error) {
-        Alert.alert('Error', error.response.data.error);
+        setShowResponseMessage(
+          error.response.data.error || 'Failed to change password.',
+        );
+        setTitle('Error');
+        setShowErrorModal(true);
       } else {
-        Alert.alert('Error', 'You can only update your password once per day.');
+        setTitle('Error Changing Password');
+        setShowResponseMessage(
+          error?.response?.data?.message ||
+            'An error occurred while changing password',
+        );
+        setShowErrorModal(true);
       }
     } finally {
       setLoading(false);
@@ -87,13 +106,21 @@ const ChangePasswordScreen: React.FC = () => {
       });
 
       if (response.status) {
-        Alert.alert('Success', 'OTP resent successfully!');
+        setShowResponseMessage(`A 6-digit OTP has been resent to ${email}`);
+        setTitle('OTP Resent Successfully');
+        setIsSuccessModalVisible(true);
       } else {
-        Alert.alert('Error', response.message || 'Failed to resend OTP.');
+        setShowResponseMessage(response.message || 'Failed to resend OTP.');
+        setTitle('Error Resending OTP');
+        setShowErrorModal(true);
       }
     } catch (error) {
       console.error('Error resending OTP:', error);
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      setShowResponseMessage(
+        'An error occurred while resending OTP. Please try again.',
+      );
+      setTitle('Error Resending OTP');
+      setShowErrorModal(true);
     } finally {
       setResendLoading(false);
 
@@ -201,6 +228,22 @@ const ChangePasswordScreen: React.FC = () => {
           )}
         </TouchableOpacity>
       </View>
+      <SuccessAlertModal
+        visible={isSuccessModalVisible}
+        title={title}
+        message={showResponseMessage}
+        onDismiss={() => {
+          setIsSuccessModalVisible(false);
+        //   navigation.goBack();
+        }}
+      />
+
+      <ErrorAlertModal
+        visible={showErrorModal}
+        title={title}
+        message={showResponseMessage}
+        onDismiss={() => setShowErrorModal(false)}
+      />
     </View>
   );
 };

@@ -7,7 +7,6 @@ import {
   ActivityIndicator,
   ScrollView,
   RefreshControl,
-  Alert,
 } from 'react-native';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -16,7 +15,7 @@ import {API_ENDPOINTS} from '../../api/api-endpoints';
 import {Ticket} from '../../types/ticket';
 import ReceiptDownloader from '../../components/passenger/ReceiptDownloader';
 import ConfirmPaymentModal from '../../components/ConfirmPaymentModal';
-import SuccessAlertModal from '../../components/SuccessAlertModal'; // Import the SuccessAlertModal
+import SuccessAlertModal from '../../components/SuccessAlertModal';
 import ErrorAlertModal from '../../components/ErrorAlertModal';
 
 const TicketScreen: React.FC = () => {
@@ -29,6 +28,7 @@ const TicketScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isModalVisible, setModalVisible] = useState(false);
   const [showResponseMessage, setShowResponseMessage] = useState('');
+  const [showErrorModal, setShowErrorModal] = useState(false);
   // Modal states
   const [isSuccessModalVisible, setSuccessModalVisible] = useState(false);
   const [isConfirmPaymentModalVisible, setConfirmPaymentModalVisible] =
@@ -88,40 +88,43 @@ const TicketScreen: React.FC = () => {
       setButtonLoading(true);
       await processPayment();
     } finally {
-      setButtonLoading(false); // Hide button loading after process
+      setButtonLoading(false);
     }
   };
 
   const processPayment = async () => {
     if (!ticket || !ticket.dispatch_id) {
-      Alert.alert('Error', 'No dispatch ID found.');
+      setShowResponseMessage('No dispatch ID found.');
+      setShowErrorModal(true);
       return;
     }
 
     try {
-      // Fetch the user's e-wallet balance
       const walletResponse = await get(API_ENDPOINTS.SHOW_EWALLET);
 
       if (!walletResponse.status) {
-        Alert.alert('Error', 'Failed to retrieve wallet details.');
+        // Alert.alert('Error', 'Failed to retrieve wallet details.');
+        setShowResponseMessage('Failed to retrieve wallet details.');
+        setShowErrorModal(true);
         return;
       }
 
-      const balance = parseFloat(walletResponse.data.balance); // Convert balance to number
+      const balance = parseFloat(walletResponse.data.balance);
 
       if (balance < ticket.total_price) {
         setShowResponseMessage(
           `Your balance is ₱${balance}, but the ticket costs ₱${ticket.total_price}. Please top up.`,
         );
-        setModalVisible(true); // Show the error modal
-        return; // Stop the transaction if balance is insufficient
+        setShowErrorModal(true);
+        return;
       }
 
       // Proceed with payment confirmation
       setConfirmPaymentModalVisible(true); // Open the Confirm Payment Modal
     } catch (error) {
       console.error('Error fetching wallet details:', error);
-      Alert.alert('Error', 'Failed to fetch wallet details.');
+      setShowResponseMessage(`Error fetching wallet details: ${error}`);
+      setShowErrorModal(true);
     }
   };
 
@@ -143,13 +146,13 @@ const TicketScreen: React.FC = () => {
         setShowResponseMessage(response.message || 'Payment successful');
       } else {
         setShowResponseMessage(response.message || 'Payment failed');
-        setModalVisible(true);
+        setShowErrorModal(true);
       }
     } catch (error) {
       console.error('Failed to reserve seat:', error);
-      Alert.alert('Error', 'An error occurred while reserving the seat.');
+      //   Alert.alert('Error', 'An error occurred while reserving the seat.');
       setShowResponseMessage('An error occurred while reserving the seat.');
-      setModalVisible(true);
+      setShowErrorModal(true);
     } finally {
       setConfirmPaymentModalVisible(false); // Close the Confirm Payment Modal
       setIsLoading(false);
@@ -316,10 +319,10 @@ const TicketScreen: React.FC = () => {
 
       {/* Error Alert Modal */}
       <ErrorAlertModal
-        visible={isModalVisible}
+        visible={showErrorModal}
         title="Transaction Error"
         message={showResponseMessage || 'Something went wrong'}
-        onDismiss={() => setModalVisible(false)}
+        onDismiss={() => setShowErrorModal(false)}
       />
     </View>
   );
