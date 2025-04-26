@@ -19,6 +19,7 @@ import Header from '../../components/dispatcher/Header';
 import DispatchCard from '../../components/dispatcher/Dispatch';
 import ShowApprovedDispatches from '../../components/dispatcher/ShowApprovedDispatches';
 import BottomNav from '../../components/dispatcher/BottomNav';
+import ShowIncomeCard from '../../components/ShowIncomeCard';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
@@ -80,6 +81,10 @@ const DispatcherDashboard: React.FC = () => {
 
   const renderItems = [
     {id: 'header', component: <Header refreshTrigger={refreshTrigger} />},
+    {
+      id: 'income',
+      component: <ShowIncomeCard refreshTrigger={refreshTrigger} />,
+    },
     {
       id: 'dispatches',
       component: <DispatchCard refreshTrigger={refreshTrigger} />,

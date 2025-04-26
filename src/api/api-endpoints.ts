@@ -50,4 +50,5 @@ export const API_ENDPOINTS = {
     GET_DISPATCHERS_TRAVEL_HISTORY: '/dispatchers/travel-history',
     GET_DRIVER_QR: '/dispatchers/driver-qr',
     PAY_DISPATCHER_QR: '/transaction/dispatchqr',
+    SHOW_INCOME: '/show-income',
 }

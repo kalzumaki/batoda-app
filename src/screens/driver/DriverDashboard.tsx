@@ -16,6 +16,7 @@ import Header from '../../components/driver/Header';
 import ShowDispatches from '../../components/driver/ShowDispatches';
 import ShowInQueue from '../../components/driver/ShowInQueue';
 import BottomNav from '../../components/driver/BottomNav';
+import ShowIncomeCard from '../../components/ShowIncomeCard';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
@@ -106,6 +107,7 @@ const DriverDashboard: React.FC = () => {
     {id: 'header', component: <Header refreshTrigger={refreshTrigger} />},
     // {id: 'dispatches', component: <ShowDispatches refreshTrigger={refreshTrigger} />},
     {id: 'queue', component: <ShowInQueue refreshTrigger={refreshTrigger} />},
+    {id: 'income', component: <ShowIncomeCard refreshTrigger={refreshTrigger} />},
     // add here the bottom nav
   ];
 
