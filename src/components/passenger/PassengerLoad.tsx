@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,7 @@ import {RefreshTriggerProp} from '../../types/passenger-dashboard';
 import CustomAlertModal from '../../components/CustomAlertModal';
 import SuccessAlertModal from '../SuccessAlertModal';
 import ErrorAlertModal from '../ErrorAlertModal';
+import useSocketListener from '../../hooks/useSocketListener';
 
 const SEAT_POSITIONS = [
   ['back_small_1', 'front_small_1', 'front_small_2'],
@@ -142,7 +143,39 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
 
     setShowConfirmModal(true);
   };
+  const handleApprovedSeats = useCallback((data: any) => {
+    console.log('Dispatch updated:', data);
+    fetchApprovedSeats();
+  }, []);
 
+  const handleReservedSeats = useCallback((data: any) => {
+    console.log('Reserved Seats Updated:', data);
+
+    if (data?.seat_positions) {
+      const reserved = data.seat_positions;
+      setReservedSeats(prevSeats => {
+        return [...new Set([...prevSeats, ...reserved])];
+      });
+    }
+  }, []);
+
+  const handleFinalizedSeats = useCallback((data: any) => {
+    console.log('Dispatch finalized on seats:', data);
+
+    if (!data.is_dispatched || !data.id) {
+      setResponseErrorMessage('No approved drivers waiting for dispatch.');
+      setShowErrorModal(true);
+      setDispatchId(null);
+      fetchApprovedSeats();
+    } else {
+      setDispatchId(data.id);
+      fetchApprovedSeats();
+    }
+  }, []);
+
+  useSocketListener('seats-reserved', handleReservedSeats);
+  useSocketListener('dispatch-updated', handleApprovedSeats);
+  useSocketListener('dispatch-finalized', handleFinalizedSeats);
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Seat Reservation</Text>

@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {RefreshTriggerProp} from '../../types/passenger-dashboard';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
 import {get} from '../../utils/proxy';
@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {API_URL, STORAGE_API_URL} from '@env';
-
+import useSocketListener from '../../hooks/useSocketListener';
 const ShowInQueue: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const [dispatches, setDispatches] = useState<Dispatch[]>([]);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
@@ -90,6 +90,18 @@ const ShowInQueue: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
     return () => clearInterval(interval);
   }, [dispatches]);
 
+  const handleDispatchUpdated = useCallback((data: any) => {
+    console.log('Dispatch updated:', data);
+    fetchInQueue();
+  }, []);
+
+  const handleDispatchFinalized = useCallback((data: any) => {
+    console.log('Dispatch finalized:', data);
+    fetchInQueue();
+  }, []);
+
+  useSocketListener('dispatch-updated', handleDispatchUpdated);
+  useSocketListener('dispatch-finalized', handleDispatchFinalized);
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Upcoming Dispatch</Text>

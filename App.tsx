@@ -34,9 +34,14 @@ import ScanQRForDrivers from './src/screens/dispatcher/ScanQRForDrivers';
 import {TimerProvider} from './src/contexts/TimerContext';
 
 import {RootStackParamList} from './src/types/passenger-dashboard';
+
+//socket
+// import useSocket from './src/utils/socketManager';
+
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const App: React.FC = () => {
+//   useSocket();
   return (
     <TimerProvider>
       <NavigationContainer>

@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
   Text,
@@ -22,7 +22,7 @@ import {Alert} from 'react-native';
 import SuccessAlertModal from '../SuccessAlertModal';
 import ErrorAlertModal from '../ErrorAlertModal';
 dayjs.extend(relativeTime);
-
+import useSocketListener from '../../hooks/useSocketListener';
 const DispatchCard: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const [multiSelectEnabled, setMultiSelectEnabled] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -47,6 +47,13 @@ const DispatchCard: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
       console.error('Failed to fetch dispatches:', error);
     }
   };
+  const handleDispatchUpdated = useCallback((data: any) => {
+    console.log('Fetch Dispatch Created:', data);
+    fetchDispatches();
+  }, []);
+
+  useSocketListener('dispatch-created', handleDispatchUpdated);
+  
   const updateDispatches = async (
     updates: {id: number; status: 'approved' | 'rejected'}[],
     isBatch = false,

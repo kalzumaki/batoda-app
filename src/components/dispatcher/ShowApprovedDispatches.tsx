@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -20,7 +20,7 @@ import {RefreshTriggerProp} from '../../types/passenger-dashboard';
 import Toast from 'react-native-toast-message';
 import SuccessAlertModal from '../SuccessAlertModal';
 import ErrorAlertModal from '../ErrorAlertModal';
-
+import useSocketListener from '../../hooks/useSocketListener';
 const ShowApprovedDispatches: React.FC<RefreshTriggerProp> = ({
   refreshTrigger,
 }) => {
@@ -113,6 +113,19 @@ const ShowApprovedDispatches: React.FC<RefreshTriggerProp> = ({
       setShowErrorModal(true);
     }
   };
+
+  const handleDispatchUpdated = useCallback((data: any) => {
+    console.log('Dispatch updated:', data);
+    fetchDispatches();
+  }, []);
+
+  const handleDispatchFinalized = useCallback((data: any) => {
+    console.log('Dispatch finalized:', data);
+    fetchDispatches();
+  }, []);
+
+  useSocketListener('dispatch-updated', handleDispatchUpdated);
+  useSocketListener('dispatch-finalized', handleDispatchFinalized);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>

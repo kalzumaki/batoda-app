@@ -14,12 +14,9 @@ import {
   RefreshTriggerProp,
   RootStackParamList,
 } from '../../types/passenger-dashboard';
-import {PusherEvent} from '@pusher/pusher-websocket-react-native';
-import {
-  subscribeToChannel,
-} from '../../pusher/pusher';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import useSocketListener from '../../hooks/useSocketListener';
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
 const Ticket: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
@@ -53,7 +50,12 @@ const Ticket: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   }, [refreshTrigger]);
 
 
-
+  const handleDispatchUpdated = useCallback((data: any) => {
+    console.log('Ticket Updated:', data);
+    fetchTicket();
+  }, []);
+  useSocketListener('user-unpaid-ticket-updated', handleDispatchUpdated);
+  useSocketListener('dispatch-finalized', handleDispatchUpdated);
 
   const handlePress = () => {
     navigation.navigate('TicketScreen');
@@ -133,7 +135,7 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   disabledTicketBox: {
-    backgroundColor: '#2d665f', // Gray out the box when disabled
+    backgroundColor: '#2d665f',
   },
 });
 
