@@ -19,6 +19,7 @@ import CustomAlertModal from '../../components/CustomAlertModal';
 import SuccessAlertModal from '../SuccessAlertModal';
 import ErrorAlertModal from '../ErrorAlertModal';
 import useSocketListener from '../../hooks/useSocketListener';
+import DepartModal from '../DepartModal';
 
 const SEAT_POSITIONS = [
   ['back_small_1', 'front_small_1', 'front_small_2'],
@@ -46,6 +47,16 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [responseErrorMessage, setResponseErrorMessage] = useState('');
   const [responseSuccessMessage, setResponseSuccessMessage] = useState('');
+  const [newlyReservedSeats, setNewlyReservedSeats] = useState<string[]>([]);
+  const [tempReservations, setTempReservations] = useState<{
+    [seatId: string]: {
+      expireAt: number;
+      dispatchId: number;
+    };
+  }>({});
+  const [isDispatchFinalized, setIsDispatchFinalized] = useState(false);
+  const [title, setTitle] = useState('');
+
   const fetchPassengerCount = async () => {
     try {
       const data: DispatchResponse = await get(API_ENDPOINTS.PASSENGER_COUNT);
@@ -90,7 +101,6 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
       }
     });
   };
-
   const fetchReservedSeats = async () => {
     try {
       if (!dispatchId) return;
@@ -144,36 +154,128 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
     setShowConfirmModal(true);
   };
   const handleApprovedSeats = useCallback((data: any) => {
-    console.log('Dispatch updated:', data);
+    console.log('Dispatch Seats Updated:', data);
+
+    setIsDispatchFinalized(false);
+    setShowErrorModal(false);
+
     fetchApprovedSeats();
   }, []);
 
   const handleReservedSeats = useCallback((data: any) => {
-    console.log('Reserved Seats Updated:', data);
+    console.log('Seats Reserved:', data);
 
-    if (data?.seat_positions) {
-      const reserved = data.seat_positions;
+    if (
+      data?.dispatch_id &&
+      data?.seat_positions &&
+      Array.isArray(data.seat_positions)
+    ) {
+      setDispatchId(data.dispatch_id);
+
+      setNewlyReservedSeats(data.seat_positions);
+      setTimeout(() => setNewlyReservedSeats([]), 2000);
+
       setReservedSeats(prevSeats => {
-        return [...new Set([...prevSeats, ...reserved])];
+        return [...new Set([...prevSeats, ...data.seat_positions])];
       });
+
+      const expiryTime = Date.now() + 2 * 60 * 1000;
+
+      setTempReservations(prev => {
+        const updates: {[key: string]: {expireAt: number; dispatchId: number}} =
+          {};
+        data.seat_positions.forEach((seat: string) => {
+          updates[seat] = {
+            expireAt: expiryTime,
+            dispatchId: data.dispatch_id as number,
+          };
+        });
+        return {...prev, ...updates};
+      });
+
+      if (data.passenger_count !== undefined) {
+        setPassengerCount(data.passenger_count);
+      }
+
+      setSelectedSeats(prevSelected =>
+        prevSelected.filter(seat => !data.seat_positions.includes(seat)),
+      );
     }
   }, []);
+  useEffect(() => {
+    const checkInterval = setInterval(() => {
+      const now = Date.now();
+      let hasExpired = false;
 
+      setTempReservations(prev => {
+        const updated = {...prev};
+        Object.keys(updated).forEach(seat => {
+          if (updated[seat].expireAt <= now) {
+            delete updated[seat];
+            hasExpired = true;
+          }
+        });
+        return updated;
+      });
+
+      if (hasExpired) {
+        setReservedSeats(prevSeats => {
+          return prevSeats.filter(
+            seat =>
+              !tempReservations[seat] || tempReservations[seat].expireAt > now,
+          );
+        });
+      }
+    }, 1000);
+    return () => clearInterval(checkInterval);
+  }, [tempReservations]);
+
+  const handleSeatPaid = useCallback((data: any) => {
+    console.log('Seat Paid:', data);
+
+    setCountdown(prevCountdown => {
+      if (prevCountdown !== null) {
+        if (countdownRef.current) {
+          clearInterval(countdownRef.current);
+          countdownRef.current = null;
+        }
+        return null;
+      }
+      return prevCountdown;
+    });
+  }, []);
   const handleFinalizedSeats = useCallback((data: any) => {
     console.log('Dispatch finalized on seats:', data);
 
-    if (!data.is_dispatched || !data.id) {
+    setSelectedSeats([]);
+    setReservedSeats([]);
+    setTempReservations({});
+    setNewlyReservedSeats([]);
+    setPassengerCount(0);
+
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
+    setCountdown(null);
+
+    setShowConfirmModal(false);
+
+    if (data.is_dispatched === 1) {
+      setDispatchId(null);
+      setTitle('Driver Already Departed');
       setResponseErrorMessage('No approved drivers waiting for dispatch.');
       setShowErrorModal(true);
-      setDispatchId(null);
-      fetchApprovedSeats();
+      setIsDispatchFinalized(true);
     } else {
       setDispatchId(data.id);
       fetchApprovedSeats();
+      setIsDispatchFinalized(false);
     }
   }, []);
 
   useSocketListener('seats-reserved', handleReservedSeats);
+  useSocketListener('seat-paid', handleSeatPaid);
   useSocketListener('dispatch-updated', handleApprovedSeats);
   useSocketListener('dispatch-finalized', handleFinalizedSeats);
   return (
@@ -212,6 +314,9 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
                       : selectedSeats.includes(seat)
                       ? styles.selected
                       : null,
+                    newlyReservedSeats.includes(seat)
+                      ? styles.newlyReserved
+                      : null,
                   ]}
                   onPress={() => toggleSeatSelection(seat)}
                   disabled={reservedSeats.includes(seat)}>
@@ -227,8 +332,14 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
         </View>
         {selectedSeats.length > 0 && (
           <TouchableOpacity
-            style={styles.confirmButton}
-            onPress={confirmReservation}>
+            style={[
+              styles.confirmButton,
+              dispatchId === null || isDispatchFinalized
+                ? styles.buttonDisabled
+                : null,
+            ]}
+            onPress={confirmReservation}
+            disabled={dispatchId === null || isDispatchFinalized}>
             <Text style={styles.confirmButtonText}>Confirm Reservation</Text>
           </TouchableOpacity>
         )}
@@ -288,6 +399,12 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
         message={responseErrorMessage}
         onDismiss={() => setShowErrorModal(false)}
       />
+      <DepartModal
+        visible={showErrorModal}
+        title={title}
+        message={responseErrorMessage}
+        onDismiss={() => setShowErrorModal(false)}
+      />
     </View>
   );
 };
@@ -337,6 +454,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   confirmButtonText: {color: '#fff', fontSize: 16, fontWeight: 'bold'},
+  newlyReserved: {
+    borderWidth: 2,
+    borderColor: '#ff5722',
+    backgroundColor: '#a3a3a3',
+  },
+  buttonDisabled: {
+    backgroundColor: '#d3d3d3',
+  },
 });
 
 export default ApprovedDispatches;
