@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -21,7 +21,7 @@ import {Dispatch, DispatchResponse} from '../../types/approved-dispatch';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
 import {PusherEvent} from '@pusher/pusher-websocket-react-native';
 import {RefreshTriggerProp} from '../../types/passenger-dashboard';
-
+import useSocketListener from '../../hooks/useSocketListener';
 const DispatchQueue: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const [dispatches, setDispatches] = useState<Dispatch[]>([]);
   const [noUpcomingQueue, setNoUpcomingQueue] = useState<boolean>(false);
@@ -72,29 +72,18 @@ const DispatchQueue: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
     }
   };
 
-  useEffect(() => {
+  const handleDispatchUpdated = useCallback((data: any) => {
+    console.log('Dispatch updated:', data);
     fetchDispatches();
+  }, []);
 
-    const handleEvent = (event: PusherEvent) => {
-      if (
-        event.eventName === 'DispatchUpdated' ||
-        event.eventName === 'DispatchFinalized'
-      ) {
-        fetchDispatches();
-      }
-    };
+  const handleDispatchFinalized = useCallback((data: any) => {
+    console.log('Dispatch finalized:', data);
+    fetchDispatches();
+  }, []);
 
-    const subscribeToDispatches = async () => {
-      await initPusher();
-      await subscribeToChannel('dispatches', handleEvent);
-    };
-
-    subscribeToDispatches();
-
-    return () => {
-      unsubscribeFromChannel('dispatches', handleEvent);
-    };
-  }, [refreshTrigger]);
+  useSocketListener('dispatch-updated', handleDispatchUpdated);
+  useSocketListener('dispatch-finalized', handleDispatchFinalized);
 
   useEffect(() => {
     const interval = setInterval(() => {

@@ -22,6 +22,8 @@ import {get, postFormData} from '../utils/proxy';
 import {API_ENDPOINTS} from '../api/api-endpoints';
 import BackButton from '../components/BackButton';
 import {STORAGE_API_URL} from '@env';
+import SuccessAlertModal from '../components/SuccessAlertModal';
+import ErrorAlertModal from '../components/ErrorAlertModal';
 
 const UploadValidId: React.FC = () => {
   const [validIdTypes, setValidIdTypes] = useState<
@@ -34,6 +36,10 @@ const UploadValidId: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [validIdData, setValidIdData] = useState<any>(null);
   const [loadingValidIdData, setLoadingValidIdData] = useState<boolean>(true);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showResponseMessage, setShowResponseMessage] = useState<string>('');
+  const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
+  const [title, setTitle] = useState<string>('');
 
   const fetchValidIdData = async () => {
     setLoadingValidIdData(true);
@@ -67,10 +73,14 @@ const UploadValidId: React.FC = () => {
         if (response.status) {
           setValidIdTypes(response.data);
         } else {
-          Alert.alert('Error', 'Failed to fetch ID types');
+          setShowResponseMessage('Failed to fetch ID types');
+          setTitle('Error');
+          setShowErrorModal(true);
         }
       } catch (error) {
-        Alert.alert('Error', 'Could not load valid ID types.');
+        setShowResponseMessage('Could not load valid ID types.');
+        setTitle('Error');
+        setShowErrorModal(true);
       }
     };
 
@@ -78,19 +88,35 @@ const UploadValidId: React.FC = () => {
   }, []);
 
   const handleSubmit = async () => {
-    if (!validIdType || !idNumber) {
-      Alert.alert('Validation Error', 'All fields are required.');
+    if (!validIdType && !idNumber) {
+      setShowResponseMessage('Both ID Type and ID Number are required.');
+      setTitle('Validation Error');
+      setShowErrorModal(true);
+      return;
+    } else if (!validIdType) {
+      setShowResponseMessage('ID Type is required.');
+      setTitle('Validation Error');
+      setShowErrorModal(true);
+      return;
+    } else if (!idNumber) {
+      setShowResponseMessage('ID Number is required.');
+      setTitle('Validation Error');
+      setShowErrorModal(true);
       return;
     }
 
     // Check if front and back images are already selected
     if (!frontImage) {
-      Alert.alert('Validation Error', 'Please select front image.');
+      setShowResponseMessage('Please select front image.');
+      setTitle('Front Image Required');
+      setShowErrorModal(true);
       return;
     }
 
     if (!backImage) {
-      Alert.alert('Validation Error', 'Please select back image.');
+      setShowResponseMessage('Please select back image.');
+      setTitle('Back Image Required');
+      setShowErrorModal(true);
       return;
     }
 
@@ -114,11 +140,9 @@ const UploadValidId: React.FC = () => {
     });
 
     try {
-
       const response = await get(API_ENDPOINTS.GET_VALID_ID);
 
       if (response.status && response.data.length > 0) {
-
         const validId = response.data[0];
         const updateResponse = await postFormData(
           API_ENDPOINTS.UPDATE_VALID_ID,
@@ -127,13 +151,14 @@ const UploadValidId: React.FC = () => {
         );
 
         if (updateResponse.status) {
-          Alert.alert('Success', 'Valid ID updated successfully!');
+          setShowResponseMessage(updateResponse.message);
+          setTitle('Update Successful');
+          setIsSuccessModalVisible(true);
           await fetchValidIdData();
         } else {
-          Alert.alert(
-            'Update Failed',
-            updateResponse.message || 'Please try again.',
-          );
+          setShowResponseMessage(updateResponse.message);
+          setTitle('Update Failed');
+          setShowErrorModal(true);
         }
       } else {
         const addResponse = await postFormData(
@@ -143,18 +168,21 @@ const UploadValidId: React.FC = () => {
         );
 
         if (addResponse.status) {
-          Alert.alert('Success', 'Upload successful!');
+          setShowResponseMessage(addResponse.message);
+          setTitle('Upload Successful');
+          setIsSuccessModalVisible(true);
           await fetchValidIdData();
         } else {
-          Alert.alert(
-            'Upload Failed',
-            addResponse.message || 'Please try again.',
-          );
+          setShowResponseMessage(addResponse.message);
+          setTitle('Upload Failed');
+          setShowErrorModal(true);
         }
       }
     } catch (error: any) {
       console.error('Error submitting data:', error);
-      Alert.alert('Error', 'An error occurred while submitting the data.');
+      setShowResponseMessage(error?.response?.data?.message);
+      setTitle('Error');
+      setShowErrorModal(true);
     } finally {
       setLoading(false);
     }
@@ -266,6 +294,19 @@ const UploadValidId: React.FC = () => {
             </TouchableOpacity>
           </>
         )}
+        <SuccessAlertModal
+          visible={isSuccessModalVisible}
+          title={title}
+          message={showResponseMessage}
+          onDismiss={() => setIsSuccessModalVisible(false)}
+        />
+
+        <ErrorAlertModal
+          visible={showErrorModal}
+          title={title}
+          message={showResponseMessage}
+          onDismiss={() => setShowErrorModal(false)}
+        />
       </ScrollView>
     </SafeAreaView>
   );

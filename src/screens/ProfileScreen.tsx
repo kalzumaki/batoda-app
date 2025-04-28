@@ -17,8 +17,9 @@ import BackButton from '../components/BackButton';
 import {get, post, postFormData} from '../utils/proxy';
 import {API_ENDPOINTS} from '../api/api-endpoints';
 import ProfilePictureListener from '../pusher/ProfilePictureUploaded';
-import { API_URL, STORAGE_API_URL } from '@env';
-
+import {API_URL, STORAGE_API_URL} from '@env';
+import SuccessAlertModal from '../components/SuccessAlertModal';
+import ErrorAlertModal from '../components/ErrorAlertModal';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
@@ -37,6 +38,10 @@ const ProfileScreen: React.FC = () => {
   const [profileData, setProfileData] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileImage, setProfileImage] = useState('');
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showResponseMessage, setShowResponseMessage] = useState<string>('');
+  const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
+  const [title, setTitle] = useState<string>('');
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -76,10 +81,11 @@ const ProfileScreen: React.FC = () => {
     }
 
     if (pickerResult.errorCode) {
-      Alert.alert(
-        'Error',
+      setShowResponseMessage(
         pickerResult.errorMessage || 'Failed to pick image.',
       );
+      setTitle('Image Picker Error');
+      setShowErrorModal(true);
       return;
     }
 
@@ -101,20 +107,24 @@ const ProfileScreen: React.FC = () => {
         console.log('Upload Success:', response);
 
         if (response.status) {
-          Alert.alert('Success', 'Profile picture updated successfully.');
+          setShowResponseMessage(response.message);
+          setTitle('Profile Picture Updated');
+          setIsSuccessModalVisible(true);
           fetchProfile();
         } else {
-          Alert.alert(
-            'Error',
-            response.message || 'Failed to upload profile picture.',
-          );
+            setShowResponseMessage(
+                response.message || 'Failed to upload profile picture.',
+            );
+            setTitle('Upload Error');
+            setShowErrorModal(true);
         }
       } catch (error) {
         console.error('Error uploading profile picture:', error);
-        Alert.alert(
-          'Error',
-          'An error occurred while uploading the profile picture.',
+        setShowResponseMessage(
+            'An error occurred while uploading the profile picture.',
         );
+        setTitle('Upload Error');
+        setShowErrorModal(true);
       }
     }
   };
@@ -183,6 +193,19 @@ const ProfileScreen: React.FC = () => {
         <Text style={styles.profileName}>
           {profileData.fname} {profileData.lname}
         </Text>
+        <SuccessAlertModal
+          visible={isSuccessModalVisible}
+          title={title}
+          message={showResponseMessage}
+          onDismiss={() => setIsSuccessModalVisible(false)}
+        />
+
+        <ErrorAlertModal
+          visible={showErrorModal}
+          title={title}
+          message={showResponseMessage}
+          onDismiss={() => setShowErrorModal(false)}
+        />
       </View>
 
       <ProfilePictureListener userId={profileData.id} />
@@ -280,7 +303,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 4,
   },
-
 });
 
 export default ProfileScreen;

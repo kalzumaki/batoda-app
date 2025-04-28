@@ -1,5 +1,6 @@
 export interface PendingDispatch {
   id: number;
+  created_at: string;
   driver: {
     fname: string;
     lname: string;

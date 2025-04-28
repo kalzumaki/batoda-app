@@ -16,9 +16,14 @@ import {API_ENDPOINTS} from '../api/api-endpoints';
 import GenderPicker from '../components/GenderPicker';
 import DatePickerComponent from '../components/DatePicker';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import SuccessAlertModal from '../components/SuccessAlertModal';
+import ErrorAlertModal from '../components/ErrorAlertModal';
 
 // Types
-type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'EditProfile'>;
+type NavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  'EditProfile'
+>;
 type EditProfileRouteProp = RouteProp<RootStackParamList, 'EditProfile'>;
 
 const EditProfileScreen: React.FC = () => {
@@ -28,6 +33,10 @@ const EditProfileScreen: React.FC = () => {
 
   const [editedValue, setEditedValue] = useState(value);
   const [loading, setLoading] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showResponseMessage, setShowResponseMessage] = useState<string>('');
+  const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
+  const [title, setTitle] = useState<string>('');
 
   useEffect(() => {
     if (field === 'gender' || field === 'birthday') {
@@ -39,29 +48,34 @@ const EditProfileScreen: React.FC = () => {
 
   const handleSubmit = async () => {
     if (editedValue === value) {
-      Alert.alert(
-        'No Changes',
+      setShowResponseMessage(
         `No changes were made to your ${fieldLabels[field] || field}.`,
       );
+      setTitle('No Changes');
+      setShowErrorModal(true);
       return;
     }
 
     if (field === 'mobile_number' && !/^09\d{9}$/.test(editedValue)) {
-      Alert.alert(
-        'Invalid Phone Number',
+      setShowResponseMessage(
         'Please enter a valid 11-digit phone number starting with 09.',
       );
+      setTitle('Invalid Phone Number');
+      setShowErrorModal(true);
       return;
     }
 
     if (
       field === 'email' &&
-      !/^[\w.-]+@[\w.-]+\.(com|net|org|gov|edu|ph|io|co)$/.test(editedValue)
+      !/^[\w.-]+@(gmail\.com|yahoo\.com|[\w.-]+\.(com|net|org|gov|edu|ph|io|co))$/.test(
+        editedValue,
+      )
     ) {
-      Alert.alert(
-        'Invalid Email',
-        'Please enter a valid email address (e.g., example@gmail.com).',
+      setShowResponseMessage(
+        'Please enter a valid email address (e.g., @yahoo or @gmail).',
       );
+      setTitle('Invalid Email');
+      setShowErrorModal(true);
       return;
     }
 
@@ -82,23 +96,34 @@ const EditProfileScreen: React.FC = () => {
       );
 
       if (response.status) {
-        Alert.alert(
-          'Saved',
+        setShowResponseMessage(
           `${fieldLabels[field] || field} updated to: ${editedValue}`,
         );
+        setTitle('Profile Updated');
+        setIsSuccessModalVisible(true);
       } else if (response.message) {
-        Alert.alert('Error', response.message);
+        setShowResponseMessage(response.message);
+        setTitle('Update Failed');
+        setShowErrorModal(true);
       } else {
-        Alert.alert('Error', 'Failed to update profile');
+        setShowResponseMessage(response.message);
+        setTitle('Update Error');
+        setShowErrorModal(true);
       }
     } catch (error: any) {
       Alert.alert(
         'Error',
         error.message || 'An error occurred while updating profile',
       );
+      setShowResponseMessage(
+        error?.response?.data?.message ||
+          'An error occurred while updating profile',
+      );
+      setTitle('Error');
+      setShowErrorModal(true);
     } finally {
       setLoading(false);
-      navigation.goBack();
+
     }
   };
 
@@ -161,6 +186,22 @@ const EditProfileScreen: React.FC = () => {
           Use the name people recognize you by, whether it's your full name or
           your business name, to help others find your account.
         </Text>
+        <SuccessAlertModal
+          visible={isSuccessModalVisible}
+          title={title}
+          message={showResponseMessage}
+          onDismiss={() => {
+            setIsSuccessModalVisible(false);
+            navigation.goBack();
+          }}
+        />
+
+        <ErrorAlertModal
+          visible={showErrorModal}
+          title={title}
+          message={showResponseMessage}
+          onDismiss={() => setShowErrorModal(false)}
+        />
       </View>
     </View>
   );

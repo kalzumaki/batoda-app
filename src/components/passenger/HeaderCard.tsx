@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {View, Text, TouchableOpacity, Image, StyleSheet} from 'react-native';
 import {get} from '../../utils/proxy';
 import {useTimer} from '../../contexts/TimerContext';
@@ -15,7 +15,7 @@ import ProfilePictureListener from '../../pusher/ProfilePictureUploaded';
 import CustomDropdown from '../MenuDropdown';
 import {RefreshTriggerProp} from '../../types/passenger-dashboard';
 import {API_URL, STORAGE_API_URL} from '@env';
-
+import useSocketListener from '../../hooks/useSocketListener';
 const HeaderMain: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const {timeLeft, setScheduledTime} = useTimer();
   const [dispatchData, setDispatchData] = useState<Dispatch | null>(null);
@@ -33,7 +33,7 @@ const HeaderMain: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
           const response = await get(API_ENDPOINTS.USERS_TOKEN);
           const data = response.data;
           setAuthenticatedUser(data);
-          console.log('data found in header component: ', data);
+        //   console.log('data found in header component: ', data);
 
           if (data && data.profile) {
             const fullImageUrl = `${STORAGE_API_URL}/storage/${data.profile}`;
@@ -61,7 +61,7 @@ const HeaderMain: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
 
     try {
       const data: DispatchResponse = await get(API_ENDPOINTS.APPROVED_DISPATCH);
-      console.log('Fetched data:', JSON.stringify(data));
+    //   console.log('Fetched data:', JSON.stringify(data));
 
       if (data?.dispatches?.length) {
         const newDispatch: Dispatch = data.dispatches[0];
@@ -88,38 +88,27 @@ const HeaderMain: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
       setScheduledTime('', '');
     }
   };
+
   useEffect(() => {
     fetchInitialData();
   }, [refreshTrigger]);
 
-  useEffect(() => {
-    const onEvent = (event: PusherEvent) => {
-      console.log('Event received:', event);
-      if (
-        event.eventName === 'DispatchUpdated' ||
-        event.eventName === 'DispatchFinalized'
-      ) {
-        console.log('Refreshing data due to event...');
-        fetchInitialData();
-      }
-    };
-
-    const subscribeToDispatches = async () => {
-      await initPusher();
-      await subscribeToChannel('dispatches', onEvent);
-    };
-
-    subscribeToDispatches();
-
-    return () => {
-      console.log('Cleaning up Pusher subscription...');
-      unsubscribeFromChannel('dispatches', onEvent);
-    };
+  const handleDispatchUpdated = useCallback((data: any) => {
+    console.log('Dispatch updated:', data);
+    fetchInitialData();
   }, []);
 
-  useEffect(() => {
-    console.log('Current dispatchData:', JSON.stringify(dispatchData));
-  }, [dispatchData]);
+  const handleDispatchFinalized = useCallback((data: any) => {
+    console.log('Dispatch finalized:', data);
+    fetchInitialData();
+  }, []);
+
+  useSocketListener('dispatch-updated', handleDispatchUpdated);
+  useSocketListener('dispatch-finalized', handleDispatchFinalized);
+
+//   useEffect(() => {
+//     console.log('Current dispatchData:', JSON.stringify(dispatchData));
+//   }, [dispatchData]);
 
   const formatTimeLeft = (seconds: number | null): string => {
     if (seconds === null) {

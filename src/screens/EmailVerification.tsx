@@ -14,6 +14,7 @@ import {fetchToken, post, postWithHeaders, put} from '../utils/proxy';
 import {API_ENDPOINTS} from '../api/api-endpoints';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import BackButton from '../components/BackButton';
+import SuccessAlertModal from '../components/SuccessAlertModal';
 
 type EmailVerificationRouteProp = RouteProp<
   RootStackParamList,
@@ -29,7 +30,9 @@ const EmailVerification: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const {email} = route.params;
   const [loading, setLoading] = useState(false);
-
+  const [showResponseMessage, setShowResponseMessage] = useState<string>('');
+  const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
+  const [title, setTitle] = useState<string>('');
   const handleProceed = async () => {
     setLoading(true);
     const token = await AsyncStorage.getItem('authToken');
@@ -49,7 +52,9 @@ const EmailVerification: React.FC = () => {
       console.log('Verification code sent.');
 
       // 3. Navigate to OTP Verification screen
-      navigation.navigate('OTPVerification', {email});
+        setShowResponseMessage(`A 6-digit OTP has been sent to ${email}`);
+        setTitle('OTP sent successfully.');
+        setIsSuccessModalVisible(true);
     } catch (error) {
       console.error('Error updating email or sending OTP:', error);
       Alert.alert('Error', 'Something went wrong. Please try again.');
@@ -60,27 +65,35 @@ const EmailVerification: React.FC = () => {
 
   return (
     <View style={styles.container}>
-    <BackButton />
-    <Text style={styles.title}>Email Verification</Text>
-    <Text style={styles.emailText}>{email}</Text>
-    <Text style={styles.description}>Are you sure this is your email?</Text>
+      <BackButton />
+      <Text style={styles.title}>Email Verification</Text>
+      <Text style={styles.emailText}>{email}</Text>
+      <Text style={styles.description}>Are you sure this is your email?</Text>
 
-    <Text style={styles.guidanceText}>
-      Press "Proceed" to receive a 6-digit OTP on your email for verification.
-    </Text>
+      <Text style={styles.guidanceText}>
+        Press "Proceed" to receive a 6-digit OTP on your email for verification.
+      </Text>
 
-    <TouchableOpacity
-      style={[styles.proceedButton, loading && { backgroundColor: '#ccc' }]}
-      onPress={handleProceed}
-      disabled={loading}>
-      {loading ? (
-        <ActivityIndicator color="white" />
-      ) : (
-        <Text style={styles.proceedText}>Proceed</Text>
-      )}
-    </TouchableOpacity>
-  </View>
-
+      <TouchableOpacity
+        style={[styles.proceedButton, loading && {backgroundColor: '#ccc'}]}
+        onPress={handleProceed}
+        disabled={loading}>
+        {loading ? (
+          <ActivityIndicator color="white" />
+        ) : (
+          <Text style={styles.proceedText}>Proceed</Text>
+        )}
+      </TouchableOpacity>
+      <SuccessAlertModal
+        visible={isSuccessModalVisible}
+        title={title}
+        message={showResponseMessage}
+        onDismiss={() => {
+          setIsSuccessModalVisible(false);
+          navigation.navigate('OTPVerification', {email});
+        }}
+      />
+    </View>
   );
 };
 
@@ -126,7 +139,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
   },
-
 });
 
 export default EmailVerification;

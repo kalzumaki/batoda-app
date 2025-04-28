@@ -14,19 +14,19 @@ import {SvgUri} from 'react-native-svg';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
 import {get} from '../../utils/proxy';
 import {STORAGE_API_URL} from '@env';
-import {PassengerQRResponse} from '../../types/qr';
+import {DispatcherQrResponse} from '../../types/qr'; // Assuming the interface is correctly imported
 import BackButton from '../../components/BackButton';
 
-const ScanQRForPassengers: React.FC = () => {
-  const [dispatches, setDispatches] = useState<PassengerQRResponse['data']>([]);
+const ScanQRForDrivers: React.FC = () => {
+  const [dispatches, setDispatches] = useState<DispatcherQrResponse['data']>([]);
   const [loading, setLoading] = useState(true);
   const [selectedQR, setSelectedQR] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPassengerQRCodes = async () => {
       try {
-        const response: PassengerQRResponse = await get(
-          API_ENDPOINTS.GET_PASSENGER_QR,
+        const response: DispatcherQrResponse = await get(
+          API_ENDPOINTS.GET_DRIVER_QR,
         );
         if (response.status && response.data) {
           setDispatches(response.data);
@@ -55,15 +55,14 @@ const ScanQRForPassengers: React.FC = () => {
 
   // Format the data for SectionList
   const sections = dispatches.map(dispatch => ({
-    title: `Reservation ID: ${dispatch.reservation_id}\n\nDispatcher: ${dispatch.dispatcher_full_name}\n`,
-
-    data: [dispatch],
+    title: `Dispatch ID: ${dispatch.dispatch_id}\n`,
+    data: [dispatch], // Wrap the dispatch in an array as data for SectionList
   }));
 
   return (
     <View style={styles.container}>
       <BackButton />
-      <Text style={styles.screenTitle}>Scan QR for Passengers</Text>
+      <Text style={styles.screenTitle}>Scan QR for Drivers</Text>
 
       {dispatches.length === 0 ? (
         <View style={styles.noDataContainer}>
@@ -74,7 +73,7 @@ const ScanQRForPassengers: React.FC = () => {
       ) : (
         <SectionList
           sections={sections}
-          keyExtractor={(item, index) => item.user_id.toString() + index}
+          keyExtractor={(item, index) => item.dispatch_id.toString() + index}
           renderItem={({item}) => (
             <TouchableOpacity
               style={styles.card}
@@ -85,32 +84,17 @@ const ScanQRForPassengers: React.FC = () => {
               <View style={styles.cardHeader}>
                 <Image
                   source={
-                    item.profile_picture
+                    item.driver.profile
                       ? {
-                          uri: `${STORAGE_API_URL}/storage/${item.profile_picture}`,
+                          uri: `${STORAGE_API_URL}/storage/${item.driver.profile}`,
                         }
                       : require('../../assets/25.png')
                   }
                   style={styles.profileImage}
                 />
                 <View style={styles.cardText}>
-                  <Text style={styles.passengerName}>{item.full_name}</Text>
-                  <Text style={styles.seatText}>Seats:</Text>
-                  {item.seat_positions.map((seat: any, idx) => {
-                    const formattedSeat: string = seat
-                      .replace(/_/g, ' ')
-                      .split(' ')
-                      .map(
-                        (word: string) =>
-                          word.charAt(0).toUpperCase() + word.slice(1),
-                      )
-                      .join(' ');
-                    return (
-                      <Text key={idx} style={styles.seatText}>
-                        • {formattedSeat}
-                      </Text>
-                    );
-                  })}
+                  <Text style={styles.passengerName}>{item.driver.full_name}</Text>
+                  <Text style={styles.seatText}>Tricycle Number: {item.driver.tricycle_number}</Text>
                 </View>
               </View>
             </TouchableOpacity>
@@ -232,4 +216,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ScanQRForPassengers;
+export default ScanQRForDrivers;

@@ -15,6 +15,8 @@ import {RootStackParamList} from '../types/passenger-dashboard';
 import BackButton from '../components/BackButton';
 import {get} from '../utils/proxy';
 import {API_ENDPOINTS} from '../api/api-endpoints';
+import SuccessAlertModal from '../components/SuccessAlertModal';
+import ErrorAlertModal from '../components/ErrorAlertModal';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
@@ -28,7 +30,10 @@ const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProps>();
   const [profileData, setProfileData] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showResponseMessage, setShowResponseMessage] = useState<string>('');
+  const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
+  const [title, setTitle] = useState<string>('');
   const fetchUserData = async () => {
     try {
       const data = await get(API_ENDPOINTS.DISPLAY_USER_DETAILS);
@@ -42,8 +47,10 @@ const SettingsScreen: React.FC = () => {
         });
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to fetch user data.');
-      console.error('Error fetching user details:', error);
+        console.error('Error fetching user details:', error);
+        setShowResponseMessage('Failed to fetch user data.');
+        setTitle('Error');
+        setShowErrorModal(true);
     } finally {
       setLoading(false);
     }
@@ -60,7 +67,9 @@ const SettingsScreen: React.FC = () => {
       if (profileData?.email) {
         navigation.navigate('ChangePassEmailVer', {email: profileData.email});
       } else {
-        Alert.alert('Error', 'Email is missing.');
+        setShowResponseMessage('Email is missing.');
+        setTitle('Error');
+        setShowErrorModal(true);
       }
     } else {
       navigation.navigate('EditProfile', {field, value});
@@ -104,6 +113,22 @@ const SettingsScreen: React.FC = () => {
           {renderEditableField('Password', profileData.password, 'password')}
         </>
       )}
+      <SuccessAlertModal
+        visible={isSuccessModalVisible}
+        title={title}
+        message={showResponseMessage}
+        onDismiss={() => {
+          setIsSuccessModalVisible(false);
+            // navigation.goBack();
+        }}
+      />
+
+      <ErrorAlertModal
+        visible={showErrorModal}
+        title={title}
+        message={showResponseMessage}
+        onDismiss={() => setShowErrorModal(false)}
+      />
     </View>
   );
 };

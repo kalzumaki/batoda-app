@@ -43,4 +43,12 @@ export const API_ENDPOINTS = {
     GET_DRIVERS_TRAVEL_HISTORY: '/drivers/travel-history',
     GET_PASSENGER_QR: '/drivers/passenger-qr',
     GET_PENDING_DISPATCHES: '/pending-dispatches',
+    APPROVED_DISPATCH_BY_BATCH: '/dispatches/batch-update',
+    GET_APPROVED_DISPATCHES_BY_DISPATCHER: '/approved-dispatches/dispatcher',
+    GET_DISPATCH_OPTIONS: '/dispatch-options',
+    DISPATCH_NOW: '/dispatches/dispatch-now',
+    GET_DISPATCHERS_TRAVEL_HISTORY: '/dispatchers/travel-history',
+    GET_DRIVER_QR: '/dispatchers/driver-qr',
+    PAY_DISPATCHER_QR: '/transaction/dispatchqr',
+    SHOW_INCOME: '/show-income',
 }

@@ -17,6 +17,9 @@ import {useRoute} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {useNavigation} from '@react-navigation/native';
 import BackButton from '../../components/BackButton';
+import SuccessAlertModal from '../../components/SuccessAlertModal';
+import CustomAlertModal from '../../components/CustomAlertModal';
+import ErrorAlertModal from '../../components/ErrorAlertModal';
 
 const SEAT_POSITIONS = [
   ['back_small_1', 'front_small_1', 'front_small_2'],
@@ -44,7 +47,12 @@ const ReserveRideScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
   const navigation = useNavigation();
-
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isReserving, setIsReserving] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [responseErrorMessage, setResponseErrorMessage] = useState('');
+  const [responseSuccessMessage, setResponseSuccessMessage] = useState('');
   const fetchReservedSeats = async () => {
     try {
       if (!dispatchId) return;
@@ -116,50 +124,19 @@ const ReserveRideScreen: React.FC = () => {
     }, 1000);
   };
 
-  const confirmReservation = async () => {
-    if (selectedSeats.length === 0 || !dispatchId) return;
+  const confirmReservation = () => {
+    if (selectedSeats.length === 0) return;
 
-    Alert.alert(
-      'Confirm Reservation',
-      'Complete the payment within 2 minutes, or your reservation will be canceled automatically.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Proceed',
-          onPress: async () => {
-            try {
-              const response = await post(
-                API_ENDPOINTS.RESERVE_SEAT,
-                {
-                  dispatch_id: dispatchId,
-                  seat_position: selectedSeats,
-                },
-                true,
-              );
+    if (!dispatchId) {
+      Alert.alert(
+        'No Approved Dispatch',
+        'No approved drivers waiting for dispatch.',
+      );
+      return;
+    }
 
-              if (response.status) {
-                setReservedSeats(prevSeats => [
-                  ...new Set([...prevSeats, ...response.reserved_seats]),
-                ]);
-
-                setSelectedSeats([]);
-                Alert.alert('Success', response.message);
-                startCountdown();
-              } else {
-                Alert.alert('Error', 'Reservation failed.');
-              }
-            } catch (error) {
-              Alert.alert('Error', 'Failed to reserve seats.');
-            }
-          },
-        },
-      ],
-    );
+    setShowConfirmModal(true);
   };
-
   return (
     <ScrollView
       contentContainerStyle={styles.container}
@@ -234,6 +211,67 @@ const ReserveRideScreen: React.FC = () => {
             </TouchableOpacity>
           )}
         </View>
+        <CustomAlertModal
+          visible={showConfirmModal}
+          title="Confirm Reservation"
+          message="Complete the payment within 2 minutes, or your reservation will be canceled automatically."
+          boldParts={['2 minutes']}
+          isLoading={isReserving}
+          onCancel={() => setShowConfirmModal(false)}
+          onConfirm={async () => {
+            setIsReserving(true);
+            try {
+              const response = await post(
+                API_ENDPOINTS.RESERVE_SEAT,
+                {
+                  dispatch_id: dispatchId,
+                  seat_position: selectedSeats,
+                },
+                true,
+              );
+
+              if (response.status) {
+                setReservedSeats(prevSeats => [
+                  ...new Set([...prevSeats, ...response.reserved_seats]),
+                ]);
+                setSelectedSeats([]);
+                startCountdown();
+                setResponseSuccessMessage(response.message);
+                setShowSuccessModal(true);
+
+                setShowConfirmModal(false);
+              } else {
+                // Alert.alert('Reservation Error', response.message);
+                setResponseErrorMessage(response.message);
+                setShowConfirmModal(false);
+                setShowErrorModal(true);
+                await fetchReservedSeats();
+              }
+            } catch (error) {
+              Alert.alert('Error', 'Failed to reserve seats.');
+              <ErrorAlertModal
+                visible={showErrorModal}
+                title="Error"
+                message="Failed to reserve seats."
+                onDismiss={() => setShowErrorModal(false)}
+              />;
+            } finally {
+              setIsReserving(false);
+            }
+          }}
+        />
+        <SuccessAlertModal
+          visible={showSuccessModal}
+          title="Success!"
+          message="Your reservation has been completed."
+          onDismiss={() => setShowSuccessModal(false)}
+        />
+        <ErrorAlertModal
+          visible={showErrorModal}
+          title="Failed to Reserve Seats"
+          message={responseErrorMessage}
+          onDismiss={() => setShowErrorModal(false)}
+        />
       </View>
     </ScrollView>
   );

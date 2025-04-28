@@ -7,4 +7,5 @@ declare module '@env' {
   export const PUSHER_CLUSTER: string;
   export const PUSHER_SCHEME: string;
   export const PUSHER_PORT: string;
+  export const SOCKET_URL: string;
 }

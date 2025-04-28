@@ -17,11 +17,14 @@ import {
   UserQRCodeData,
 } from '../../types/passenger-dashboard';
 import BackButton from '../../components/BackButton';
+import ErrorAlertModal from '../../components/ErrorAlertModal';
+import SuccessAlertModal from '../../components/SuccessAlertModal';
 
 // Define QR code data structures
 interface DispatchQRCodeData {
   dispatch_id: number;
   wallet_id: number;
+  dispatch_reservation_id: number;
 }
 
 interface PayDispatcher {
@@ -35,7 +38,9 @@ interface QRCodeEvent {
 const ScanQRScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [loading, setLoading] = useState(false);
-
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showResponseMessage, setShowResponseMessage] = useState('');
   const handleQRCodeRead = async (event: QRCodeEvent) => {
     if (loading) return;
 
@@ -52,11 +57,14 @@ const ScanQRScreen: React.FC = () => {
       } else if (isUserQRCode(parsedData)) {
         handleUserQRCodeRead(parsedData);
       } else {
-        throw new Error('Invalid QR Code format');
+        // throw new Error('Invalid QR Code format');
+        setShowResponseMessage('Invalid QR Code format');
+        setShowErrorModal(true);
       }
     } catch (error) {
       console.error('QR Processing Error:', error);
-      Alert.alert('Error', 'Invalid QR Code data. Please try again.');
+      setShowResponseMessage('Invalid QR Code data. Please try again.');
+      setShowErrorModal(true);
     } finally {
       setLoading(false);
     }
@@ -70,15 +78,16 @@ const ScanQRScreen: React.FC = () => {
       console.log('API Response:', response);
 
       if (response.status) {
-        Alert.alert('Success', 'Dispatcher payment completed!', [
-          {text: 'OK', onPress: () => navigation.goBack()},
-        ]);
+        setShowResponseMessage(response.message);
+        setShowSuccessModal(true);
       } else {
-        Alert.alert('Error', response.message || 'Dispatcher payment failed');
+        setShowResponseMessage(response.message || 'Dispatcher payment failed');
+        setShowErrorModal(true);
       }
     } catch (error) {
       console.error('Dispatcher Transaction Error:', error);
-      Alert.alert('Error', 'Transaction failed. Please try again.');
+      setShowResponseMessage('Transaction failed. Please try again.');
+      setShowErrorModal(true);
     }
   };
   // Type guards for QR code validation
@@ -101,15 +110,17 @@ const ScanQRScreen: React.FC = () => {
       console.log('API Response:', response);
 
       if (response.status) {
-        Alert.alert('Success', 'Transaction completed successfully!', [
-          {text: 'OK', onPress: () => navigation.goBack()},
-        ]);
+        setShowResponseMessage(response.message);
+        setShowSuccessModal(true);
       } else {
-        Alert.alert('Error', response.message || 'Transaction failed');
+        setShowResponseMessage(response.message || 'Transaction failed');
+        setShowErrorModal(true);
       }
     } catch (error) {
       console.error('Transaction Error:', error);
-      Alert.alert('Error', 'Transaction failed. Please try again.');
+
+      setShowResponseMessage('Transaction failed. Please try again.');
+      setShowErrorModal(true);
     }
   };
 
@@ -145,6 +156,22 @@ const ScanQRScreen: React.FC = () => {
       <Text style={styles.description}>
         Align the QR code within the frame to scan.
       </Text>
+      <SuccessAlertModal
+        visible={showSuccessModal}
+        title="Success"
+        message={showResponseMessage}
+        onDismiss={() => {
+          setShowSuccessModal(false);
+          navigation.goBack();
+        }}
+      />
+
+      <ErrorAlertModal
+        visible={showErrorModal}
+        title="Transaction Error"
+        message={showResponseMessage || 'Something went wrong'}
+        onDismiss={() => setShowErrorModal(false)}
+      />
     </View>
   );
 };

@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useRef} from 'react';
+import React, {useEffect, useState, useRef, useCallback} from 'react';
 import {get} from '../../utils/proxy';
 import {DispatchResponse, Dispatch} from '../../types/approved-dispatch';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
@@ -13,7 +13,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {RefreshTriggerProp} from '../../types/passenger-dashboard';
 import {API_URL, STORAGE_API_URL} from '@env';
-
+import useSocketListener from '../../hooks/useSocketListener';
 const ShowDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const [dispatch, setDispatch] = useState<Dispatch | null>(null);
   const [loading, setLoading] = useState(true);
@@ -22,7 +22,31 @@ const ShowDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
     '../../assets/25.png',
   );
   const authenticatedUser = useRef<any>(null);
+  const fetchDispatch = async () => {
+    setLoading(true);
+    try {
+      const response: DispatchResponse = await get(
+        API_ENDPOINTS.APPROVED_DISPATCH,
+      );
+      console.log('Dispatch Response:', response);
 
+      if (response?.dispatches?.length) {
+        setDispatch(response.dispatches[0]);
+      } else {
+        setDispatch(null);
+        setMessage(response?.message ?? 'No Approved Dispatches Yet');
+      }
+    } catch (error) {
+      console.error('Failed to fetch dispatch:', error);
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'Failed to load dispatch data.',
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
     const checkUser = async () => {
       try {
@@ -37,36 +61,12 @@ const ShowDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
         authenticatedUser.current = response.data;
 
         if (response.data?.profile) {
-          setProfileImage(`${STORAGE_API_URL}/storage/${response.data.profile}`);
+          setProfileImage(
+            `${STORAGE_API_URL}/storage/${response.data.profile}`,
+          );
         }
       } catch (error) {
         console.error('Error fetching authenticated user:', error);
-      }
-    };
-
-    const fetchDispatch = async () => {
-      setLoading(true);
-      try {
-        const response: DispatchResponse = await get(
-          API_ENDPOINTS.APPROVED_DISPATCH,
-        );
-        console.log('Dispatch Response:', response);
-
-        if (response?.dispatches?.length) {
-          setDispatch(response.dispatches[0]);
-        } else {
-          setDispatch(null);
-          setMessage(response?.message ?? 'No Approved Dispatches Yet');
-        }
-      } catch (error) {
-        console.error('Failed to fetch dispatch:', error);
-        setMessage(
-          error instanceof Error
-            ? error.message
-            : 'Failed to load dispatch data.',
-        );
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -74,6 +74,18 @@ const ShowDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
     fetchDispatch();
   }, [refreshTrigger]);
 
+  const handleDispatchUpdated = useCallback((data: any) => {
+    console.log('Dispatch updated:', data);
+    fetchDispatch();
+  }, []);
+
+  const handleDispatchFinalized = useCallback((data: any) => {
+    console.log('Dispatch finalized:', data);
+    fetchDispatch();
+  }, []);
+
+  useSocketListener('dispatch-updated', handleDispatchUpdated);
+  useSocketListener('dispatch-finalized', handleDispatchFinalized);
   if (loading) {
     return (
       <View style={styles.loadingContainer}>

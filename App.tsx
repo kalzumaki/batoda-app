@@ -28,13 +28,20 @@ import EditTricycleNumberScreen from './src/screens/driver/EditTricycleNumberScr
 import ScanQRForPassengers from './src/screens/driver/ScanQRForPassengers';
 import TravelHistoryForDrivers from './src/screens/driver/TravelHistoryForDrivers';
 import UploadValidIdScreen from './src/screens/UploadValidId';
+import TravelHistoryForDispatchers from './src/screens/dispatcher/TravelHistoryForDispatchers';
+import ScanQRForDrivers from './src/screens/dispatcher/ScanQRForDrivers';
 // Contexts
 import {TimerProvider} from './src/contexts/TimerContext';
 
 import {RootStackParamList} from './src/types/passenger-dashboard';
+
+//socket
+// import useSocket from './src/utils/socketManager';
+
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const App: React.FC = () => {
+//   useSocket();
   return (
     <TimerProvider>
       <NavigationContainer>
@@ -101,9 +108,11 @@ const App: React.FC = () => {
             name="RegisterEwallet"
             component={RegisterEwalletScreen}
           />
+          <Stack.Screen name="UploadValidId" component={UploadValidIdScreen} />
+          <Stack.Screen name="ScanQRForDrivers" component={ScanQRForDrivers} />
           <Stack.Screen
-            name="UploadValidId"
-            component={UploadValidIdScreen}
+            name="TravelHistoryForDispatchers"
+            component={TravelHistoryForDispatchers}
           />
         </Stack.Navigator>
         <Toast />

@@ -26,6 +26,8 @@ export type RootStackParamList = {
   ScanQRForPassengers: undefined;
   TravelHistoryForDrivers: undefined;
   UploadValidId: undefined;
+  ScanQRForDrivers: undefined;
+  TravelHistoryForDispatchers: undefined;
 };
 
 export interface UserQRCodeData {
