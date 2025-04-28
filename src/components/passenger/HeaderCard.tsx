@@ -66,12 +66,12 @@ const HeaderMain: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
       if (data?.dispatches?.length) {
         const newDispatch: Dispatch = data.dispatches[0];
 
-        console.log(
-          'Dispatcher Response Time:',
-          newDispatch.dispatcher_response_time,
-          'Scheduled Dispatch Time:',
-          newDispatch.scheduled_dispatch_time,
-        );
+        // console.log(
+        //   'Dispatcher Response Time:',
+        //   newDispatch.dispatcher_response_time,
+        //   'Scheduled Dispatch Time:',
+        //   newDispatch.scheduled_dispatch_time,
+        // );
 
         setDispatchData(newDispatch);
         setScheduledTime(

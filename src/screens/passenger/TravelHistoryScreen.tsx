@@ -41,7 +41,7 @@ const TravelHistoryScreen: React.FC = () => {
         console.log('Data fetched successfully:', data); // Check what data we get
         setTravelHistory(data);
       } else {
-        console.error('No valid travel history data found.');
+        console.log('No valid travel history data found.');
         setTravelHistory([]);
       }
     } catch (error) {
@@ -80,7 +80,7 @@ const TravelHistoryScreen: React.FC = () => {
       } else if (diffInDays === 1) {
         groupKey = 'Yesterday';
       } else {
-        groupKey = item.date; // Use exact date if older than yesterday
+        groupKey = item.date;
       }
 
       if (!groupedHistory[groupKey]) {
