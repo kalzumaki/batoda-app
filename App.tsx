@@ -31,9 +31,10 @@ import UploadValidIdScreen from './src/screens/UploadValidId';
 import TravelHistoryForDispatchers from './src/screens/dispatcher/TravelHistoryForDispatchers';
 import ScanQRForDrivers from './src/screens/dispatcher/ScanQRForDrivers';
 import NotificationScreen from './src/screens/NotificationScreen';
+
 // Contexts
 import {TimerProvider} from './src/contexts/TimerContext';
-import {NotificationProvider} from './src/contexts/NotificationContext';
+
 
 import {RootStackParamList} from './src/types/passenger-dashboard';
 //socket
@@ -44,7 +45,6 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 const App: React.FC = () => {
   //   useSocket();
   return (
-    <NotificationProvider>
       <TimerProvider>
         <NavigationContainer>
           <Stack.Navigator
@@ -133,7 +133,6 @@ const App: React.FC = () => {
           <Toast />
         </NavigationContainer>
       </TimerProvider>
-    </NotificationProvider>
   );
 };
 

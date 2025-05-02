@@ -59,6 +59,8 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const [hasIncomingDispatches, setHasIncomingDispatches] = useState(false);
   const [pendingFinalization, setPendingFinalization] =
     useState<boolean>(false);
+  const [showDepartModal, setShowDepartModal] = useState(false);
+  const [messageDepartModal, setMessageDepartModal] = useState('');
   const fetchPassengerCount = async () => {
     try {
       const data: DispatchResponse = await get(API_ENDPOINTS.PASSENGER_COUNT);
@@ -270,9 +272,9 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
         } else {
           console.log('🚨 No incoming dispatches. Show DEPART modal.');
           setTitle('Driver Already Departed');
-          setResponseErrorMessage('No approved drivers waiting for dispatch.');
+          setMessageDepartModal('No approved drivers waiting for dispatch.');
           setShowSuccessModal(false);
-          setShowErrorModal(true);
+          setShowDepartModal(true);
           setIsDispatchFinalized(true);
         }
         setPendingFinalization(false); // Done
@@ -303,8 +305,6 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
 
       console.log('⏳ Waiting for incoming dispatch update...');
       setPendingFinalization(true);
-
-      // ❌ NO more forcing setShowSuccessModal(false) or setShowErrorModal(false) here!!
     } else {
       console.log('✨ Normal dispatch flow.');
       setDispatchId(data.id);
@@ -439,10 +439,10 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
         onDismiss={() => setShowErrorModal(false)}
       />
       <DepartModal
-        visible={showErrorModal}
+        visible={showDepartModal}
         title={title}
-        message={responseErrorMessage}
-        onDismiss={() => setShowErrorModal(false)}
+        message={messageDepartModal}
+        onDismiss={() => setShowDepartModal(false)}
       />
     </View>
   );

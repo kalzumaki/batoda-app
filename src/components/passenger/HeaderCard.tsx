@@ -12,7 +12,6 @@ import {
 } from '../../types/passenger-dashboard';
 import {STORAGE_API_URL} from '@env';
 import useSocketListener from '../../hooks/useSocketListener';
-import NotificationBadge from '../NotificationBadge';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
@@ -21,6 +20,8 @@ const HeaderMain: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const [dispatchData, setDispatchData] = useState<Dispatch | null>(null);
   const [authenticatedUser, setAuthenticatedUser] = useState<any>(null);
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+
   const navigation = useNavigation<NavigationProps>();
   useEffect(() => {
     const checkAuth = async () => {
@@ -106,6 +107,27 @@ const HeaderMain: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   useSocketListener('dispatch-updated', handleDispatchUpdated);
   useSocketListener('dispatch-finalized', handleDispatchFinalized);
 
+  const fetchUnreadNotif = async () => {
+    try {
+      const res = await get(API_ENDPOINTS.NOTIF_UNREAD_COUNT);
+      if (res?.status && typeof res.unread === 'number') {
+        setUnreadCount(res.unread);
+      }
+    } catch (error) {
+      console.error('Failed to fetch unread notifications:', error);
+    }
+  };
+  useEffect(() => {
+    fetchUnreadNotif();
+  }, []);
+
+  const handleNewNotification = useCallback((data: any) => {
+    console.log('New notification received:', data);
+    fetchUnreadNotif();
+  }, []);
+
+  useSocketListener('new-notification', handleNewNotification);
+
   //   useEffect(() => {
   //     console.log('Current dispatchData:', JSON.stringify(dispatchData));
   //   }, [dispatchData]);
@@ -155,7 +177,11 @@ const HeaderMain: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
                 source={require('../../assets/3.png')}
                 style={styles.notifIcon}
               />
-              <NotificationBadge />
+              {unreadCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{unreadCount}</Text>
+                </View>
+              )}
             </View>
           </TouchableOpacity>
           <CustomDropdown />
@@ -300,6 +326,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#A8BAB7',
     textAlign: 'center',
+  },
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: 8,
+    backgroundColor: 'red',
+    borderRadius: 10,
+    paddingHorizontal: 5,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 });
 
