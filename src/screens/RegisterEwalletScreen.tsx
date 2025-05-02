@@ -16,6 +16,7 @@ import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../types/passenger-dashboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import BackButton from '../components/BackButton';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
@@ -82,7 +83,7 @@ const RegisterEwalletScreen: React.FC = () => {
         );
       }
     } catch (error) {
-    //   console.error('❌ Error registering e-wallet:', error);
+      //   console.error('❌ Error registering e-wallet:', error);
       Alert.alert('Error', 'An unexpected error occurred.');
     }
     setIsLoading(false);
@@ -107,6 +108,7 @@ const RegisterEwalletScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      <BackButton onPress={() => navigation.navigate('Login')} />
       {/* Title */}
       <Text style={styles.title}>E-Wallet Registration</Text>
 

@@ -19,6 +19,7 @@ import FloatingNavigation from '../../components/passenger/FloatingNav';
 import {fetchToken, get, post, postWithoutPayload} from '../../utils/proxy';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
 import {useFocusEffect} from '@react-navigation/native';
+import ErrorAlertModal from '../../components/ErrorAlertModal';
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
 const PassengerDashboard: React.FC = () => {
@@ -27,17 +28,29 @@ const PassengerDashboard: React.FC = () => {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [responseErrorMessage, setResponseErrorMessage] = useState('');
 
   const checkAuth = async () => {
     setLoading(true);
     const token = await AsyncStorage.getItem('userToken');
     console.log('User Token: ', token);
-    if (token) {
-      setIsAuthenticated(true);
-      await checkEwallet();
-    } else {
+
+    if (!token) {
       navigation.replace('Login');
+      return;
     }
+
+    // Token exists, user is authenticated
+    setIsAuthenticated(true);
+
+    try {
+      await checkEwallet();
+    } catch (error) {
+      // Just in case checkEwallet throws unexpectedly
+      console.error('Error during wallet check:', error);
+    }
+
     setLoading(false);
   };
 
@@ -45,16 +58,23 @@ const PassengerDashboard: React.FC = () => {
     checkAuth();
   }, [navigation]);
 
-  //   useFocusEffect(
-  //     useCallback(() => {
-  //       checkAuth();
-  //     }, [navigation])
-  //   );
   const checkEwallet = async () => {
     try {
       console.log('Checking e-wallet...');
       const response = await get(API_ENDPOINTS.SHOW_EWALLET);
-      console.log('E-Wallet API Response:', response);
+
+      // If backend returns non-JSON or HTML fallback, treat as logout
+      if (!response || typeof response !== 'object' || !response.status) {
+        console.log('🔒 Invalid or expired session. Redirecting to Login...');
+
+        await AsyncStorage.removeItem('userToken');
+        setResponseErrorMessage(
+          'Your Account was Blocked. Please Contact to the Management.',
+        );
+        setShowErrorModal(true);
+
+        return;
+      }
 
       if (response.status && response.data) {
         console.log('✅ E-Wallet exists:', response.data);
@@ -65,62 +85,11 @@ const PassengerDashboard: React.FC = () => {
     } catch (error: any) {
       console.error('❌ Error checking e-wallet:', error);
 
-      if (error.response?.status === 404) {
-        console.log('❌ No E-Wallet found (404). Redirecting...');
-        navigation.replace('RegisterEwallet');
-      } else {
-        console.log('🚨 Unexpected error, assuming no e-wallet exists...');
-        navigation.replace('RegisterEwallet');
-      }
+      // Fallback safety: logout on unexpected errors
+      await AsyncStorage.removeItem('userToken');
+      navigation.replace('Login');
     }
   };
-
-  //   const showEwalletAlert = () => {
-  //     console.log('🔔 Showing E-Wallet Alert...');
-
-  //     Alert.alert(
-  //       'No E-Wallet Registered',
-  //       'You need to register an e-wallet before proceeding.',
-  //       [
-  //         {
-  //           text: 'Register',
-  //           onPress: async () => {
-  //             console.log('✅ User chose to register E-Wallet.');
-  //             await registerEwallet();
-  //           },
-  //         },
-  //       ],
-  //     );
-  //   };
-
-  //   const registerEwallet = async () => {
-  //     try {
-  //       console.log('🚀 Registering E-Wallet...');
-
-  //       const response = await post(
-  //         API_ENDPOINTS.REGISTER_EWALLET,
-  //         {
-  //           bank_name: 'GCash',
-  //         },
-  //         true,
-  //       );
-
-  //       if (response.status) {
-  //         Alert.alert(
-  //           'Success',
-  //           'Your e-wallet has been registered successfully!',
-  //         );
-  //       } else {
-  //         Alert.alert(
-  //           'Error',
-  //           response.message || 'Failed to register e-wallet.',
-  //         );
-  //       }
-  //     } catch (error) {
-  //       console.error('❌ Error registering e-wallet:', error);
-  //       Alert.alert('Error', 'An unexpected error occurred.');
-  //     }
-  //   };
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -162,7 +131,7 @@ const PassengerDashboard: React.FC = () => {
         <>
           {/* Scrollable FlatList */}
           <FlatList
-            data={renderItems.filter(item => item.id !== 'floatnav')} // Exclude FloatingNav from FlatList
+            data={renderItems.filter(item => item.id !== 'floatnav')} 
             keyExtractor={item => item.id}
             renderItem={renderItem}
             contentContainerStyle={styles.contentContainer}
@@ -178,6 +147,12 @@ const PassengerDashboard: React.FC = () => {
           {/* Fixed Floating Navigation */}
           <View style={styles.floatingNavWrapper} pointerEvents="box-none">
             <FloatingNavigation refreshTrigger={refreshTrigger} />
+            <ErrorAlertModal
+              visible={showErrorModal}
+              title="Account Blocked"
+              message={responseErrorMessage}
+              onDismiss={() => navigation.replace('Login')}
+            />
           </View>
         </>
       )}
