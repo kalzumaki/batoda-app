@@ -29,6 +29,8 @@ import {Picker} from '@react-native-picker/picker'; // Import Picker for selecti
 import {RegisterFormData, FormImage} from '../types/register';
 import {launchImageLibrary} from 'react-native-image-picker';
 import BackButton from '../components/BackButton';
+import SuccessAlertModal from '../components/SuccessAlertModal';
+import ErrorAlertModal from '../components/ErrorAlertModal';
 
 // Define the navigation types
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
@@ -36,6 +38,10 @@ type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 const Register: React.FC = () => {
   const navigation = useNavigation<NavigationProps>();
 
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [responseErrorMessage, setResponseErrorMessage] = useState('');
+
+  const [title, setTitle] = useState('');
   const [formData, setFormData] = useState<RegisterFormData>({
     fname: '',
     lname: '',
@@ -180,24 +186,55 @@ const Register: React.FC = () => {
       const data = await postFormData(API_ENDPOINTS.REGISTER, form, false);
       console.log('New User Registered:', data);
 
+      if (!data || data.status === false) {
+        let errorMessage = data.message || 'Registration failed.';
+
+        if (data.errors) {
+          if (data.errors.password) {
+            errorMessage = data.errors.password[0];
+          } else {
+            const firstErrorField = Object.keys(data.errors)[0];
+            errorMessage = data.errors[firstErrorField][0];
+          }
+        }
+
+        setTitle('Registration Failed')
+        setResponseErrorMessage(errorMessage)
+        setShowErrorModal(true)
+        return;
+      }
+
       Toast.show({
         type: 'success',
         text1: 'Check Email for Verification!',
         text2: 'Registration Successful',
       });
 
-      // Redirect to login or another screen
       navigation.navigate('Login');
     } catch (error: any) {
       console.log(
         'API request error:',
         error?.response?.data || error?.message,
       );
-      Toast.show({
-        type: 'error',
-        text1: 'Registration Failed',
-        text2: error?.message || 'An error occurred',
-      });
+
+      // Laravel-style validation error handler
+      const errors = error?.response?.data?.errors;
+      if (errors) {
+        const firstFieldWithError = Object.keys(errors)[0];
+        const firstErrorMessage = errors[firstFieldWithError][0];
+
+        Toast.show({
+          type: 'error',
+          text1: 'Registration Failed',
+          text2: firstErrorMessage,
+        });
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Registration Failed',
+          text2: error?.message || 'An error occurred',
+        });
+      }
     } finally {
       setIsRegistering(false);
       setLoading(false);
@@ -309,6 +346,10 @@ const Register: React.FC = () => {
                   handleChange('password_confirmation', text)
                 }
               />
+              <Text style={styles.passwordNote}>
+                * Password must be at least 8 characters, and include a mix of
+                letters, numbers, and symbols.
+              </Text>
             </View>
           </Stepper.Step>
 
@@ -453,6 +494,12 @@ const Register: React.FC = () => {
 
         {/* Loading feedback */}
         {isRegistering && <OptimisticFeedback action="register" />}
+        <ErrorAlertModal
+          visible={showErrorModal}
+          title={title}
+          message={responseErrorMessage}
+          onDismiss={() => setShowErrorModal(false)}
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -553,7 +600,13 @@ const styles = StyleSheet.create({
   buttonDisabled: {
     opacity: 0.7,
   },
-
+  passwordNote: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 12,
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
 });
 
 export default Register;

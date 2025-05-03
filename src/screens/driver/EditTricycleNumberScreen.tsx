@@ -4,20 +4,25 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
 import {get, put} from '../../utils/proxy';
 import BackButton from '../../components/BackButton';
+import SuccessAlertModal from '../../components/SuccessAlertModal';
+import ErrorAlertModal from '../../components/ErrorAlertModal';
 
 const EditTricycleNumberScreen: React.FC = () => {
   const [tricycleDigits, setTricycleDigits] = useState(['', '', '']);
   const [fetchedNumber, setFetchedNumber] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const inputRefs = useRef<Array<TextInput | null>>([]);
-
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [responseErrorMessage, setResponseErrorMessage] = useState('');
+  const [responseSuccessMessage, setResponseSuccessMessage] = useState('');
+  const [title, setTitle] = useState('');
   useEffect(() => {
     const fetchTricycleNumber = async () => {
       try {
@@ -27,14 +32,17 @@ const EditTricycleNumberScreen: React.FC = () => {
           setFetchedNumber(fetchedNumber);
           setTricycleDigits(fetchedNumber.split(''));
         } else {
-          Alert.alert('Error', 'Failed to fetch tricycle number.');
+          setResponseErrorMessage('Failed to fetch tricycle number.');
+          setTitle('Error');
+          setShowErrorModal(true);
         }
       } catch (error) {
         console.log('❌ Error fetching tricycle number:', error);
-        Alert.alert(
-          'Error',
+        setResponseErrorMessage(
           'An error occurred while fetching the tricycle number.',
         );
+        setTitle('Error');
+        setShowErrorModal(true);
       } finally {
         setIsLoading(false);
       }
@@ -59,15 +67,18 @@ const EditTricycleNumberScreen: React.FC = () => {
   const handleUpdate = async () => {
     const tricycleNumber = tricycleDigits.join('');
     if (tricycleNumber.length !== 3) {
-      Alert.alert('Error', 'Tricycle number must be 3 digits.');
+      setResponseErrorMessage('Tricycle number must be 3 digits.');
+      setTitle('Error');
+      setShowErrorModal(true);
       return;
     }
 
     if (tricycleNumber === fetchedNumber) {
-      Alert.alert(
-        'Info',
+      setResponseErrorMessage(
         'New tricycle number is the same as the current one. No changes made.',
       );
+      setTitle('No Changes');
+      setShowErrorModal(true);
       return;
     }
 
@@ -79,16 +90,21 @@ const EditTricycleNumberScreen: React.FC = () => {
         true,
       );
       if (response.status) {
-        Alert.alert('Success', 'Tricycle number updated successfully.');
+        setResponseSuccessMessage(response.message);
+        setTitle('Success');
+        setShowSuccessModal(true);
       } else {
-        Alert.alert('Error', 'Failed to update tricycle number.');
+        setResponseErrorMessage('Failed to update tricycle number.');
+        setTitle('Error');
+        setShowErrorModal(true);
       }
     } catch (error) {
       console.log('❌ Error updating tricycle number:', error);
-      Alert.alert(
-        'Error',
+      setResponseErrorMessage(
         'An error occurred while updating the tricycle number.',
       );
+      setTitle('Error');
+      setShowErrorModal(true);
     } finally {
       setIsLoading(false);
     }
@@ -129,6 +145,18 @@ const EditTricycleNumberScreen: React.FC = () => {
         onPress={handleUpdate}>
         <Text style={styles.verifyText}>Update Tricycle Number</Text>
       </TouchableOpacity>
+      <SuccessAlertModal
+        visible={showSuccessModal}
+        title={title}
+        message={responseSuccessMessage}
+        onDismiss={() => setShowSuccessModal(false)}
+      />
+      <ErrorAlertModal
+        visible={showErrorModal}
+        title={title}
+        message={responseErrorMessage}
+        onDismiss={() => setShowErrorModal(false)}
+      />
     </View>
   );
 };

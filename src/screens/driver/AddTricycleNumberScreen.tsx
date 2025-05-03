@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
@@ -13,6 +12,8 @@ import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useNavigation} from '@react-navigation/native';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
 import {post} from '../../utils/proxy';
+import SuccessAlertModal from '../../components/SuccessAlertModal';
+import ErrorAlertModal from '../../components/ErrorAlertModal';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
@@ -21,7 +22,11 @@ const AddTricycleNumberScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const inputRefs = useRef<Array<TextInput | null>>([]);
   const navigation = useNavigation<NavigationProps>();
-
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [responseErrorMessage, setResponseErrorMessage] = useState('');
+  const [responseSuccessMessage, setResponseSuccessMessage] = useState('');
+  const [title, setTitle] = useState('');
   const handleInputChange = (text: string, index: number) => {
     if (/^\d?$/.test(text)) {
       const updatedDigits = [...tricycleDigits];
@@ -37,48 +42,52 @@ const AddTricycleNumberScreen: React.FC = () => {
 
   const getTricycleNumber = () => tricycleDigits.join('');
 
-const handleAddTricycleNumber = async () => {
+  const handleAddTricycleNumber = async () => {
     const tricycleNumber = getTricycleNumber();
 
     if (tricycleNumber.length !== 3) {
-        Alert.alert('Error', 'Please enter a valid 3-digit tricycle number.');
-        return;
+      setResponseErrorMessage('Please enter a valid 3-digit tricycle number.');
+      setTitle('Invalid Tricycle Number');
+      setShowErrorModal(true);
+      return;
     }
 
     setIsLoading(true);
     try {
-        const response = await post(
-            API_ENDPOINTS.ADD_TRICYCLE_NUMBER,
-            { tricycle_number: tricycleNumber },
-            true,
-        );
+      const response = await post(
+        API_ENDPOINTS.ADD_TRICYCLE_NUMBER,
+        {tricycle_number: tricycleNumber},
+        true,
+      );
 
-        if (response.status) {
-            Alert.alert('Success', 'Tricycle number added successfully!', [
-                {
-                    text: 'OK',
-                    onPress: () => navigation.replace('DriverDashboard'),
-                },
-            ]);
-        } else {
-            // Display API error message or fallback
-            Alert.alert('Error', response.error || response.message || 'Failed to add tricycle number.');
-        }
+      if (response.status) {
+        setResponseSuccessMessage('Tricycle number added successfully!');
+        setTitle('Success');
+        setShowSuccessModal(true);
+      } else {
+        setResponseErrorMessage(response.error || response.message);
+        setTitle('Error');
+        setShowErrorModal(true);
+      }
     } catch (error: any) {
-        console.log('❌ Error adding tricycle number:', error);
+      console.log('❌ Error adding tricycle number:', error);
 
-        if (error.response && error.response.data) {
-            const { message, error: apiError } = error.response.data;
-            Alert.alert('Error', apiError || message || 'An unexpected error occurred.');
-        } else {
-            Alert.alert('Error', 'The Tricycle Number is already taken. Please try another one.');
-        }
+      if (error.response && error.response.data) {
+        const {message, error: apiError} = error.response.data;
+        setResponseErrorMessage(apiError || message);
+        setTitle('Error');
+        setShowErrorModal(true);
+      } else {
+        setResponseErrorMessage(
+          'The Tricycle Number is already taken. Please try another one.',
+        );
+        setTitle('Already Exist');
+        setShowErrorModal(true);
+      }
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
-};
-
-
+  };
 
   return (
     <View style={styles.container}>
@@ -118,6 +127,18 @@ const handleAddTricycleNumber = async () => {
           <Text style={styles.verifyText}>Add Tricycle Number</Text>
         )}
       </TouchableOpacity>
+      <SuccessAlertModal
+        visible={showSuccessModal}
+        title={title}
+        message={responseSuccessMessage}
+        onDismiss={() => navigation.replace('DriverDashboard')}
+      />
+      <ErrorAlertModal
+        visible={showErrorModal}
+        title={title}
+        message={responseErrorMessage}
+        onDismiss={() => setShowErrorModal(false)}
+      />
     </View>
   );
 };
@@ -153,7 +174,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 10,
     textAlign: 'center',
-
   },
 
   otpInput: {
