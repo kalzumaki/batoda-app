@@ -33,22 +33,38 @@ const PassengerDashboard: React.FC = () => {
 
   const checkAuth = async () => {
     setLoading(true);
+
     const token = await AsyncStorage.getItem('userToken');
     console.log('User Token: ', token);
 
     if (!token) {
       navigation.replace('Login');
+      setLoading(false);
       return;
     }
 
-    // Token exists, user is authenticated
-    setIsAuthenticated(true);
-
     try {
+      const response = await post(API_ENDPOINTS.VALIDATE_TOKEN, {}, true);
+      console.log('response: ', response);
+      if (
+        response?.message === 'Unauthenticated.' ||
+        response?.status === false
+      ) {
+        console.log('🔒 Unauthenticated or blocked. Redirecting to Login...');
+        await AsyncStorage.removeItem('userToken');
+        setResponseErrorMessage(
+          'Your Account was Blocked or Session Expired. Please contact management.',
+        );
+        setShowErrorModal(true);
+        return;
+      }
+
+      setIsAuthenticated(true);
       await checkEwallet();
     } catch (error) {
-      // Just in case checkEwallet throws unexpectedly
-      console.error('Error during wallet check:', error);
+      console.error('❌ Error during authentication:', error);
+      await AsyncStorage.removeItem('userToken');
+      navigation.replace('Login');
     }
 
     setLoading(false);
@@ -62,20 +78,6 @@ const PassengerDashboard: React.FC = () => {
     try {
       console.log('Checking e-wallet...');
       const response = await get(API_ENDPOINTS.SHOW_EWALLET);
-
-      // If backend returns non-JSON or HTML fallback, treat as logout
-      if (!response || typeof response !== 'object' || !response.status) {
-        console.log('🔒 Invalid or expired session. Redirecting to Login...');
-
-        await AsyncStorage.removeItem('userToken');
-        setResponseErrorMessage(
-          'Your Account was Blocked. Please Contact to the Management.',
-        );
-        setShowErrorModal(true);
-
-        return;
-      }
-
       if (response.status && response.data) {
         console.log('✅ E-Wallet exists:', response.data);
       } else {
@@ -131,7 +133,7 @@ const PassengerDashboard: React.FC = () => {
         <>
           {/* Scrollable FlatList */}
           <FlatList
-            data={renderItems.filter(item => item.id !== 'floatnav')} 
+            data={renderItems.filter(item => item.id !== 'floatnav')}
             keyExtractor={item => item.id}
             renderItem={renderItem}
             contentContainerStyle={styles.contentContainer}

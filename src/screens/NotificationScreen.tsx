@@ -190,7 +190,6 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingBottom: 20,
-    alignItems: 'center',
   },
   card: {
     backgroundColor: '#469c8f',

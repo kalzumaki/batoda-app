@@ -51,6 +51,7 @@ export const API_ENDPOINTS = {
   GET_DRIVER_QR: '/dispatchers/driver-qr',
   PAY_DISPATCHER_QR: '/transaction/dispatchqr',
   SHOW_INCOME: '/show-income',
+  VALIDATE_TOKEN: '/validate-token',
   // notifications
   NOTIF_FINALIZED_DISPATCH: '/notifications/finalized-dispatch',
   NOTIF_CANCELLED_TICKET: '/notifications/cancelled-ticket',

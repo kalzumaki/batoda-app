@@ -61,6 +61,7 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
     useState<boolean>(false);
   const [showDepartModal, setShowDepartModal] = useState(false);
   const [messageDepartModal, setMessageDepartModal] = useState('');
+  
   const fetchPassengerCount = async () => {
     try {
       const data: DispatchResponse = await get(API_ENDPOINTS.PASSENGER_COUNT);

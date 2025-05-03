@@ -17,7 +17,6 @@ import {STORAGE_API_URL} from '@env';
 import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome';
 import dayjs from 'dayjs';
 import {RefreshTriggerProp} from '../../types/passenger-dashboard';
-import Toast from 'react-native-toast-message';
 import SuccessAlertModal from '../SuccessAlertModal';
 import ErrorAlertModal from '../ErrorAlertModal';
 import useSocketListener from '../../hooks/useSocketListener';
@@ -129,6 +128,7 @@ const ShowApprovedDispatches: React.FC<RefreshTriggerProp> = ({
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.title}>Approved Dispatches</Text>
       {loading ? (
         <ActivityIndicator size="large" color="#007AFF" />
       ) : dispatches.length === 0 ? (
@@ -304,6 +304,14 @@ const styles = StyleSheet.create({
     color: '#fff',
     textAlign: 'center',
   },
+  title:{
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000000',
+    textAlign: 'center',
+    marginVertical: 12,
+
+  }
 });
 
 export default ShowApprovedDispatches;
