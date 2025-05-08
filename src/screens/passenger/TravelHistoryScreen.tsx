@@ -13,7 +13,7 @@ import SearchAndFilter from '../../components/SearchAndFilter';
 import {get} from '../../utils/proxy';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
 import {TravelHistory} from '../../types/travel-history';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useNavigation} from '@react-navigation/native';
 import {RootStackParamList} from '../../types/passenger-dashboard';
 type TravelHistoryScreenNavigationProp = NativeStackNavigationProp<
@@ -67,17 +67,21 @@ const TravelHistoryScreen: React.FC = () => {
   // Group travel history by date
   const groupByDate = (history: TravelHistory[]) => {
     const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
     const groupedHistory: {[key: string]: TravelHistory[]} = {};
 
     history.forEach(item => {
       const itemDate = new Date(item.date);
-      const diffInTime = today.getTime() - itemDate.getTime();
-      const diffInDays = Math.floor(diffInTime / (1000 * 3600 * 24));
+      const itemDateStr = itemDate.toDateString();
+
+      const todayStr = today.toDateString();
+      const yesterdayStr = yesterday.toDateString();
 
       let groupKey = '';
-      if (diffInDays === 0) {
+      if (itemDateStr === todayStr) {
         groupKey = 'Today';
-      } else if (diffInDays === 1) {
+      } else if (itemDateStr === yesterdayStr) {
         groupKey = 'Yesterday';
       } else {
         groupKey = item.date;
