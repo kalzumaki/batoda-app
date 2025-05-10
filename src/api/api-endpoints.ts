@@ -62,4 +62,5 @@ export const API_ENDPOINTS = {
   NOTIF_UNREAD_COUNT: '/notifications/unread-count',
   GET_NOTIF_PER_USER: '/notifications',
   NOTIF_MARK_AS_READ: '/notifications/{id}/read',
+  CLEAR_NOTIF: '/notifications/clear'
 };

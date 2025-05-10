@@ -127,7 +127,7 @@ const HeaderMain: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   }, []);
 
   useSocketListener('new-notification', handleNewNotification);
-
+  useSocketListener('notifications-cleared', handleNewNotification);
   //   useEffect(() => {
   //     console.log('Current dispatchData:', JSON.stringify(dispatchData));
   //   }, [dispatchData]);

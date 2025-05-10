@@ -306,3 +306,21 @@ export const postWithHeaders = async (
     throw error;
   }
 };
+export const del = async (url: string, needsAuth: boolean = true) => {
+  try {
+    const authHeader = await getAuthHeader(needsAuth);
+
+    const config: RequestConfig = {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: authHeader,
+      },
+    };
+
+    return request(url, config);
+  } catch (error) {
+    console.error('Error making DELETE request:', error);
+    throw error;
+  }
+};

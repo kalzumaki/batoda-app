@@ -80,6 +80,7 @@ const Header: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   }, []);
 
   useSocketListener('new-notification', handleNewNotification);
+  useSocketListener('notifications-cleared', handleNewNotification);
   return (
     <View style={styles.container}>
       {/* Profile Picture Listener */}

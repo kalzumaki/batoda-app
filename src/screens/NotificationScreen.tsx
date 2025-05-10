@@ -9,13 +9,15 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import React, {useEffect, useState} from 'react';
-import {get, put} from '../utils/proxy';
+import {del, get, put} from '../utils/proxy';
 import {API_ENDPOINTS} from '../api/api-endpoints';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useNavigation} from '@react-navigation/native';
 import {RootStackParamList} from '../types/passenger-dashboard';
 import BackButton from '../components/BackButton';
-
+import Icon from 'react-native-vector-icons/Ionicons';
+import SuccessAlertModal from '../components/SuccessAlertModal';
+import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome';
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
 interface NotificationItem {
@@ -50,7 +52,9 @@ const NotificationScreen = () => {
   const [selectedNotification, setSelectedNotification] =
     useState<NotificationItem | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-
+  const [showResponseMessage, setShowResponseMessage] = useState<string>('');
+  const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
+  const [title, setTitle] = useState<string>('');
   const fetchNotifications = async () => {
     try {
       const response = await get(API_ENDPOINTS.GET_NOTIF_PER_USER);
@@ -65,8 +69,7 @@ const NotificationScreen = () => {
   };
   useEffect(() => {
     fetchNotifications();
-  }, [])
-
+  }, []);
 
   const handleNotificationPress = async (notification: NotificationItem) => {
     setSelectedNotification(notification);
@@ -95,6 +98,19 @@ const NotificationScreen = () => {
       }
     }
   };
+  const handleClearNotifications = async () => {
+    try {
+      const response = await del(API_ENDPOINTS.CLEAR_NOTIF, true);
+      if (response.message) {
+        setNotifications([]);
+        setShowResponseMessage(response.message);
+        setTitle('Notifications Cleared');
+        setIsSuccessModalVisible(true);
+      }
+    } catch (error) {
+      console.error('Failed to clear notifications:', error);
+    }
+  };
 
   const renderItem = ({item}: {item: NotificationItem}) => (
     <TouchableOpacity
@@ -121,6 +137,12 @@ const NotificationScreen = () => {
     <View style={styles.container}>
       <BackButton />
       <Text style={styles.title}>Notifications</Text>
+      {/* Trashcan icon */}
+      <TouchableOpacity
+        style={styles.trashIconContainer}
+        onPress={handleClearNotifications}>
+        <Icon name="trash-bin" size={15} color="#fff" />
+      </TouchableOpacity>
 
       {loading ? (
         <View style={styles.loaderContainer}>
@@ -170,6 +192,15 @@ const NotificationScreen = () => {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
+      <SuccessAlertModal
+        visible={isSuccessModalVisible}
+        title={title}
+        message={showResponseMessage}
+        onDismiss={() => {
+          setIsSuccessModalVisible(false);
+          navigation.goBack();
+        }}
+      />
     </View>
   );
 };
@@ -203,7 +234,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-
   },
   type: {
     fontWeight: 'bold',
@@ -278,6 +308,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999',
     textAlign: 'right',
+  },
+  trashIconContainer: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    backgroundColor: '#ff6347',
+    padding: 10,
+    borderRadius: 30,
   },
 });
 
