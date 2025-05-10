@@ -3,25 +3,26 @@ import {View, Text, TouchableOpacity, Image, StyleSheet} from 'react-native';
 import {get} from '../../utils/proxy';
 import {useTimer} from '../../contexts/TimerContext';
 import {Dispatch, DispatchResponse} from '../../types/approved-dispatch';
-import {
-  initPusher,
-  subscribeToChannel,
-  unsubscribeFromChannel,
-} from '../../pusher/pusher';
 import {API_ENDPOINTS} from '../../api/api-endpoints';
-import {PusherEvent} from '@pusher/pusher-websocket-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import ProfilePictureListener from '../../pusher/ProfilePictureUploaded';
 import CustomDropdown from '../MenuDropdown';
-import {RefreshTriggerProp} from '../../types/passenger-dashboard';
-import {API_URL, STORAGE_API_URL} from '@env';
+import {
+  RefreshTriggerProp,
+  RootStackParamList,
+} from '../../types/passenger-dashboard';
+import {STORAGE_API_URL} from '@env';
 import useSocketListener from '../../hooks/useSocketListener';
+import {useNavigation} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 const HeaderMain: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const {timeLeft, setScheduledTime} = useTimer();
   const [dispatchData, setDispatchData] = useState<Dispatch | null>(null);
   const [authenticatedUser, setAuthenticatedUser] = useState<any>(null);
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
 
+  const navigation = useNavigation<NavigationProps>();
   useEffect(() => {
     const checkAuth = async () => {
       const token = await AsyncStorage.getItem('userToken');
@@ -33,7 +34,7 @@ const HeaderMain: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
           const response = await get(API_ENDPOINTS.USERS_TOKEN);
           const data = response.data;
           setAuthenticatedUser(data);
-        //   console.log('data found in header component: ', data);
+          //   console.log('data found in header component: ', data);
 
           if (data && data.profile) {
             const fullImageUrl = `${STORAGE_API_URL}/storage/${data.profile}`;
@@ -61,17 +62,17 @@ const HeaderMain: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
 
     try {
       const data: DispatchResponse = await get(API_ENDPOINTS.APPROVED_DISPATCH);
-    //   console.log('Fetched data:', JSON.stringify(data));
+      //   console.log('Fetched data:', JSON.stringify(data));
 
       if (data?.dispatches?.length) {
         const newDispatch: Dispatch = data.dispatches[0];
 
-        console.log(
-          'Dispatcher Response Time:',
-          newDispatch.dispatcher_response_time,
-          'Scheduled Dispatch Time:',
-          newDispatch.scheduled_dispatch_time,
-        );
+        // console.log(
+        //   'Dispatcher Response Time:',
+        //   newDispatch.dispatcher_response_time,
+        //   'Scheduled Dispatch Time:',
+        //   newDispatch.scheduled_dispatch_time,
+        // );
 
         setDispatchData(newDispatch);
         setScheduledTime(
@@ -106,9 +107,30 @@ const HeaderMain: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   useSocketListener('dispatch-updated', handleDispatchUpdated);
   useSocketListener('dispatch-finalized', handleDispatchFinalized);
 
-//   useEffect(() => {
-//     console.log('Current dispatchData:', JSON.stringify(dispatchData));
-//   }, [dispatchData]);
+  const fetchUnreadNotif = async () => {
+    try {
+      const res = await get(API_ENDPOINTS.NOTIF_UNREAD_COUNT);
+      if (res?.status && typeof res.unread === 'number') {
+        setUnreadCount(res.unread);
+      }
+    } catch (error) {
+      console.error('Failed to fetch unread notifications:', error);
+    }
+  };
+  useEffect(() => {
+    fetchUnreadNotif();
+  }, []);
+
+  const handleNewNotification = useCallback((data: any) => {
+    console.log('New notification received:', data);
+    fetchUnreadNotif();
+  }, []);
+
+  useSocketListener('new-notification', handleNewNotification);
+  useSocketListener('notifications-cleared', handleNewNotification);
+  //   useEffect(() => {
+  //     console.log('Current dispatchData:', JSON.stringify(dispatchData));
+  //   }, [dispatchData]);
 
   const formatTimeLeft = (seconds: number | null): string => {
     if (seconds === null) {
@@ -134,13 +156,8 @@ const HeaderMain: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
     };
     return today.toLocaleDateString('en-US', options);
   };
-
   return (
     <View style={styles.headerContainer}>
-      {/* Profile Picture Listener */}
-      {/* {authenticatedUser && authenticatedUser.id && (
-        <ProfilePictureListener userId={authenticatedUser.id} />
-      )} */}
       {/* Top Bar */}
       <View style={styles.topBar}>
         <Image
@@ -153,18 +170,20 @@ const HeaderMain: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
         />
         {/* Right Icons (Notification and Drawer) */}
         <View style={styles.rightIcons}>
-          <TouchableOpacity>
-            <Image
-              source={require('../../assets/3.png')}
-              style={styles.notifIcon}
-            />
+          <TouchableOpacity
+            onPress={() => navigation.navigate('NotificationScreen')}>
+            <View style={{position: 'relative'}}>
+              <Image
+                source={require('../../assets/3.png')}
+                style={styles.notifIcon}
+              />
+              {unreadCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{unreadCount}</Text>
+                </View>
+              )}
+            </View>
           </TouchableOpacity>
-          {/* <TouchableOpacity>
-            <Image
-              source={require('../../assets/4.png')}
-              style={styles.drawerIcon}
-            />
-          </TouchableOpacity> */}
           <CustomDropdown />
         </View>
       </View>
@@ -307,6 +326,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#A8BAB7',
     textAlign: 'center',
+  },
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: 8,
+    backgroundColor: 'red',
+    borderRadius: 10,
+    paddingHorizontal: 5,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 });
 

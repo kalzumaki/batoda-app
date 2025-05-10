@@ -30,94 +30,109 @@ import TravelHistoryForDrivers from './src/screens/driver/TravelHistoryForDriver
 import UploadValidIdScreen from './src/screens/UploadValidId';
 import TravelHistoryForDispatchers from './src/screens/dispatcher/TravelHistoryForDispatchers';
 import ScanQRForDrivers from './src/screens/dispatcher/ScanQRForDrivers';
+import NotificationScreen from './src/screens/NotificationScreen';
+
 // Contexts
 import {TimerProvider} from './src/contexts/TimerContext';
 
-import {RootStackParamList} from './src/types/passenger-dashboard';
 
+import {RootStackParamList} from './src/types/passenger-dashboard';
 //socket
 // import useSocket from './src/utils/socketManager';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const App: React.FC = () => {
-//   useSocket();
+  //   useSocket();
   return (
-    <TimerProvider>
-      <NavigationContainer>
-        <Stack.Navigator
-          initialRouteName="Login"
-          screenOptions={{headerShown: false}}>
-          <Stack.Screen name="Login" component={Login} />
-          <Stack.Screen name="Register" component={Register} />
-          <Stack.Screen
-            name="PassengerDashboard"
-            component={PassengerDashboard}
-          />
-          <Stack.Screen name="DriverDashboard" component={DriverDashboard} />
-          <Stack.Screen
-            name="DispatcherDashboard"
-            component={DispatcherDashboard}
-          />
-          <Stack.Screen name="TicketScreen" component={TicketScreen} />
-          {/* floating nav */}
-          <Stack.Screen name="ReserveRide" component={ReserveRideScreen} />
-          <Stack.Screen name="ScanQR" component={ScanQRScreen} />
-          <Stack.Screen
-            name="UserDetailsScreen"
-            component={UserDetailsScreen}
-          />
-          <Stack.Screen name="TravelHistory" component={TravelHistoryScreen} />
-          <Stack.Screen
-            name="TravelHistoryDetail"
-            component={TravelHistoryDetailScreen}
-          />
-          <Stack.Screen name="Profile" component={ProfileScreen} />
-          <Stack.Screen name="Settings" component={SettingsScreen} />
-          <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-          <Stack.Screen
-            name="EmailVerification"
-            component={EmailVerification}
-          />
-          <Stack.Screen name="OTPVerification" component={OTPVerification} />
-          <Stack.Screen
-            name="ChangePassEmailVer"
-            component={ChangePassEmailVer}
-          />
-          <Stack.Screen
-            name="ChangePassword"
-            component={ChangePasswordScreen}
-          />
-          <Stack.Screen
-            name="AddTricycleNumber"
-            component={AddTricycleNumberScreen}
-          />
-          <Stack.Screen
-            name="EditTricycleNumber"
-            component={EditTricycleNumberScreen}
-          />
-          <Stack.Screen
-            name="TravelHistoryForDrivers"
-            component={TravelHistoryForDrivers}
-          />
-          <Stack.Screen
-            name="ScanQRForPassengers"
-            component={ScanQRForPassengers}
-          />
-          <Stack.Screen
-            name="RegisterEwallet"
-            component={RegisterEwalletScreen}
-          />
-          <Stack.Screen name="UploadValidId" component={UploadValidIdScreen} />
-          <Stack.Screen name="ScanQRForDrivers" component={ScanQRForDrivers} />
-          <Stack.Screen
-            name="TravelHistoryForDispatchers"
-            component={TravelHistoryForDispatchers}
-          />
-        </Stack.Navigator>
-        <Toast />
-      </NavigationContainer>
-    </TimerProvider>
+      <TimerProvider>
+        <NavigationContainer>
+          <Stack.Navigator
+            initialRouteName="Login"
+            screenOptions={{headerShown: false}}>
+            <Stack.Screen name="Login" component={Login} />
+            <Stack.Screen name="Register" component={Register} />
+            <Stack.Screen
+              name="PassengerDashboard"
+              component={PassengerDashboard}
+            />
+            <Stack.Screen name="DriverDashboard" component={DriverDashboard} />
+            <Stack.Screen
+              name="DispatcherDashboard"
+              component={DispatcherDashboard}
+            />
+            <Stack.Screen name="TicketScreen" component={TicketScreen} />
+            {/* floating nav */}
+            <Stack.Screen name="ReserveRide" component={ReserveRideScreen} />
+            <Stack.Screen name="ScanQR" component={ScanQRScreen} />
+            <Stack.Screen
+              name="UserDetailsScreen"
+              component={UserDetailsScreen}
+            />
+            <Stack.Screen
+              name="TravelHistory"
+              component={TravelHistoryScreen}
+            />
+            <Stack.Screen
+              name="TravelHistoryDetail"
+              component={TravelHistoryDetailScreen}
+            />
+            <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+            <Stack.Screen
+              name="EmailVerification"
+              component={EmailVerification}
+            />
+            <Stack.Screen name="OTPVerification" component={OTPVerification} />
+            <Stack.Screen
+              name="ChangePassEmailVer"
+              component={ChangePassEmailVer}
+            />
+            <Stack.Screen
+              name="ChangePassword"
+              component={ChangePasswordScreen}
+            />
+            <Stack.Screen
+              name="AddTricycleNumber"
+              component={AddTricycleNumberScreen}
+            />
+            <Stack.Screen
+              name="EditTricycleNumber"
+              component={EditTricycleNumberScreen}
+            />
+            <Stack.Screen
+              name="TravelHistoryForDrivers"
+              component={TravelHistoryForDrivers}
+            />
+            <Stack.Screen
+              name="ScanQRForPassengers"
+              component={ScanQRForPassengers}
+            />
+            <Stack.Screen
+              name="RegisterEwallet"
+              component={RegisterEwalletScreen}
+            />
+            <Stack.Screen
+              name="UploadValidId"
+              component={UploadValidIdScreen}
+            />
+            <Stack.Screen
+              name="ScanQRForDrivers"
+              component={ScanQRForDrivers}
+            />
+            <Stack.Screen
+              name="TravelHistoryForDispatchers"
+              component={TravelHistoryForDispatchers}
+            />
+            <Stack.Screen
+              name="NotificationScreen"
+              component={NotificationScreen}
+            />
+          </Stack.Navigator>
+          <Toast />
+        </NavigationContainer>
+      </TimerProvider>
   );
 };
 

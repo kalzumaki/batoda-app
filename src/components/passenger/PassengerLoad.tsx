@@ -56,7 +56,12 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   }>({});
   const [isDispatchFinalized, setIsDispatchFinalized] = useState(false);
   const [title, setTitle] = useState('');
-
+  const [hasIncomingDispatches, setHasIncomingDispatches] = useState(false);
+  const [pendingFinalization, setPendingFinalization] =
+    useState<boolean>(false);
+  const [showDepartModal, setShowDepartModal] = useState(false);
+  const [messageDepartModal, setMessageDepartModal] = useState('');
+  
   const fetchPassengerCount = async () => {
     try {
       const data: DispatchResponse = await get(API_ENDPOINTS.PASSENGER_COUNT);
@@ -161,6 +166,7 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
 
     fetchApprovedSeats();
   }, []);
+  useSocketListener('dispatch-updated', handleApprovedSeats);
 
   const handleReservedSeats = useCallback((data: any) => {
     console.log('Seats Reserved:', data);
@@ -244,9 +250,44 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
       return prevCountdown;
     });
   }, []);
+
+  const handleIncomingDispatch = useCallback(
+    (data: any) => {
+      console.log('Incoming Dispatch:', data);
+
+      const hasDispatches =
+        data?.dispatches &&
+        Array.isArray(data.dispatches) &&
+        data.dispatches.length > 0;
+
+      setHasIncomingDispatches(hasDispatches);
+
+      if (pendingFinalization) {
+        if (hasDispatches) {
+          console.log('✅ Incoming dispatch exists. Show SUCCESS modal.');
+          setTitle('New Dispatch Available');
+          setResponseSuccessMessage('A new driver is available for dispatch.');
+          setShowErrorModal(false);
+          setShowSuccessModal(true);
+          setIsDispatchFinalized(false);
+        } else {
+          console.log('🚨 No incoming dispatches. Show DEPART modal.');
+          setTitle('Driver Already Departed');
+          setMessageDepartModal('No approved drivers waiting for dispatch.');
+          setShowSuccessModal(false);
+          setShowDepartModal(true);
+          setIsDispatchFinalized(true);
+        }
+        setPendingFinalization(false); // Done
+      }
+    },
+    [pendingFinalization],
+  );
+
   const handleFinalizedSeats = useCallback((data: any) => {
     console.log('Dispatch finalized on seats:', data);
 
+    // Clear other states (seats etc.)
     setSelectedSeats([]);
     setReservedSeats([]);
     setTempReservations({});
@@ -258,25 +299,24 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
       countdownRef.current = null;
     }
     setCountdown(null);
-
     setShowConfirmModal(false);
 
     if (data.is_dispatched === 1) {
       setDispatchId(null);
-      setTitle('Driver Already Departed');
-      setResponseErrorMessage('No approved drivers waiting for dispatch.');
-      setShowErrorModal(true);
-      setIsDispatchFinalized(true);
+
+      console.log('⏳ Waiting for incoming dispatch update...');
+      setPendingFinalization(true);
     } else {
+      console.log('✨ Normal dispatch flow.');
       setDispatchId(data.id);
       fetchApprovedSeats();
       setIsDispatchFinalized(false);
     }
   }, []);
 
+  useSocketListener('incoming-dispatches', handleIncomingDispatch);
   useSocketListener('seats-reserved', handleReservedSeats);
   useSocketListener('seat-paid', handleSeatPaid);
-  useSocketListener('dispatch-updated', handleApprovedSeats);
   useSocketListener('dispatch-finalized', handleFinalizedSeats);
   return (
     <View style={styles.container}>
@@ -400,10 +440,10 @@ const ApprovedDispatches: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
         onDismiss={() => setShowErrorModal(false)}
       />
       <DepartModal
-        visible={showErrorModal}
+        visible={showDepartModal}
         title={title}
-        message={responseErrorMessage}
-        onDismiss={() => setShowErrorModal(false)}
+        message={messageDepartModal}
+        onDismiss={() => setShowDepartModal(false)}
       />
     </View>
   );

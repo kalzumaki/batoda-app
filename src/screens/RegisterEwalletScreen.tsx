@@ -16,6 +16,9 @@ import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../types/passenger-dashboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import BackButton from '../components/BackButton';
+import SuccessAlertModal from '../components/SuccessAlertModal';
+import ErrorAlertModal from '../components/ErrorAlertModal';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
@@ -35,6 +38,12 @@ const RegisterEwalletScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedEwallet, setSelectedEwallet] = useState<string>('GCash');
   const [dropdownVisible, setDropdownVisible] = useState<boolean>(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [responseErrorMessage, setResponseErrorMessage] = useState('');
+  const [responseSuccessMessage, setResponseSuccessMessage] = useState('');
+
+  const [successUserType, setSuccessUserType] = useState<number | null>(null);
 
   const handleRegister = async () => {
     setIsLoading(true);
@@ -51,38 +60,19 @@ const RegisterEwalletScreen: React.FC = () => {
         const userType = userTypeString ? parseInt(userTypeString, 10) : null;
 
         // Success alert and navigation
-        Alert.alert(
-          'Success',
+        setResponseSuccessMessage(
           `${selectedEwallet} has been registered successfully!`,
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                switch (userType) {
-                  case 6:
-                    navigation.replace('DriverDashboard');
-                    break;
-                  case 7:
-                    navigation.replace('DispatcherDashboard');
-                    break;
-                  case 8:
-                    navigation.replace('PassengerDashboard');
-                    break;
-                  default:
-                    Alert.alert('Error', 'Invalid user type.');
-                }
-              },
-            },
-          ],
         );
+        setSuccessUserType(userType); // Save userType for later navigation
+        setShowSuccessModal(true);
       } else {
-        Alert.alert(
-          'Error',
+        setResponseErrorMessage(
           response.message || 'Failed to register e-wallet.',
         );
+        setShowErrorModal(true);
       }
     } catch (error) {
-    //   console.error('❌ Error registering e-wallet:', error);
+      //   console.error('❌ Error registering e-wallet:', error);
       Alert.alert('Error', 'An unexpected error occurred.');
     }
     setIsLoading(false);
@@ -107,6 +97,7 @@ const RegisterEwalletScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      <BackButton onPress={() => navigation.navigate('Login')} />
       {/* Title */}
       <Text style={styles.title}>E-Wallet Registration</Text>
 
@@ -173,6 +164,35 @@ const RegisterEwalletScreen: React.FC = () => {
           <Text style={styles.optionText}>Register</Text>
         )}
       </TouchableOpacity>
+      <SuccessAlertModal
+        visible={showSuccessModal}
+        title="Success!"
+        message={responseSuccessMessage}
+        onDismiss={() => {
+          setShowSuccessModal(false);
+          switch (successUserType) {
+            case 6:
+              navigation.replace('DriverDashboard');
+              break;
+            case 7:
+              navigation.replace('DispatcherDashboard');
+              break;
+            case 8:
+              navigation.replace('PassengerDashboard');
+              break;
+            default:
+              setResponseErrorMessage('Invalid user type.');
+              setShowErrorModal(true);
+          }
+        }}
+      />
+
+      <ErrorAlertModal
+        visible={showErrorModal}
+        title="Error"
+        message={responseErrorMessage}
+        onDismiss={() => setShowErrorModal(false)}
+      />
     </View>
   );
 };

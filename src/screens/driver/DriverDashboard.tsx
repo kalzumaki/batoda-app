@@ -7,7 +7,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {get} from '../../utils/proxy';
+import {get, post} from '../../utils/proxy';
 import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../../types/passenger-dashboard';
@@ -17,6 +17,7 @@ import ShowDispatches from '../../components/driver/ShowDispatches';
 import ShowInQueue from '../../components/driver/ShowInQueue';
 import BottomNav from '../../components/driver/BottomNav';
 import ShowIncomeCard from '../../components/ShowIncomeCard';
+import ErrorAlertModal from '../../components/ErrorAlertModal';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
@@ -26,34 +27,73 @@ const DriverDashboard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const navigation = useNavigation<NavigationProps>();
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [responseErrorMessage, setResponseErrorMessage] = useState('');
 
   const checkAuth = async () => {
+    setLoading(true);
+    const token = await AsyncStorage.getItem('userToken');
+    console.log('User Token: ', token);
+
+    if (!token) {
+      navigation.replace('Login');
+      return;
+    }
+
+    // Token exists
+    setIsAuthenticated(true);
+
     try {
-      const token = await AsyncStorage.getItem('userToken');
-      if (!token) {
-        navigation.replace('Login');
+      const response = await post(API_ENDPOINTS.VALIDATE_TOKEN, {}, true);
+      console.log('response: ', response);
+      if (
+        response?.message === 'Unauthenticated.' ||
+        response?.status === false
+      ) {
+        console.log('🔒 Unauthenticated or blocked. Redirecting to Login...');
+        await AsyncStorage.removeItem('userToken');
+        setResponseErrorMessage(
+          'Your Account was Blocked. Please contact management.',
+        );
+        setShowErrorModal(true);
         return;
       }
 
-      // Run checks in parallel
-      const [ewalletResponse, tricycleResponse] = await Promise.all([
-        checkEwallet(),
-        checkTricycleNumber(),
-      ]);
+      const walletValid = await checkEwallet();
+      if (!walletValid) return;
 
-      // Handle navigation only after both checks
-      if (!ewalletResponse) {
-        navigation.replace('RegisterEwallet');
-      } else if (!tricycleResponse) {
+      const tricycleValid = await checkTricycleNumber();
+      if (!tricycleValid) {
         navigation.replace('AddTricycleNumber');
-      } else {
-        setIsAuthenticated(true);
       }
     } catch (error) {
-      console.error('❌ Error during authentication:', error);
+      console.error('❌ Error during auth checks:', error);
+      await AsyncStorage.removeItem('userToken');
       navigation.replace('Login');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkEwallet = async (): Promise<boolean> => {
+    try {
+      console.log('🔍 Checking e-wallet...');
+      const response = await get(API_ENDPOINTS.SHOW_EWALLET);
+      console.log('💳 E-Wallet API Response:', response);
+
+      if (response.status && response.data) {
+        console.log('✅ E-Wallet exists.');
+        return true;
+      } else {
+        console.log('❌ No E-Wallet found. Redirecting...');
+        navigation.replace('RegisterEwallet');
+        return false;
+      }
+    } catch (error) {
+      console.log('❌ E-wallet check failed:', error);
+      await AsyncStorage.removeItem('userToken');
+      navigation.replace('Login');
+      return false;
     }
   };
 
@@ -67,26 +107,10 @@ const DriverDashboard: React.FC = () => {
         console.log('❌ No Tricycle Number found.');
         return false;
       }
+
       return true;
     } catch (error) {
       console.log('❌ Error checking tricycle number:', error);
-      return false;
-    }
-  };
-
-  const checkEwallet = async (): Promise<boolean> => {
-    try {
-      console.log('🔍 Checking e-wallet...');
-      const response = await get(API_ENDPOINTS.SHOW_EWALLET);
-      console.log('💳 E-Wallet API Response:', response);
-
-      if (!response?.status || !response?.data) {
-        console.log('❌ No E-Wallet found.');
-        return false;
-      }
-      return true;
-    } catch (error) {
-      console.log('❌ Error checking e-wallet:', error);
       return false;
     }
   };
@@ -107,7 +131,10 @@ const DriverDashboard: React.FC = () => {
     {id: 'header', component: <Header refreshTrigger={refreshTrigger} />},
     // {id: 'dispatches', component: <ShowDispatches refreshTrigger={refreshTrigger} />},
     {id: 'queue', component: <ShowInQueue refreshTrigger={refreshTrigger} />},
-    {id: 'income', component: <ShowIncomeCard refreshTrigger={refreshTrigger} />},
+    {
+      id: 'income',
+      component: <ShowIncomeCard refreshTrigger={refreshTrigger} />,
+    },
     // add here the bottom nav
   ];
 
@@ -146,6 +173,12 @@ const DriverDashboard: React.FC = () => {
           <BottomNav />
         </>
       ) : null}
+      <ErrorAlertModal
+        visible={showErrorModal}
+        title="Account Blocked"
+        message={responseErrorMessage}
+        onDismiss={() => navigation.replace('Login')}
+      />
     </View>
   );
 };

@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
   Text,
@@ -12,43 +12,47 @@ import {
 import LottieView from 'lottie-react-native';
 import {get} from '../utils/proxy';
 import {API_ENDPOINTS} from '../api/api-endpoints';
-import {IncomeGroup} from '../types/show-income';
+import {IncomeResponse} from '../types/show-income';
 import {RefreshTriggerProp} from '../types/passenger-dashboard';
+import useSocketListener from '../hooks/useSocketListener';
 
 const ShowIncomeCard: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
-  const [incomeData, setIncomeData] = useState<IncomeGroup[]>([]);
+  const [incomeData, setIncomeData] = useState<IncomeResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [selectedGroup, setSelectedGroup] = useState<IncomeGroup | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
 
-  useEffect(() => {
-    const fetchIncome = async () => {
-      try {
-        const response = await get(API_ENDPOINTS.SHOW_INCOME);
-        if (response.status) {
-          setIncomeData(response.history);
-        } else {
-          console.error('Failed to fetch income:', response.message);
-        }
-      } catch (error) {
-        console.error('Error fetching income:', error);
-      } finally {
-        setLoading(false);
+  const fetchIncome = async () => {
+    try {
+      const response = await get(API_ENDPOINTS.SHOW_INCOME);
+      if (response.status) {
+        setIncomeData(response);
+      } else {
+        console.log('Failed to fetch income:', response.message);
       }
-    };
-
+    } catch (error) {
+      console.log('Error fetching income:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
     fetchIncome();
   }, [refreshTrigger]);
+  const handleNewIncome = useCallback((data: any) => {
+    console.log('New Income:', data);
+    fetchIncome();
+  }, []);
 
-  const openModal = (group: IncomeGroup) => {
-    setSelectedGroup(group);
-    setModalVisible(true);
-  };
+  useSocketListener('dispatcher-paid', handleNewIncome);
+  useSocketListener('seat-paid', handleNewIncome);
 
-  const closeModal = () => {
-    setModalVisible(false);
-    setSelectedGroup(null);
-  };
+  const openModal = () => setModalVisible(true);
+  const closeModal = () => setModalVisible(false);
+
+  const todayGroup = incomeData?.history.find(group => group.date === 'Today');
+  const otherGroups = incomeData?.history.filter(
+    group => group.date !== 'Today',
+  );
 
   if (loading) {
     return (
@@ -57,54 +61,58 @@ const ShowIncomeCard: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
       </View>
     );
   }
+  if (!incomeData) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.noDataText}>Unable to load income data.</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      {incomeData.length === 0 ? (
-        <Text style={styles.noDataText}>No income history found.</Text>
+      {!todayGroup ? (
+        <Text style={styles.noDataText}>No income history for today.</Text>
       ) : (
-        <FlatList
-          data={incomeData}
-          keyExtractor={item => item.date}
-          renderItem={({item: group}) => (
-            <TouchableOpacity
-              style={styles.card}
-              onPress={() => openModal(group)}>
-              {/* Lottie Animation */}
-              <View style={styles.lottieContainer}>
-                <LottieView
-                  source={require('../assets/income-animation.json')}
-                  autoPlay
-                  loop
-                  style={styles.lottie}
-                />
-              </View>
+        <TouchableOpacity style={styles.card} onPress={openModal}>
+          <View style={styles.lottieContainer}>
+            <LottieView
+              source={require('../assets/income-animation.json')}
+              autoPlay
+              loop
+              style={styles.lottie}
+            />
+          </View>
 
-              <View style={styles.cardContent}>
-                <Text style={styles.date}>{group.date}</Text>
-                <Text style={styles.incomeLabel}>Daily Income</Text>
-                <Text style={styles.incomeValue}>
-                  ₱{group.total_income.toLocaleString()}
+          <View style={styles.cardContent}>
+            <Text style={styles.date}>{todayGroup.date}</Text>
+            <Text style={styles.incomeLabel}>Daily Income</Text>
+            <Text style={styles.incomeValue}>
+              ₱
+              {Number(todayGroup.total_income).toLocaleString('en-PH', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </Text>
+
+            {incomeData?.monthly_income?.length > 0 && (
+              <>
+                <Text style={[styles.incomeLabel, {marginTop: 8}]}>
+                  Monthly Income
                 </Text>
-
-                {group.monthly_income && group.monthly_income.length > 0 && (
-                  <>
-                    <Text style={[styles.incomeLabel, {marginTop: 8}]}>
-                      Monthly Income
-                    </Text>
-                    <Text style={styles.incomeValue}>
-                      ₱
-                      {parseFloat(
-                        group.monthly_income[0]?.total_income,
-                      ).toLocaleString()}
-                    </Text>
-                  </>
-                )}
-              </View>
-            </TouchableOpacity>
-          )}
-          contentContainerStyle={{paddingBottom: 20}}
-        />
+                <Text style={styles.incomeValue}>
+                  ₱
+                  {parseFloat(
+                    incomeData.monthly_income[0].total_income,
+                  ).toLocaleString('en-PH', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </Text>
+              </>
+            )}
+          </View>
+        </TouchableOpacity>
       )}
 
       {/* Modal */}
@@ -117,45 +125,46 @@ const ShowIncomeCard: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
               <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>
-                  {selectedGroup?.date} Transactions
-                </Text>
-
-                {selectedGroup?.monthly_income &&
-                  selectedGroup.monthly_income.length > 0 && (
-                    <Text style={styles.modalIncome}>
-                      Monthly Income: ₱
-                      {parseFloat(
-                        selectedGroup.monthly_income[0]?.total_income,
-                      ).toLocaleString()}
-                    </Text>
-                  )}
-
-                <View style={styles.tableHeader}>
-                  <Text style={styles.tableHeaderText}>Amount</Text>
-                  <Text style={styles.tableHeaderText}>Dispatch ID</Text>
-                </View>
-
+                <Text style={styles.modalTitle}>Past Income History</Text>
                 <FlatList
-                  data={selectedGroup?.transactions}
-                  keyExtractor={item => item.id.toString()}
-                  renderItem={({item, index}) => (
-                    <View
-                      style={[
-                        styles.transactionRow,
-                        index % 2 === 0 ? styles.rowEven : styles.rowOdd,
-                      ]}>
-                      <Text style={styles.transactionCell}>
-                        ₱{parseFloat(item.amount).toLocaleString()}
+                  data={otherGroups}
+                  keyExtractor={item => item.date}
+                  renderItem={({item}) => (
+                    <>
+                      <Text style={styles.modalSubTitle}>
+                        {item.date} Transactions
                       </Text>
-                      <Text style={styles.transactionCell}>
-                        {item.dispatch_id}
-                      </Text>
-                    </View>
+
+                      <View style={styles.tableHeader}>
+                        <Text style={styles.tableHeaderText}>Amount</Text>
+                        <Text style={styles.tableHeaderText}>Dispatch ID</Text>
+                      </View>
+
+                      {item.transactions.length === 0 ? (
+                        <Text style={{textAlign: 'center', padding: 8}}>
+                          No transactions
+                        </Text>
+                      ) : (
+                        item.transactions.map((tx, index) => (
+                          <View
+                            key={tx.id}
+                            style={[
+                              styles.transactionRow,
+                              index % 2 === 0 ? styles.rowEven : styles.rowOdd,
+                            ]}>
+                            <Text style={styles.transactionCell}>
+                              ₱{parseFloat(tx.amount).toLocaleString()}
+                            </Text>
+                            <Text style={styles.transactionCell}>
+                              {tx.dispatch_id}
+                            </Text>
+                          </View>
+                        ))
+                      )}
+                    </>
                   )}
                   showsVerticalScrollIndicator={false}
                   contentContainerStyle={{paddingBottom: 20}}
-                  style={{flexGrow: 0}}
                 />
               </View>
             </TouchableWithoutFeedback>
@@ -241,15 +250,15 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     color: '#3d5554',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  modalIncome: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#469c8f',
     marginBottom: 16,
     textAlign: 'center',
+  },
+  modalSubTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#3d5554',
+    marginTop: 16,
+    marginBottom: 8,
   },
   tableHeader: {
     flexDirection: 'row',
