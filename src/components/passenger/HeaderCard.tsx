@@ -1,77 +1,137 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {View, Text, TouchableOpacity, Image, StyleSheet} from 'react-native';
-import {get} from '../../utils/proxy'; // Adjust the path based on your project structure
+import {get} from '../../utils/proxy';
 import {useTimer} from '../../contexts/TimerContext';
-import {Dispatch, DispatchResponse} from '../../types/approved-dispatch'; // Import the Dispatch interfaces
-import Toast from 'react-native-toast-message';
-
-const HeaderMain: React.FC = () => {
-  const {timeLeft, setScheduledTime} = useTimer(); // Use TimerContext
+import {Dispatch, DispatchResponse} from '../../types/approved-dispatch';
+import {API_ENDPOINTS} from '../../api/api-endpoints';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import CustomDropdown from '../MenuDropdown';
+import {
+  RefreshTriggerProp,
+  RootStackParamList,
+} from '../../types/passenger-dashboard';
+import {STORAGE_API_URL} from '@env';
+import useSocketListener from '../../hooks/useSocketListener';
+import {useNavigation} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
+const HeaderMain: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
+  const {timeLeft, setScheduledTime} = useTimer();
   const [dispatchData, setDispatchData] = useState<Dispatch | null>(null);
-  const pollingInterval = useRef<NodeJS.Timeout | null>(null);
+  const [authenticatedUser, setAuthenticatedUser] = useState<any>(null);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
 
-  const TEN_MINUTES_IN_SECONDS = 600;
+  const navigation = useNavigation<NavigationProps>();
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = await AsyncStorage.getItem('userToken');
 
-  const fetchDispatchData = async () => {
-    try {
-      const data: DispatchResponse = await get('/approved-dispatches');
-      if (data && data.dispatches && data.dispatches.length > 0) {
-        const newDispatch: Dispatch = data.dispatches[0];
+      if (token) {
+        console.log('User Token from headercomponent: ', token);
 
-        // Check if `is_dispatched` changed from 0 to 1 (from undispached to dispatched)
-        if (
-          dispatchData &&
-          dispatchData.is_dispatched === 0 &&
-          newDispatch.is_dispatched === 1
-        ) {
-          // Show toast if `is_dispatched` became 1
-          Toast.show({
-            type: 'success',
-            text1: 'You are all set!',
-            text2: 'Ready to go! Travel safe!',
-            visibilityTime: 3000, // Duration of the toast (in ms)
-          });
-        }
+        try {
+          const response = await get(API_ENDPOINTS.USERS_TOKEN);
+          const data = response.data;
+          setAuthenticatedUser(data);
+          //   console.log('data found in header component: ', data);
 
-        // Only update if dispatchData is different
-        if (!dispatchData || newDispatch.id !== dispatchData.id) {
-          setDispatchData(newDispatch);
-
-          // Determine timer based on dispatch status
-          if (
-            newDispatch.is_dispatched === 1 ||
-            newDispatch.actual_dispatch_time !== null
-          ) {
-            // Reset the scheduled time to null, displaying '-- -- --'
-            setScheduledTime(null);
+          if (data && data.profile) {
+            const fullImageUrl = `${STORAGE_API_URL}/storage/${data.profile}`;
+            console.log('Full profile image URL:', fullImageUrl);
+            setProfileImage(fullImageUrl);
           } else {
-            // Set the scheduled_dispatch_time in TimerContext
-            setScheduledTime(newDispatch.scheduled_dispatch_time);
+            const fullName = `${data.fname} ${data.lname}`;
+            const encodedName = encodeURIComponent(fullName);
+            const imageUrl = `https://avatar.iran.liara.run/username?username=${encodedName}`;
+            setProfileImage(imageUrl);
           }
+        } catch (error) {
+          console.error('Error fetching authenticated user:', error);
         }
       } else {
-        // No dispatch data, reset the scheduled time
+        console.log('No token fetched from headercomponent');
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  const fetchInitialData = async () => {
+    console.log('Starting fetchInitialData...');
+
+    try {
+      const data: DispatchResponse = await get(API_ENDPOINTS.APPROVED_DISPATCH);
+      //   console.log('Fetched data:', JSON.stringify(data));
+
+      if (data?.dispatches?.length) {
+        const newDispatch: Dispatch = data.dispatches[0];
+
+        // console.log(
+        //   'Dispatcher Response Time:',
+        //   newDispatch.dispatcher_response_time,
+        //   'Scheduled Dispatch Time:',
+        //   newDispatch.scheduled_dispatch_time,
+        // );
+
+        setDispatchData(newDispatch);
+        setScheduledTime(
+          newDispatch.dispatcher_response_time ?? '',
+          newDispatch.scheduled_dispatch_time ?? '',
+        );
+      } else {
         setDispatchData(null);
-        setScheduledTime(null);
+        setScheduledTime('', '');
       }
     } catch (error) {
-      console.error('Error fetching dispatch data:', error);
+      console.error('Error fetching initial data:', error);
       setDispatchData(null);
-      setScheduledTime(null);
+      setScheduledTime('', '');
     }
   };
 
   useEffect(() => {
-    fetchDispatchData();
-    pollingInterval.current = setInterval(fetchDispatchData, 5000);
-    return () => {
-      if (pollingInterval.current) {
-        clearInterval(pollingInterval.current);
-      }
-    };
-  }, []); // Empty dependency array to prevent multiple intervals
+    fetchInitialData();
+  }, [refreshTrigger]);
 
-  // Format timeLeft to display as "8 mins" or "-- -- --" if no data
+  const handleDispatchUpdated = useCallback((data: any) => {
+    console.log('Dispatch updated:', data);
+    fetchInitialData();
+  }, []);
+
+  const handleDispatchFinalized = useCallback((data: any) => {
+    console.log('Dispatch finalized:', data);
+    fetchInitialData();
+  }, []);
+
+  useSocketListener('dispatch-updated', handleDispatchUpdated);
+  useSocketListener('dispatch-finalized', handleDispatchFinalized);
+
+  const fetchUnreadNotif = async () => {
+    try {
+      const res = await get(API_ENDPOINTS.NOTIF_UNREAD_COUNT);
+      if (res?.status && typeof res.unread === 'number') {
+        setUnreadCount(res.unread);
+      }
+    } catch (error) {
+      console.error('Failed to fetch unread notifications:', error);
+    }
+  };
+  useEffect(() => {
+    fetchUnreadNotif();
+  }, []);
+
+  const handleNewNotification = useCallback((data: any) => {
+    console.log('New notification received:', data);
+    fetchUnreadNotif();
+  }, []);
+
+  useSocketListener('new-notification', handleNewNotification);
+  useSocketListener('notifications-cleared', handleNewNotification);
+  //   useEffect(() => {
+  //     console.log('Current dispatchData:', JSON.stringify(dispatchData));
+  //   }, [dispatchData]);
+
   const formatTimeLeft = (seconds: number | null): string => {
     if (seconds === null) {
       return '-- -- --';
@@ -87,7 +147,6 @@ const HeaderMain: React.FC = () => {
     return `${minutes} mins ${secs > 0 ? `${secs} sec` : ''}`;
   };
 
-  // Format today's date
   const getCurrentDate = (): string => {
     const today = new Date();
     const options: Intl.DateTimeFormatOptions = {
@@ -97,23 +156,36 @@ const HeaderMain: React.FC = () => {
     };
     return today.toLocaleDateString('en-US', options);
   };
-
   return (
     <View style={styles.headerContainer}>
       {/* Top Bar */}
       <View style={styles.topBar}>
-        <TouchableOpacity>
-          <Image
-            source={require('../../assets/profile-user.png')}
-            style={styles.profileIcon}
-          />
-        </TouchableOpacity>
-        <TouchableOpacity>
-          <Image
-            source={require('../../assets/menu.png')}
-            style={styles.drawerIcon}
-          />
-        </TouchableOpacity>
+        <Image
+          source={
+            profileImage && profileImage.startsWith('http')
+              ? {uri: profileImage}
+              : require('../../assets/25.png')
+          }
+          style={styles.profileIcon}
+        />
+        {/* Right Icons (Notification and Drawer) */}
+        <View style={styles.rightIcons}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('NotificationScreen')}>
+            <View style={{position: 'relative'}}>
+              <Image
+                source={require('../../assets/3.png')}
+                style={styles.notifIcon}
+              />
+              {unreadCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{unreadCount}</Text>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
+          <CustomDropdown />
+        </View>
       </View>
 
       {/* Dispatching Status */}
@@ -126,19 +198,10 @@ const HeaderMain: React.FC = () => {
             {dispatchData ? dispatchData.tricycle.tricycle_number : '---'}
           </Text>
           <Text style={styles.tricycleLabel}>Tricycle Number</Text>
-
-          <TouchableOpacity style={styles.reserveButton}>
-            <Text style={styles.buttonText}>Reserve Now</Text>
-          </TouchableOpacity>
         </View>
 
         <View style={styles.infoContainer}>
           {/* Route Section - Always Displayed */}
-          <View style={styles.infoTextContainer}>
-            <Text style={styles.infoTitle}>Route</Text>
-            <Text style={styles.infoValue}>Dumaguete ➔</Text>
-            <Text style={styles.infoValue}>Bacong</Text>
-          </View>
 
           {/* Today's Date */}
           <View style={styles.infoTextContainer}>
@@ -147,6 +210,11 @@ const HeaderMain: React.FC = () => {
           </View>
 
           {/* Time Left */}
+          <View style={styles.infoTextContainer}>
+            <Text style={styles.infoTitle}>Route</Text>
+            <Text style={styles.infoValue}>Dumaguete ➔</Text>
+            <Text style={styles.infoValue}>Bacong</Text>
+          </View>
           <View style={styles.infoTextContainer}>
             <Text style={styles.infoTitle}>Time Left</Text>
             <Text style={styles.infoValue}>
@@ -162,9 +230,9 @@ const HeaderMain: React.FC = () => {
 const styles = StyleSheet.create({
   headerContainer: {
     backgroundColor: '#2d665f',
-    padding: 20,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    padding: 18,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
     width: '100%',
     marginHorizontal: 0,
   },
@@ -173,19 +241,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  rightIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  notifIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 15,
+  },
   profileIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
   },
   drawerIcon: {
-    width: 30,
-    height: 30,
+    width: 20,
+    height: 20,
   },
   statusText: {
-    fontSize: 16,
+    fontWeight: 'bold',
+    fontSize: 18,
     color: '#ffff',
-    marginTop: 30,
+    marginTop: 20,
     textAlign: 'left',
   },
   mainContent: {
@@ -195,16 +273,18 @@ const styles = StyleSheet.create({
   },
   tricycleContainer: {
     alignItems: 'center',
-    marginRight: 20,
+    marginRight: 10,
   },
   tricycleNumber: {
-    fontSize: 72,
+    fontSize: 60,
+    marginLeft: 30,
     color: '#FFFFFF',
     fontWeight: 'bold',
   },
   tricycleLabel: {
     fontSize: 16,
-    color: '#C6D9D7',
+    marginLeft: 30,
+    color: '#ffffff',
     marginBottom: 10,
   },
   driverName: {
@@ -225,27 +305,44 @@ const styles = StyleSheet.create({
   },
   infoTitle: {
     fontSize: 14,
-    color: '#A8BAB7',
+    color: '#ffffff',
   },
   infoValue: {
-    fontSize: 18,
+    fontSize: 17,
     color: '#FFFFFF',
     fontWeight: 'bold',
   },
   reserveButton: {
-    backgroundColor: '#62a287', // Updated to the provided color code
+    backgroundColor: '#62a287',
     padding: 10,
     borderRadius: 30,
     marginTop: 10,
   },
   buttonText: {
-    color: '#FFFFFF', // Ensures the text stands out on the button
+    color: '#FFFFFF',
     fontWeight: 'bold',
   },
   timeUnit: {
     fontSize: 12,
     color: '#A8BAB7',
     textAlign: 'center',
+  },
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: 8,
+    backgroundColor: 'red',
+    borderRadius: 10,
+    paddingHorizontal: 5,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 });
 

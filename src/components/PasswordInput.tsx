@@ -6,10 +6,15 @@ interface PasswordInputProps {
   placeholder?: string;
   value: string;
   onChangeText: (text: string) => void;
-  style?: object; // Allow custom styles
+  style?: object;
 }
 
-const PasswordInput: React.FC<PasswordInputProps> = ({ placeholder, value, onChangeText, style }) => {
+const PasswordInput: React.FC<PasswordInputProps> = ({
+  placeholder,
+  value,
+  onChangeText,
+  style,
+}) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
 
   const togglePasswordVisibility = () => {
@@ -26,7 +31,10 @@ const PasswordInput: React.FC<PasswordInputProps> = ({ placeholder, value, onCha
         secureTextEntry={!isPasswordVisible}
         placeholderTextColor="#A9A9A9"
       />
-      <TouchableOpacity onPress={togglePasswordVisibility} style={styles.iconContainer}>
+      <TouchableOpacity
+        onPress={togglePasswordVisibility}
+        style={styles.iconContainer}
+        activeOpacity={0.7}>
         <FontAwesomeIcon
           name={isPasswordVisible ? 'eye' : 'eye-slash'}
           size={20}
@@ -39,14 +47,14 @@ const PasswordInput: React.FC<PasswordInputProps> = ({ placeholder, value, onCha
 
 const styles = StyleSheet.create({
   container: {
-    position: 'relative', // Ensure the toggle button is positioned absolutely
+    position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#A9A9A9',
     borderRadius: 8,
     marginVertical: 10,
-    backgroundColor: '#FFFFFF', // White background
+    backgroundColor: '#FFFFFF',
   },
   input: {
     flex: 1,
@@ -54,12 +62,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#000',
     paddingHorizontal: 10,
-    paddingRight: 40, // Add padding to the right to avoid text overlapping the icon
+    paddingRight: 40,
   },
   iconContainer: {
-    position: 'absolute', // Position the icon absolutely within the input field
-    right: 10, // Position it at the right edge of the input
-    padding: 5, // Add some padding for better touch area
+    position: 'absolute',
+    right: 10,
+    padding: 5,
   },
 });
 

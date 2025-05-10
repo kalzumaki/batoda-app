@@ -1,79 +1,184 @@
-// src/screens/driver/DriverDashboard.tsx
-
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Button } from 'react-native';
+import React, {useEffect, useState, useCallback} from 'react';
+import {
+  View,
+  FlatList,
+  RefreshControl,
+  ActivityIndicator,
+  StyleSheet,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { get, logout } from '../../utils/proxy';
-import { User } from '../../types/User'; // Import the Driver type
-import Toast from 'react-native-toast-message';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-
-type RootStackParamList = {
-  Login: undefined;
-  DriverDashboard: undefined;
-};
+import {get, post} from '../../utils/proxy';
+import {useNavigation} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {RootStackParamList} from '../../types/passenger-dashboard';
+import {API_ENDPOINTS} from '../../api/api-endpoints';
+import Header from '../../components/driver/Header';
+import ShowDispatches from '../../components/driver/ShowDispatches';
+import ShowInQueue from '../../components/driver/ShowInQueue';
+import BottomNav from '../../components/driver/BottomNav';
+import ShowIncomeCard from '../../components/ShowIncomeCard';
+import ErrorAlertModal from '../../components/ErrorAlertModal';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
 const DriverDashboard: React.FC = () => {
-  const [driverData, setDriverData] = useState<User | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const navigation = useNavigation<NavigationProps>();
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [responseErrorMessage, setResponseErrorMessage] = useState('');
 
-  useEffect(() => {
-    const fetchDriverData = async () => {
-      const token = await AsyncStorage.getItem('userToken');
-      if (token) {
-        try {
-          const data = await get('/drivers');
-          setDriverData(data.data[0]); 
-        } catch (error) {
-          console.error('Error fetching driver data:', error);
-        }
-      }
-    };
+  const checkAuth = async () => {
+    setLoading(true);
+    const token = await AsyncStorage.getItem('userToken');
+    console.log('User Token: ', token);
 
-    fetchDriverData();
-  }, []);
+    if (!token) {
+      navigation.replace('Login');
+      return;
+    }
 
-  const handleLogout = async () => {
+    // Token exists
+    setIsAuthenticated(true);
+
     try {
-      console.log('Attempting to log out...');
-  
-      await logout();
-  
-      console.log('Logout successful, removing token from AsyncStorage...');
-      
-      Toast.show({
-        type: 'success',
-        text1: 'Logout Successful',
-      });
-  
-      console.log('Navigating back to the login screen...');
-      navigation.replace('Login'); 
+      const response = await post(API_ENDPOINTS.VALIDATE_TOKEN, {}, true);
+      console.log('response: ', response);
+      if (
+        response?.message === 'Unauthenticated.' ||
+        response?.status === false
+      ) {
+        console.log('🔒 Unauthenticated or blocked. Redirecting to Login...');
+        await AsyncStorage.removeItem('userToken');
+        setResponseErrorMessage(
+          'Your Account was Blocked. Please contact management.',
+        );
+        setShowErrorModal(true);
+        return;
+      }
+
+      const walletValid = await checkEwallet();
+      if (!walletValid) return;
+
+      const tricycleValid = await checkTricycleNumber();
+      if (!tricycleValid) {
+        navigation.replace('AddTricycleNumber');
+      }
     } catch (error) {
-      console.error('Error logging out:', error);
-  
-      Toast.show({
-        type: 'error',
-        text1: 'Logout Failed',
-        text2: 'Please try again.',
-      });
+      console.error('❌ Error during auth checks:', error);
+      await AsyncStorage.removeItem('userToken');
+      navigation.replace('Login');
+    } finally {
+      setLoading(false);
     }
   };
 
+  const checkEwallet = async (): Promise<boolean> => {
+    try {
+      console.log('🔍 Checking e-wallet...');
+      const response = await get(API_ENDPOINTS.SHOW_EWALLET);
+      console.log('💳 E-Wallet API Response:', response);
+
+      if (response.status && response.data) {
+        console.log('✅ E-Wallet exists.');
+        return true;
+      } else {
+        console.log('❌ No E-Wallet found. Redirecting...');
+        navigation.replace('RegisterEwallet');
+        return false;
+      }
+    } catch (error) {
+      console.log('❌ E-wallet check failed:', error);
+      await AsyncStorage.removeItem('userToken');
+      navigation.replace('Login');
+      return false;
+    }
+  };
+
+  const checkTricycleNumber = async (): Promise<boolean> => {
+    try {
+      console.log('🔍 Checking tricycle number...');
+      const response = await get(API_ENDPOINTS.FETCH_TRICYCLE_NUMBER);
+      console.log('🚐 Tricycle Number API Response:', response);
+
+      if (!response?.status || !response?.tricycle_number) {
+        console.log('❌ No Tricycle Number found.');
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.log('❌ Error checking tricycle number:', error);
+      return false;
+    }
+  };
+
+  // Run authentication check once the component mounts
+  useEffect(() => {
+    checkAuth();
+  }, [navigation]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await checkAuth();
+    setRefreshing(false);
+    setRefreshTrigger(prev => prev + 1);
+  }, []);
+
+  const renderItems = [
+    {id: 'header', component: <Header refreshTrigger={refreshTrigger} />},
+    // {id: 'dispatches', component: <ShowDispatches refreshTrigger={refreshTrigger} />},
+    {id: 'queue', component: <ShowInQueue refreshTrigger={refreshTrigger} />},
+    {
+      id: 'income',
+      component: <ShowIncomeCard refreshTrigger={refreshTrigger} />,
+    },
+    // add here the bottom nav
+  ];
+
+  const renderItem = ({
+    item,
+  }: {
+    item: {id: string; component: React.ReactNode};
+  }) => <View key={item.id}>{item.component}</View>;
+
+  if (loading) {
+    return (
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="#007bff" />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Driver Dashboard</Text>
-      {driverData ? (
-        <Text style={styles.welcomeText}>
-          Welcome, {driverData.fname} {driverData.lname}!
-        </Text>
-      ) : (
-        <Text style={styles.loadingText}>Loading your data...</Text>
-      )}
-      
-      <Button title="Logout" onPress={handleLogout} color="#FF6F61" />
+      {isAuthenticated ? (
+        <>
+          <FlatList
+            data={renderItems}
+            renderItem={renderItem}
+            keyExtractor={item => item.id}
+            scrollEnabled={true}
+            contentContainerStyle={styles.contentContainer}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+              />
+            }
+          />
+          {/* Fixed Bottom Navigation */}
+          <BottomNav />
+        </>
+      ) : null}
+      <ErrorAlertModal
+        visible={showErrorModal}
+        title="Account Blocked"
+        message={responseErrorMessage}
+        onDismiss={() => navigation.replace('Login')}
+      />
     </View>
   );
 };
@@ -81,25 +186,16 @@ const DriverDashboard: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: 'white',
+  },
+  loaderContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#145A32',
   },
-  title: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: '#F1F8E9',
-    marginBottom: 20,
-  },
-  welcomeText: {
-    fontSize: 20,
-    color: '#E8F5E9',
-    textAlign: 'center',
-    paddingHorizontal: 20,
-  },
-  loadingText: {
-    fontSize: 18,
-    color: '#C8E6C9',
+  contentContainer: {
+    flexGrow: 1,
+    paddingBottom: 80,
   },
 });
 

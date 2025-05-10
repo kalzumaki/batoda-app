@@ -1,79 +1,168 @@
-// src/screens/dispatcher/DispatcherDashboard.tsx
-
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Button } from 'react-native';
+import React, {useEffect, useState, useCallback} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Button,
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { get, logout } from '../../utils/proxy';
-import { User } from '../../types/User'; // Import the Dispatcher type
+import {get, post} from '../../utils/proxy';
 import Toast from 'react-native-toast-message';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-
-type RootStackParamList = {
-  Login: undefined;
-  DispatcherDashboard: undefined;
-};
+import {useNavigation} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {RootStackParamList} from '../../types/passenger-dashboard';
+import {API_ENDPOINTS} from '../../api/api-endpoints';
+import Header from '../../components/dispatcher/Header';
+import DispatchCard from '../../components/dispatcher/Dispatch';
+import ShowApprovedDispatches from '../../components/dispatcher/ShowApprovedDispatches';
+import BottomNav from '../../components/dispatcher/BottomNav';
+import ShowIncomeCard from '../../components/ShowIncomeCard';
+import ErrorAlertModal from '../../components/ErrorAlertModal';
 
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
 const DispatcherDashboard: React.FC = () => {
-  const [dispatcherData, setDispatcherData] = useState<User | null>(null);
   const navigation = useNavigation<NavigationProps>();
+  const [loading, setLoading] = useState<boolean>(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [responseErrorMessage, setResponseErrorMessage] = useState('');
+  
+  const checkAuth = async () => {
+    setLoading(true);
+
+    const token = await AsyncStorage.getItem('userToken');
+    console.log('User Token: ', token);
+
+    if (!token) {
+      navigation.replace('Login');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await post(API_ENDPOINTS.VALIDATE_TOKEN, {}, true);
+      console.log('response: ', response);
+      if (
+        response?.message === 'Unauthenticated.' ||
+        response?.status === false
+      ) {
+        console.log('🔒 Unauthenticated or blocked. Redirecting to Login...');
+        await AsyncStorage.removeItem('userToken');
+        setResponseErrorMessage(
+          'Your Account was Blocked or Session Expired. Please contact management.',
+        );
+        setShowErrorModal(true);
+        return;
+      }
+
+      setIsAuthenticated(true);
+      await checkEwallet();
+    } catch (error) {
+      console.error('❌ Error during authentication:', error);
+      await AsyncStorage.removeItem('userToken');
+      navigation.replace('Login');
+    }
+
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const fetchDispatcherData = async () => {
-      const token = await AsyncStorage.getItem('userToken');
-      if (token) {
-        try {
-          const data = await get('/dispatchers');
-          setDispatcherData(data.data[0]); 
-        } catch (error) {
-          console.error('Error fetching dispatcher data:', error);
-        }
-      }
-    };
+    checkAuth();
+  }, [navigation]);
 
-    fetchDispatcherData();
-  }, []);
-
-  const handleLogout = async () => {
+  const checkEwallet = async () => {
     try {
-      console.log('Attempting to log out...');
-  
-      await logout();
-  
-      console.log('Logout successful, removing token from AsyncStorage...');
-      
-      Toast.show({
-        type: 'success',
-        text1: 'Logout Successful',
-      });
-  
-      console.log('Navigating back to the login screen...');
-      navigation.replace('Login'); 
-    } catch (error) {
-      console.error('Error logging out:', error);
-  
-      Toast.show({
-        type: 'error',
-        text1: 'Logout Failed',
-        text2: 'Please try again.',
-      });
+      console.log('Checking e-wallet...');
+      const response = await get(API_ENDPOINTS.SHOW_EWALLET);
+      console.log('E-Wallet API Response:', response);
+      if (response.status && response.data) {
+        console.log('✅ E-Wallet exists:', response.data);
+      } else {
+        console.log('❌ No E-Wallet found. Redirecting to Register...');
+        navigation.replace('RegisterEwallet');
+      }
+    } catch (error: any) {
+      console.error('❌ Error checking e-wallet:', error);
+
+      if (error.response?.status === 404) {
+        console.log('❌ No E-Wallet found (404). Redirecting...');
+        navigation.replace('RegisterEwallet');
+      } else {
+        console.log('🚨 Unexpected error, assuming no e-wallet exists...');
+        navigation.replace('RegisterEwallet');
+      }
     }
   };
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setLoading(true);
+    await checkAuth();
+    setRefreshTrigger(prev => prev + 1);
+    setLoading(false);
+    setRefreshing(false);
+  }, []);
+
+  const renderItems = [
+    {id: 'header', component: <Header refreshTrigger={refreshTrigger} />},
+    {
+      id: 'income',
+      component: <ShowIncomeCard refreshTrigger={refreshTrigger} />,
+    },
+    {
+      id: 'dispatches',
+      component: <DispatchCard refreshTrigger={refreshTrigger} />,
+    },
+    {
+      id: 'approved-dispatches',
+      component: <ShowApprovedDispatches refreshTrigger={refreshTrigger} />,
+    },
+  ];
+  const renderItem = ({
+    item,
+  }: {
+    item: {id: string; component: React.ReactNode};
+  }) => <View key={item.id}>{item.component}</View>;
+
+  if (loading) {
+    return (
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="#007bff" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Dispatcher Dashboard</Text>
-      {dispatcherData ? (
-        <Text style={styles.welcomeText}>
-          Welcome, {dispatcherData.fname} {dispatcherData.lname}!
-        </Text>
-      ) : (
-        <Text style={styles.loadingText}>Loading your data...</Text>
-      )}
-      
-      <Button title="Logout" onPress={handleLogout} color="#FF6F61" />
+      {isAuthenticated ? (
+        <>
+          <FlatList
+            data={renderItems}
+            renderItem={renderItem}
+            keyExtractor={item => item.id}
+            scrollEnabled={true}
+            contentContainerStyle={styles.contentContainer}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+              />
+            }
+          />
+          <BottomNav />
+        </>
+      ) : null}
+      <ErrorAlertModal
+        visible={showErrorModal}
+        title="Account Blocked"
+        message={responseErrorMessage}
+        onDismiss={() => navigation.replace('Login')}
+      />
     </View>
   );
 };
@@ -82,24 +171,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#145A32',
   },
-  title: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: '#F1F8E9',
-    marginBottom: 20,
-  },
-  welcomeText: {
-    fontSize: 20,
-    color: '#E8F5E9',
-    textAlign: 'center',
-    paddingHorizontal: 20,
-  },
-  loadingText: {
-    fontSize: 18,
-    color: '#C8E6C9',
+  contentContainer: {
+    flexGrow: 1,
+    paddingBottom: 80,
   },
 });
 

@@ -1,66 +1,116 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome'; // Import FontAwesomeIcon
-import Toast from 'react-native-toast-message'; // Import your toast library
-import { get } from '../../utils/proxy'; // Adjust path to your utility
-import { Dispatch, DispatchResponse } from '../../types/approved-dispatch';
+import React, {useCallback, useEffect, useState} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+} from 'react-native';
+import Toast from 'react-native-toast-message';
+import {get} from '../../utils/proxy';
+import {
+  initPusher,
+  subscribeToChannel,
+  unsubscribeFromChannel,
+} from '../../pusher/pusher';
+import {useNavigation} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {RootStackParamList} from '../../types/passenger-dashboard';
 
-const DispatchQueue: React.FC = () => {
+import {Dispatch, DispatchResponse} from '../../types/approved-dispatch';
+import {API_ENDPOINTS} from '../../api/api-endpoints';
+import {PusherEvent} from '@pusher/pusher-websocket-react-native';
+import {RefreshTriggerProp} from '../../types/passenger-dashboard';
+import useSocketListener from '../../hooks/useSocketListener';
+const DispatchQueue: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const [dispatches, setDispatches] = useState<Dispatch[]>([]);
   const [noUpcomingQueue, setNoUpcomingQueue] = useState<boolean>(false);
-  const [polling, setPolling] = useState<boolean>(false);
-  const pollingInterval = useRef<NodeJS.Timeout | null>(null);
+  const [minutesLeft, setMinutesLeft] = useState<{[id: number]: number}>({});
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const fetchDispatches = async () => {
-    setPolling(true);
     try {
-      const response: DispatchResponse = await get('/in-queue');
+      const response: DispatchResponse = await get(API_ENDPOINTS.IN_QUEUE);
       if (response.status) {
-        console.log('Fetched dispatches:', response.dispatches);
-  
-        // Filter out dispatched items
         const activeDispatches = response.dispatches.filter(
-          (dispatch) => dispatch.is_dispatched !== 1
+          dispatch => dispatch.is_dispatched !== 1,
         );
-  
-        // Check if activeDispatches is empty
+
+        const initialMinutesLeft = activeDispatches.reduce((acc, dispatch) => {
+          const scheduledTimeMs = new Date(
+            dispatch.scheduled_dispatch_time,
+          ).getTime();
+          const currentTimeMs = new Date().getTime();
+          acc[dispatch.id] = Math.max(
+            0,
+            Math.ceil((scheduledTimeMs - currentTimeMs) / 60000),
+          );
+          return acc;
+        }, {} as {[id: number]: number});
+
+        setMinutesLeft(initialMinutesLeft);
+
         if (activeDispatches.length > 0) {
           setDispatches(activeDispatches);
-          setNoUpcomingQueue(false); // There are tricycles in the queue
+          setNoUpcomingQueue(false);
         } else {
-          setDispatches([]); // Clear the queue
-          setNoUpcomingQueue(true); // No tricycles in queue
+          setDispatches([]);
+          setNoUpcomingQueue(true);
         }
-  
       } else {
-        setNoUpcomingQueue(true); // No tricycles in queue if response is invalid
+        setNoUpcomingQueue(true);
       }
     } catch (error) {
       console.error('Error fetching dispatches:', error);
-      setNoUpcomingQueue(true); // No tricycles in queue on error
-    } finally {
-      setPolling(false);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to fetch dispatch queue.',
+      });
+      setNoUpcomingQueue(true);
     }
   };
-  
-  useEffect(() => {
+
+  const handleDispatchUpdated = useCallback((data: any) => {
+    console.log('Dispatch updated:', data);
     fetchDispatches();
-    pollingInterval.current = setInterval(fetchDispatches, 5000);
-    return () => {
-      if (pollingInterval.current) {
-        clearInterval(pollingInterval.current);
-      }
-    };
   }, []);
 
-  const renderMinutesLeft = (scheduledTime: string) => {
-    const timeLeft = Math.max(
-      0,
-      Math.ceil(
-        (new Date(scheduledTime).getTime() - new Date().getTime()) / 60000,
-      ),
-    );
-    return `${timeLeft} mins left`;
+  const handleDispatchFinalized = useCallback((data: any) => {
+    console.log('Dispatch finalized:', data);
+    fetchDispatches();
+  }, []);
+
+  useSocketListener('dispatch-updated', handleDispatchUpdated);
+  useSocketListener('dispatch-finalized', handleDispatchFinalized);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMinutesLeft(prevMinutesLeft => {
+        const updatedMinutesLeft = {...prevMinutesLeft};
+        Object.keys(updatedMinutesLeft).forEach(id => {
+          updatedMinutesLeft[parseInt(id)] = Math.max(
+            0,
+            updatedMinutesLeft[parseInt(id)] - 1,
+          );
+        });
+        return updatedMinutesLeft;
+      });
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [dispatches]);
+
+  const handlePress = (dispatch: Dispatch) => {
+    console.log('Navigating to ReserveRide with:', {
+      dispatchId: dispatch.id,
+      tricycleNumber: dispatch.tricycle.tricycle_number,
+    });
+    navigation.navigate('ReserveRide', {
+      dispatchId: dispatch.id,
+      tricycleNumber: dispatch.tricycle.tricycle_number,
+    });
   };
 
   return (
@@ -70,33 +120,25 @@ const DispatchQueue: React.FC = () => {
         <Text style={styles.headerText}>Tricycle No.</Text>
         <Text style={styles.headerText}>Standby Time</Text>
       </View>
-
-      {/* Polling message limited to ScrollView area */}
-      <View style={styles.pollingContainer}>
-        {polling && dispatches.length > 0 && (
-          <Text style={styles.pollingText}>Updating queue...</Text>
-        )}
-      </View>
-
       <ScrollView>
-        {/* Conditional rendering for dispatches */}
         {noUpcomingQueue ? (
           <Text style={styles.emptyText}>No tricycles in queue.</Text>
         ) : (
-          dispatches.map((item) => (
-            <View key={item.id} style={styles.dispatchItem}>
-              <Text style={styles.tricycleNumber}>
-                {item.tricycle.tricycle_number}
-              </Text>
-              <View style={styles.timeContainer}>
-                <Text style={styles.timeText}>
-                  {renderMinutesLeft(item.scheduled_dispatch_time)}
+          dispatches.map(item => (
+            <TouchableOpacity key={item.id} onPress={() => handlePress(item)}>
+              <View style={styles.dispatchItem}>
+                <Text style={styles.tricycleNumber}>
+                  {item.tricycle.tricycle_number}
                 </Text>
-                <TouchableOpacity>
-                  <FontAwesomeIcon name="ellipsis-v" style={styles.icon} />
-                </TouchableOpacity>
+                <View style={styles.timeContainer}>
+                  <Text style={styles.timeText}>
+                    {minutesLeft[item.id] !== undefined
+                      ? `${minutesLeft[item.id]} mins left`
+                      : ''}
+                  </Text>
+                </View>
               </View>
-            </View>
+            </TouchableOpacity>
           ))
         )}
       </ScrollView>
@@ -109,11 +151,6 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: 'white',
     borderRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowRadius: 2,
   },
   title: {
     textAlign: 'left',
@@ -121,18 +158,13 @@ const styles = StyleSheet.create({
     color: 'black',
     marginBottom: 10,
   },
-  pollingContainer: {
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     padding: 10,
     backgroundColor: '#469c8f',
-    borderRadius: 20,
-    // marginBottom: 10,
+    borderRadius: 10,
+    marginBottom: 10,
   },
   headerText: {
     fontSize: 14,
@@ -145,21 +177,14 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 10,
     backgroundColor: '#c6d9d7',
-    borderRadius: 25,
+    borderRadius: 10,
     marginBottom: 10,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 1,
   },
   tricycleNumber: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#2d665f',
+    marginLeft: 10,
   },
   timeContainer: {
     flexDirection: 'row',
@@ -170,19 +195,11 @@ const styles = StyleSheet.create({
     color: '#2d665f',
     marginRight: 10,
   },
-  icon: {
-    fontSize: 30,
-    color: '#2d665f',
-  },
   emptyText: {
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: 10,
+    marginBottom: 30,
     color: '#c6d9d7',
-  },
-  pollingText: {
-    textAlign: 'center',
-    color: '#ffffff',
-    zIndex: 1
   },
 });
 
