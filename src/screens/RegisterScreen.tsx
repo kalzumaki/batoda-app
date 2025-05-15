@@ -56,7 +56,7 @@ const Register: React.FC = () => {
     brgy_clearance: null,
     valid_id_front: null,
     valid_id_back: null,
-    valid_id_type: '',
+    valid_id_type: "1",
     id_number: '',
   });
 
