@@ -8,7 +8,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {del, get, put} from '../utils/proxy';
 import {API_ENDPOINTS} from '../api/api-endpoints';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
@@ -17,7 +17,8 @@ import {RootStackParamList} from '../types/passenger-dashboard';
 import BackButton from '../components/BackButton';
 import Icon from 'react-native-vector-icons/Ionicons';
 import SuccessAlertModal from '../components/SuccessAlertModal';
-import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome';
+import useSocketListener from '../hooks/useSocketListener';
+
 type NavigationProps = NativeStackNavigationProp<RootStackParamList>;
 
 interface NotificationItem {
@@ -55,6 +56,7 @@ const NotificationScreen = () => {
   const [showResponseMessage, setShowResponseMessage] = useState<string>('');
   const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
   const [title, setTitle] = useState<string>('');
+
   const fetchNotifications = async () => {
     try {
       const response = await get(API_ENDPOINTS.GET_NOTIF_PER_USER);
@@ -70,6 +72,13 @@ const NotificationScreen = () => {
   useEffect(() => {
     fetchNotifications();
   }, []);
+  const handleNewNotification = useCallback((data: any) => {
+    console.log('New notification received:', data);
+    fetchNotifications();
+  }, []);
+
+  useSocketListener('new-notification', handleNewNotification);
+  useSocketListener('notifications-cleared', handleNewNotification);
 
   const handleNotificationPress = async (notification: NotificationItem) => {
     setSelectedNotification(notification);

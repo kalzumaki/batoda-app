@@ -336,7 +336,7 @@ const Login: React.FC = () => {
                     title: '2. Seat Policy',
                     bullets: [
                       'Strictly one (1) person per seat.',
-                      'Overloading or sabakanay (2 persons on 1 seat) is not allowed.',
+                      'Sabakanay (2 persons on 1 seat) is not allowed, except if the second passenger is a baby or a small child accompanied by an adult',
                     ],
                   },
                   {

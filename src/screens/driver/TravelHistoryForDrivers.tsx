@@ -153,7 +153,7 @@ const TravelHistoryForDrivers = () => {
           Status: {getStatusDisplay(item.status)}
         </Text>
         <Text style={styles.referenceNo}>Dispatch ID: {item.dispatch_id}</Text>
-        <Text style={styles.time}>Passenger Count: {item.passenger_count}</Text>
+        <Text style={styles.time}>Seat Count: {item.passenger_count}</Text>
         <Text style={styles.time}>Dispatcher: {item.dispatcher.full_name}</Text>
 
         {item.scheduled_dispatch_time ? (

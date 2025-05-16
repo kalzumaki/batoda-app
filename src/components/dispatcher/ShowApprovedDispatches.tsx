@@ -34,6 +34,8 @@ const ShowApprovedDispatches: React.FC<RefreshTriggerProp> = ({
   const [showResponseMessage, setShowResponseMessage] = useState<string>('');
   const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
   const [title, setTitle] = useState<string>('');
+  const [passengerCount, setPassengerCount] = useState<number>(0);
+
   const fetchDispatches = async () => {
     try {
       setLoading(true);
@@ -122,13 +124,18 @@ const ShowApprovedDispatches: React.FC<RefreshTriggerProp> = ({
     console.log('Dispatch finalized:', data);
     fetchDispatches();
   }, []);
+  const handleDispatchSeatCount = useCallback((data: any) => {
+    console.log('Seat Count:', data);
+    fetchDispatches();
+  }, []);
 
   useSocketListener('dispatch-updated', handleDispatchUpdated);
   useSocketListener('dispatch-finalized', handleDispatchFinalized);
+  useSocketListener('seat-paid', handleDispatchSeatCount);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Approved Dispatches</Text>
+      <Text style={styles.title}>Approved Dispatches</Text>
       {loading ? (
         <ActivityIndicator size="large" color="#007AFF" />
       ) : dispatches.length === 0 ? (
@@ -157,7 +164,7 @@ const ShowApprovedDispatches: React.FC<RefreshTriggerProp> = ({
                   Tricycle #: {dispatch.tricycle.tricycle_number}
                 </Text>
                 <Text style={styles.subText}>
-                  Passenger Count: {dispatch.passenger_count}
+                  Seat Count: {dispatch.passenger_count}
                 </Text>
                 <Text style={styles.subText}>
                   Scheduled: {dayjs(dispatch.scheduled_dispatch_time).fromNow()}
@@ -304,14 +311,13 @@ const styles = StyleSheet.create({
     color: '#fff',
     textAlign: 'center',
   },
-  title:{
+  title: {
     fontSize: 18,
     fontWeight: '600',
     color: '#000000',
     textAlign: 'center',
     marginVertical: 12,
-
-  }
+  },
 });
 
 export default ShowApprovedDispatches;

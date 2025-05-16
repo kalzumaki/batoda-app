@@ -22,6 +22,8 @@ const ShowInQueue: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
   const [selectedDispatch, setSelectedDispatch] = useState<Dispatch | null>(
     null,
   );
+  const [passengerCount, setPassengerCount] = useState<number>(0);
+
   const [profileImage, setProfileImage] = useState<string>(
     '../../assets/25.png',
   );
@@ -102,6 +104,7 @@ const ShowInQueue: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
 
   useSocketListener('dispatch-updated', handleDispatchUpdated);
   useSocketListener('dispatch-finalized', handleDispatchFinalized);
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Upcoming Dispatch</Text>
@@ -187,8 +190,8 @@ const ShowInQueue: React.FC<RefreshTriggerProp> = ({refreshTrigger}) => {
                         {selectedDispatch.dispatcher.lname}
                       </Text>
                       <Text style={styles.modalText}>
-                        <Text style={styles.label}>Passenger Count: </Text>
-                        {selectedDispatch.passenger_count}
+                        <Text style={styles.label}>Seat Count: </Text>
+                        {passengerCount}
                       </Text>
                       <Text style={styles.modalText}>
                         <Text style={styles.label}>Time Left: </Text>

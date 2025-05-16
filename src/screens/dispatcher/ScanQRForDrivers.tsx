@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
   Text,
   View,
@@ -16,34 +16,46 @@ import {get} from '../../utils/proxy';
 import {STORAGE_API_URL} from '@env';
 import {DispatcherQrResponse} from '../../types/qr'; // Assuming the interface is correctly imported
 import BackButton from '../../components/BackButton';
+import SuccessAlertModal from '../../components/SuccessAlertModal';
+import useSocketListener from '../../hooks/useSocketListener';
 
 const ScanQRForDrivers: React.FC = () => {
-  const [dispatches, setDispatches] = useState<DispatcherQrResponse['data']>([]);
+  const [dispatches, setDispatches] = useState<DispatcherQrResponse['data']>(
+    [],
+  );
   const [loading, setLoading] = useState(true);
   const [selectedQR, setSelectedQR] = useState<string | null>(null);
+  const [isSuccessModalVisible, setSuccessModalVisible] = useState(false);
+  const [showResponseMessage, setShowResponseMessage] = useState('');
 
-  useEffect(() => {
-    const fetchPassengerQRCodes = async () => {
-      try {
-        const response: DispatcherQrResponse = await get(
-          API_ENDPOINTS.GET_DRIVER_QR,
-        );
-        if (response.status && response.data) {
-          setDispatches(response.data);
-        } else {
-          setDispatches([]);
-        }
-      } catch (error) {
-        console.error('Failed to fetch passenger QR codes:', error);
+  const fetchPassengerQRCodes = async () => {
+    try {
+      const response: DispatcherQrResponse = await get(
+        API_ENDPOINTS.GET_DRIVER_QR,
+      );
+      if (response.status && response.data) {
+        setDispatches(response.data);
+      } else {
         setDispatches([]);
-      } finally {
-        setLoading(false);
       }
-    };
-
+    } catch (error) {
+      console.error('Failed to fetch passenger QR codes:', error);
+      setDispatches([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
     fetchPassengerQRCodes();
   }, []);
-
+  const handleQrFresh = useCallback((data: any) => {
+    console.log('Payment Received from Driver');
+    setShowResponseMessage('QR Payment Success check your Daily Income');
+    setSuccessModalVisible(true);
+    setSelectedQR(null);
+    fetchPassengerQRCodes();
+  }, []);
+  useSocketListener('dispatcher-paid', handleQrFresh);
   if (loading) {
     return (
       <View style={styles.center}>
@@ -93,8 +105,12 @@ const ScanQRForDrivers: React.FC = () => {
                   style={styles.profileImage}
                 />
                 <View style={styles.cardText}>
-                  <Text style={styles.passengerName}>{item.driver.full_name}</Text>
-                  <Text style={styles.seatText}>Tricycle Number: {item.driver.tricycle_number}</Text>
+                  <Text style={styles.passengerName}>
+                    {item.driver.full_name}
+                  </Text>
+                  <Text style={styles.seatText}>
+                    Tricycle Number: {item.driver.tricycle_number}
+                  </Text>
                 </View>
               </View>
             </TouchableOpacity>
@@ -120,6 +136,12 @@ const ScanQRForDrivers: React.FC = () => {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
+      <SuccessAlertModal
+        visible={isSuccessModalVisible}
+        title="Payment Successful"
+        message={showResponseMessage}
+        onDismiss={() => setSuccessModalVisible(false)}
+      />
     </View>
   );
 };

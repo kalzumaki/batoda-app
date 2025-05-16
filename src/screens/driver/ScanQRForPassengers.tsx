@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
   Text,
   View,
@@ -16,34 +16,48 @@ import {get} from '../../utils/proxy';
 import {STORAGE_API_URL} from '@env';
 import {PassengerQRResponse} from '../../types/qr';
 import BackButton from '../../components/BackButton';
+import useSocketListener from '../../hooks/useSocketListener';
+import SuccessAlertModal from '../../components/SuccessAlertModal';
 
 const ScanQRForPassengers: React.FC = () => {
   const [dispatches, setDispatches] = useState<PassengerQRResponse['data']>([]);
   const [loading, setLoading] = useState(true);
   const [selectedQR, setSelectedQR] = useState<string | null>(null);
+  const [isSuccessModalVisible, setSuccessModalVisible] = useState(false);
+  const [showResponseMessage, setShowResponseMessage] = useState('');
 
-  useEffect(() => {
-    const fetchPassengerQRCodes = async () => {
-      try {
-        const response: PassengerQRResponse = await get(
-          API_ENDPOINTS.GET_PASSENGER_QR,
-        );
-        if (response.status && response.data) {
-          setDispatches(response.data);
-        } else {
-          setDispatches([]);
-        }
-      } catch (error) {
-        console.error('Failed to fetch passenger QR codes:', error);
+  const fetchPassengerQRCodes = async () => {
+    try {
+      const response: PassengerQRResponse = await get(
+        API_ENDPOINTS.GET_PASSENGER_QR,
+      );
+      if (response.status && response.data) {
+        setDispatches(response.data);
+      } else {
         setDispatches([]);
-      } finally {
-        setLoading(false);
       }
-    };
-
+    } catch (error) {
+      console.error('Failed to fetch passenger QR codes:', error);
+      setDispatches([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
     fetchPassengerQRCodes();
   }, []);
 
+  const handleQrFresh = useCallback((data: any) => {
+    console.log('Payment Received from Passenger');
+    setShowResponseMessage('QR Payment Success check your Daily Income');
+    setSuccessModalVisible(true);
+    setSelectedQR(null);
+    fetchPassengerQRCodes();
+  }, []);
+  const handleCancelledReservations = useCallback((data: any) => {
+
+  }, [])
+  useSocketListener('seat-paid', handleQrFresh);
   if (loading) {
     return (
       <View style={styles.center}>
@@ -136,6 +150,12 @@ const ScanQRForPassengers: React.FC = () => {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
+      <SuccessAlertModal
+        visible={isSuccessModalVisible}
+        title="Payment Successful"
+        message={showResponseMessage}
+        onDismiss={() => setSuccessModalVisible(false)}
+      />
     </View>
   );
 };
