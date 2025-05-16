@@ -55,9 +55,14 @@ const ScanQRForPassengers: React.FC = () => {
     fetchPassengerQRCodes();
   }, []);
   const handleCancelledReservations = useCallback((data: any) => {
-
+    fetchPassengerQRCodes();
   }, [])
+  const handleReservations = useCallback((data: any) => {
+    fetchPassengerQRCodes();
+  }, [])
+  useSocketListener('seats-reserved', handleReservations);
   useSocketListener('seat-paid', handleQrFresh);
+  useSocketListener('reservation-cancelled', handleCancelledReservations);
   if (loading) {
     return (
       <View style={styles.center}>
