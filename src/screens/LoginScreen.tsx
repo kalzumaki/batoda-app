@@ -326,63 +326,71 @@ const Login: React.FC = () => {
 
                 {[
                   {
-                    title: '1. No Refund Policy',
+                    title: '1. GCash Payment Requirement',
+                    bullets: [
+                      'All users are required to have an active GCash account to enable cashless transactions.',
+                      'The Batoda app will access a secure payment gateway that links to the GCash app to ensure smooth transactions.',
+                    ],
+                  },
+
+                  {
+                    title: '2. No Refund Policy',
                     bullets: [
                       'All payments made are non-refundable.',
                       'Once a transaction is completed, no cancellations or refund requests will be entertained.',
                     ],
                   },
                   {
-                    title: '2. Seat Policy',
+                    title: '3. Seat Policy',
                     bullets: [
                       'Strictly one (1) person per seat.',
                       'Sabakanay (2 persons on 1 seat) is not allowed, except if the second passenger is a baby or a small child accompanied by an adult',
                     ],
                   },
                   {
-                    title: '3. Passenger Conduct',
+                    title: '4. Passenger Conduct',
                     bullets: [
                       'Passengers must respect the driver and fellow riders.',
                       'Aggressive behavior or intoxication may result in removal or banning.',
                     ],
                   },
                   {
-                    title: '4. Driver Conduct',
+                    title: '5. Driver Conduct',
                     bullets: [
                       'Drivers must follow traffic laws and behave professionally.',
                       'Misconduct should be reported via BATODA channels.',
                     ],
                   },
                   {
-                    title: '5. Fare Disputes',
+                    title: '6. Fare Disputes',
                     bullets: [
                       'Confirm fare before the ride.',
                       'Disputes without proof will not be entertained.',
                     ],
                   },
                   {
-                    title: '6. Trip Responsibility',
+                    title: '7. Trip Responsibility',
                     bullets: [
                       'BATODA is not liable for delays due to traffic, weather, or other uncontrollable factors.',
                       'BATODA is not responsible for lost items.',
                     ],
                   },
                   {
-                    title: '7. Safety Measures',
+                    title: '8. Safety Measures',
                     bullets: [
                       'No standing or hanging on the sidebars during rides.',
                       'Children must be with an adult.',
                     ],
                   },
                   {
-                    title: '8. Data Privacy',
+                    title: '9. Data Privacy',
                     bullets: [
                       'Your personal and trip data will be handled securely.',
                       'It will be used only to improve services.',
                     ],
                   },
                   {
-                    title: '9. Violations and Banning',
+                    title: '10. Violations and Banning',
                     bullets: [
                       'Violating these terms may lead to suspension or permanent ban from the service.',
                     ],
