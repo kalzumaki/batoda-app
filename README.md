@@ -16,8 +16,10 @@ Before starting, make sure the following are installed and set up properly:
 - **npm** (npm recommended)
 - **Java Development Kit (JDK)** – for Android development
 - **Android Studio** – includes Android SDK, Emulator, and tools
-  > If android studio is not available use:
-- **Developer mode** - on mobile device (USB debugging)
+
+  > **Note:** If Android Studio is not available, use:
+  >
+  > - **Developer mode** enabled on your mobile device (USB debugging)
 
 - **React Native CLI**
   ```bash
@@ -53,6 +55,6 @@ If the <code>.env</code> file is missing, please contact the developer:
 - **Facebook:** https://www.facebook.com/kalzumaki.91/
 </details>
 
-# **NOTE**
+# **NOTE:**
 
-> This only works on android.
+This only works on android.
