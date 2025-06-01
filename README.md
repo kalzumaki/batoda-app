@@ -55,6 +55,6 @@ If the <code>.env</code> file is missing, please contact the developer:
 - **Facebook:** https://www.facebook.com/kalzumaki.91/
 </details>
 
-# **NOTE:**
+### ⚠️ **NOTE:**
 
-This only works on android.
+This only works on Android.
